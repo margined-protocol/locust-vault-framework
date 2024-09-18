@@ -1,0 +1,43 @@
+name: Test Wasm Binaries
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  test:
+    name: Integration tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v4
+
+      - name: Install toolchain
+        run: rustup show
+
+      - name: Set up cargo cache
+        uses: actions/cache@v4
+        continue-on-error: false
+        with:
+          path: |
+            ~/.cargo/crates.toml
+            ~/.cargo/crates2.json
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+            /home/runner/go/pkg/mod/github.com/
+          key: ${{ runner.os }}-cargo-ci-build-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: ${{ runner.os }}-cargo-ci-build
+
+      - name: Compile contracts
+        run: cargo wasm
+        env:
+          RUSTFLAGS: "-C link-arg=-s"
+
+      - name: Run tests
+        run: cargo test

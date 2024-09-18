@@ -1,0 +1,48 @@
+[workspace]
+members  = [ "contracts/mocks/*", "contracts/strategy", "packages/*" ]
+resolver = "2"
+
+[workspace.package]
+edition      = "2021"
+rust-version = "1.78.0"
+version      = "0.1.1"
+
+[workspace.dependencies]
+cosmwasm-schema   = { version = "1.5.5" }
+cosmwasm-std      = { version = "1.5.5" }
+cw-controllers    = { version = "1.1.2" }
+cw-storage-plus   = { version = "1.2.0" }
+cw-utils          = { version = "1.0.3" }
+cw-vault-standard = { version = "0.3.3" }
+cw2               = { version = "1.1.2" }
+cw_margined       = { version = "0.1.0" }
+neutron-std       = { package = "margined-neutron-std", version = "4.2.0" }
+neutron-test-tube = { version = "4.2.0" }
+num_enum          = { version = "0.7.2" }
+osmosis-std       = { version = "0.25.0" }
+osmosis-test-tube = { version = "25.0.0" }
+prost             = { version = "0.12.4" }
+prost-types       = { version = "0.12.4" }
+regex             = { version = "1.10.5" }
+serde             = { version = "1.0.201" }
+serde-json-wasm   = { version = "1.0.1" }
+serde_json        = { version = "1.0.117" }
+strum             = { version = "0.26.2", features = [ "derive" ] }
+test-tube         = { version = "0.7.0" }
+thiserror         = "1.0.44"
+vaultenator       = { version = "0.5.0" }
+
+# packages
+interface = { version = "0.1.0", path = "packages/interface" }
+testing   = { version = "0.1.0", path = "packages/testing" }
+
+[profile.release]
+codegen-units    = 1
+debug            = false
+debug-assertions = false
+incremental      = false
+lto              = true
+opt-level        = 3
+overflow-checks  = true
+panic            = 'abort'
+rpath            = false

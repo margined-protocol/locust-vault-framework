@@ -1,0 +1,19 @@
+[package]
+description = "Strategy Contract Interface"
+edition     = "2021"
+name        = "interface"
+version     = "0.1.0"
+
+[features]
+# for quicker tests, cargo test --lib
+# for more explicit tests, cargo test --features=backtraces
+backtraces = [ "cosmwasm-std/backtraces" ]
+
+[dependencies]
+cosmwasm-schema   = { workspace = true }
+cosmwasm-std      = { workspace = true }
+cw-vault-standard = { workspace = true }
+osmosis-std       = { workspace = true }
+prost             = { workspace = true }
+serde             = { workspace = true }
+vaultenator       = { workspace = true }
