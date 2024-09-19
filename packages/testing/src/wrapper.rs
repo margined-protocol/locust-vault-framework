@@ -31,6 +31,30 @@ impl TestEnv {
 
         wasm.execute(contract_addr, &msg, &[], signer)
     }
+
+    pub fn set_vault(
+        &self,
+        wasm: &Wasm<OsmosisTestApp>,
+        contract_addr: &str,
+        vault: String,
+        signer: &SigningAccount,
+    ) -> RunnerExecuteResult<MsgExecuteContractResponse> {
+        let msg = ExecuteMsg::SetVault { vault };
+
+        wasm.execute(contract_addr, &msg, &[], signer)
+    }
+
+    pub fn set_grants(
+        &self,
+        wasm: &Wasm<OsmosisTestApp>,
+        contract_addr: &str,
+        grants: Vec<String>,
+        signer: &SigningAccount,
+    ) -> RunnerExecuteResult<MsgExecuteContractResponse> {
+        let msg = ExecuteMsg::SetGrants { grants };
+
+        wasm.execute(contract_addr, &msg, &[], signer)
+    }
 }
 
 // Query Functions

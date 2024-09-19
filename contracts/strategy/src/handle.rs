@@ -1,4 +1,9 @@
-use crate::{errors::ContractError, state::CONFIG};
+use crate::{
+    errors::ContractError,
+    events::{event_repay, event_set_grants, event_set_vault, event_withdraw},
+    state::CONFIG,
+    utils::{create_authz_grant_messages, tokens_to_string},
+};
 
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{
@@ -27,13 +32,24 @@ pub fn handle_withdraw(
         ContractError::Unauthorized {}
     );
 
-    let msg = WasmMsg::Execute {
-        msg: to_json_binary(&VaultMsg::Withdraw { tokens_to_withdraw })?,
-        funds: vec![],
-        contract_addr: config.vault.to_string(),
+    let vault = match &config.vault {
+        Some(vault) => vault,
+        None => {
+            return Err(ContractError::VaultNotSet {});
+        }
     };
 
-    Ok(Response::default().add_message(msg))
+    let msg = WasmMsg::Execute {
+        msg: to_json_binary(&VaultMsg::Withdraw {
+            tokens_to_withdraw: tokens_to_withdraw.clone(),
+        })?,
+        funds: vec![],
+        contract_addr: vault.to_string(),
+    };
+
+    Ok(Response::default()
+        .add_event(event_withdraw(tokens_to_string(tokens_to_withdraw)))
+        .add_message(msg))
 }
 
 pub fn handle_repay(
@@ -49,11 +65,64 @@ pub fn handle_repay(
         ContractError::Unauthorized {}
     );
 
-    let msg = WasmMsg::Execute {
-        msg: to_json_binary(&VaultMsg::Repay {})?,
-        funds: tokens_to_repay,
-        contract_addr: config.vault.to_string(),
+    let vault = match &config.vault {
+        Some(vault) => vault,
+        None => {
+            return Err(ContractError::VaultNotSet {});
+        }
     };
 
-    Ok(Response::default().add_message(msg))
+    let msg = WasmMsg::Execute {
+        msg: to_json_binary(&VaultMsg::Repay {})?,
+        funds: tokens_to_repay.clone(),
+        contract_addr: vault.to_string(),
+    };
+
+    Ok(Response::default()
+        .add_event(event_repay(tokens_to_string(tokens_to_repay)))
+        .add_message(msg))
+}
+
+pub fn handle_set_vault(
+    deps: DepsMut,
+    _env: Env,
+    info: MessageInfo,
+    vault: String,
+) -> Result<Response, ContractError> {
+    let mut config = CONFIG.load(deps.storage)?;
+
+    ensure!(config.admin == info.sender, ContractError::Unauthorized {});
+
+    config.vault = Some(vault.clone());
+    config.validate(&deps.as_ref())?;
+
+    CONFIG.save(deps.storage, &config)?;
+
+    Ok(Response::default().add_event(event_set_vault(vault)))
+}
+
+pub fn handle_set_grants(
+    deps: DepsMut,
+    env: Env,
+    info: MessageInfo,
+    grants: Vec<String>,
+) -> Result<Response, ContractError> {
+    let mut config = CONFIG.load(deps.storage)?;
+
+    ensure!(config.admin == info.sender, ContractError::Unauthorized {});
+
+    config.grants.clone_from(&grants);
+    config.validate(&deps.as_ref())?;
+
+    let grantee = config.controller.clone();
+    let grants_str: Vec<&str> = config.grants.iter().map(|s| s.as_str()).collect();
+
+    let authz_msgs =
+        create_authz_grant_messages(env.contract.address.as_str(), &grantee, &grants_str);
+
+    CONFIG.save(deps.storage, &config)?;
+
+    Ok(Response::new()
+        .add_event(event_set_grants(grants))
+        .add_messages(authz_msgs))
 }

@@ -46,8 +46,8 @@ pub struct MockInstantiateMsg {}
 
 pub fn get_default_instantiation_msg(env: &TestEnv) -> InstantiateMsg {
     InstantiateMsg {
+        admin: env.signer.address(),
         controller: env.controller.address(),
-        vault: env.signer.address(),
         token0: BASE_DENOM.to_string(),
         token1: None,
         grants: vec![MsgCreatePosition::TYPE_URL.to_string()],

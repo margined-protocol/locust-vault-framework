@@ -31,8 +31,8 @@ fn test_instantiation() {
         .instantiate(
             code_id,
             &InstantiateMsg {
+                admin: env.signer.address(),
                 controller: env.controller.address(),
-                vault: env.signer.address(),
                 token0: BASE_DENOM.to_string(),
                 token1: None,
                 grants: vec![MsgCreatePosition::TYPE_URL.to_string()],
@@ -56,8 +56,9 @@ fn test_instantiation() {
     assert_eq!(
         config,
         ConfigResponse {
+            admin: env.signer.address(),
             controller: env.controller.address(),
-            vault: env.signer.address(),
+            vault: None,
             token0: BASE_DENOM.to_string(),
             token1: None,
             pool_info: PoolInfo::Osmosis {
@@ -84,8 +85,8 @@ fn test_fail_instantiation() {
         .instantiate(
             code_id,
             &InstantiateMsg {
+                admin: env.signer.address(),
                 controller: env.controller.address(),
-                vault: env.signer.address(),
                 token0: BASE_DENOM.to_string(),
                 token1: None,
                 grants: vec![],
@@ -106,6 +107,63 @@ fn test_fail_instantiation() {
         err,
         ContractError::Std(StdError::generic_err("Grants must be non-empty")),
     );
+}
+
+#[test]
+fn test_set_vault() {
+    let env = TestEnv::new();
+
+    let wasm = Wasm::new(&env.app);
+
+    let code_id = store_code(&wasm, &env.signer, "strategy").unwrap();
+
+    let contract_addr = wasm
+        .instantiate(
+            code_id,
+            &InstantiateMsg {
+                admin: env.signer.address(),
+                controller: env.controller.address(),
+                token0: BASE_DENOM.to_string(),
+                token1: None,
+                grants: vec![MsgCreatePosition::TYPE_URL.to_string()],
+                pool_info: PoolInfo::Osmosis {
+                    id: 1,
+                    token0: BASE_DENOM.to_string(),
+                    token1: QUOTE_DENOM.to_string(),
+                },
+            },
+            None,
+            Some("strategy-contract"),
+            &[],
+            &env.signer,
+        )
+        .unwrap()
+        .data
+        .address;
+
+    env.set_vault(&wasm, &contract_addr, env.controller.address(), &env.signer)
+        .unwrap();
+
+    let config = env.query_config(&wasm, &contract_addr).unwrap();
+
+    assert_eq!(
+        config,
+        ConfigResponse {
+            admin: env.signer.address(),
+            controller: env.controller.address(),
+            vault: Some(env.controller.address()),
+            token0: BASE_DENOM.to_string(),
+            token1: None,
+            pool_info: PoolInfo::Osmosis {
+                id: 1,
+                token0: BASE_DENOM.to_string(),
+                token1: QUOTE_DENOM.to_string(),
+            },
+            grants: vec![MsgCreatePosition::TYPE_URL.to_string()],
+            name: format!("crates.io:{}", CONTRACT_NAME),
+            version: CONTRACT_VERSION.to_string(),
+        }
+    )
 }
 
 #[test]
@@ -143,10 +201,11 @@ fn test_withdraw() {
     assert_eq!(base_amount, vault_base_balance_before.into());
     assert_eq!(quote_amount, vault_quote_balance_before.into());
 
-    let mut msg = get_default_instantiation_msg(&env);
-    msg.vault = vault_addr.to_string();
+    let msg = get_default_instantiation_msg(&env);
 
     let contract_addr = env.deploy_strategy_contract(&wasm, Some(msg));
+    env.set_vault(&wasm, &contract_addr, vault_addr.clone(), &env.signer)
+        .unwrap();
 
     let tokens_to_withdraw = vec![
         coin(base_amount, BASE_DENOM),
@@ -195,10 +254,11 @@ fn test_repay() {
     let vault_base_balance_before = env.get_balance(&vault_addr, BASE_DENOM);
     let vault_quote_balance_before = env.get_balance(&vault_addr, QUOTE_DENOM);
 
-    let mut msg = get_default_instantiation_msg(&env);
-    msg.vault = vault_addr.to_string();
+    let msg = get_default_instantiation_msg(&env);
 
     let contract_addr = env.deploy_strategy_contract(&wasm, Some(msg));
+    env.set_vault(&wasm, &contract_addr, vault_addr.clone(), &env.signer)
+        .unwrap();
 
     let tokens_to_withdraw = vec![
         coin(base_amount, BASE_DENOM),

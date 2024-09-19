@@ -15,6 +15,7 @@ pub fn query_config(deps: &Deps) -> StdResult<ConfigResponse> {
     let version = get_contract_version(deps.storage)?;
 
     Ok(ConfigResponse {
+        admin: config.admin,
         controller: config.controller,
         vault: config.vault,
         token0: config.token0,

@@ -29,6 +29,7 @@ cw-utils        = { workspace = true }
 cw2             = { workspace = true }
 interface       = { workspace = true }
 osmosis-std     = { workspace = true }
+prost           = { workspace = true }
 serde           = { workspace = true }
 thiserror       = { workspace = true }
 

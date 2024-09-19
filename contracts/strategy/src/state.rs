@@ -7,8 +7,9 @@ pub const CONFIG: Item<Config> = Item::new("config");
 
 #[cw_serde]
 pub struct Config {
+    pub admin: String,
     pub controller: String,
-    pub vault: String,
+    pub vault: Option<String>,
     pub token0: String,
     pub token1: Option<String>,
     pub grants: Vec<String>,
@@ -17,8 +18,12 @@ pub struct Config {
 
 impl Config {
     pub fn validate(&self, deps: &Deps) -> StdResult<()> {
+        deps.api.addr_validate(&self.admin)?;
         deps.api.addr_validate(&self.controller)?;
-        deps.api.addr_validate(&self.vault)?;
+
+        if self.vault.is_some() {
+            deps.api.addr_validate(self.vault.as_ref().unwrap())?;
+        }
 
         ensure!(
             !self.grants.is_empty(),

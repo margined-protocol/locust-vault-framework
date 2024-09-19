@@ -1933,6 +1933,7 @@ dependencies = [
  "interface",
  "osmosis-std",
  "osmosis-test-tube",
+ "prost 0.12.6",
  "serde",
  "test-tube",
  "testing",
