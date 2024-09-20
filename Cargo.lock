@@ -1929,6 +1929,7 @@ dependencies = [
  "cosmwasm-std",
  "cw-storage-plus",
  "cw-utils",
+ "cw-vault-standard",
  "cw2",
  "interface",
  "osmosis-std",

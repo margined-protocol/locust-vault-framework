@@ -10,9 +10,17 @@ use cosmwasm_std::{
     ensure, to_json_binary, Coin, DepsMut, Env, MessageInfo, Response, StdError, WasmMsg,
 };
 use cw_utils::nonpayable;
+use cw_vault_standard::VaultStandardExecuteMsg;
+
+pub type VaultExecuteMsg = VaultStandardExecuteMsg<ExtensionExecuteMsg>;
 
 #[cw_serde]
-pub enum VaultMsg {
+pub enum ExtensionExecuteMsg {
+    Vaultenator(VaultenatorExtensionExecuteMsg),
+}
+
+#[cw_serde]
+pub enum VaultenatorExtensionExecuteMsg {
     Withdraw { tokens_to_withdraw: Vec<Coin> },
     Repay {},
 }
@@ -40,9 +48,11 @@ pub fn handle_withdraw(
     };
 
     let msg = WasmMsg::Execute {
-        msg: to_json_binary(&VaultMsg::Withdraw {
-            tokens_to_withdraw: tokens_to_withdraw.clone(),
-        })?,
+        msg: to_json_binary(&VaultExecuteMsg::VaultExtension(
+            ExtensionExecuteMsg::Vaultenator(VaultenatorExtensionExecuteMsg::Withdraw {
+                tokens_to_withdraw: tokens_to_withdraw.clone(),
+            }),
+        ))?,
         funds: vec![],
         contract_addr: vault.to_string(),
     };
@@ -73,7 +83,9 @@ pub fn handle_repay(
     };
 
     let msg = WasmMsg::Execute {
-        msg: to_json_binary(&VaultMsg::Repay {})?,
+        msg: to_json_binary(&VaultExecuteMsg::VaultExtension(
+            ExtensionExecuteMsg::Vaultenator(VaultenatorExtensionExecuteMsg::Repay {}),
+        ))?,
         funds: tokens_to_repay.clone(),
         contract_addr: vault.to_string(),
     };

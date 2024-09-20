@@ -2,12 +2,22 @@ use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{
     entry_point, BankMsg, Binary, Coin, Deps, DepsMut, Env, MessageInfo, Response, StdResult,
 };
+use cw_vault_standard::VaultStandardInfoResponse;
 
 #[cw_serde]
 pub struct InstantiateMsg {}
 
+use cw_vault_standard::VaultStandardExecuteMsg;
+
+pub type VaultExecuteMsg = VaultStandardExecuteMsg<ExtensionExecuteMsg>;
+
 #[cw_serde]
-pub enum ExecuteMsg {
+pub enum ExtensionExecuteMsg {
+    Vaultenator(VaultenatorExtensionExecuteMsg),
+}
+
+#[cw_serde]
+pub enum VaultenatorExtensionExecuteMsg {
     Withdraw { tokens_to_withdraw: Vec<Coin> },
     Repay {},
 }
