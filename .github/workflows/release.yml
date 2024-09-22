@@ -1,0 +1,90 @@
+name: Release
+on:
+  push:
+    tags:
+    - "[0-9]+.[0-9]+.[0-9]+"
+env:
+  CARGO_INCREMENTAL: 0
+permissions:
+  contents: write
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install toolchain
+        run: rustup show
+
+      - name: Set up cargo cache
+        uses: actions/cache@v4
+        continue-on-error: false
+        with:
+          path: |
+            ~/.cargo/crates.toml
+            ~/.cargo/crates2.json
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-pcl-release-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: ${{ runner.os }}-cargo-pcl-release-
+
+      - name: Run cargo fmt
+        run: cargo fmt --all -- --check
+
+      - name: Run cargo clippy
+        run: cargo clippy -- -D warnings
+
+      - name: Create optimised release
+        run: ./scripts/rust-optimizer.sh
+
+      - name: Install ts-codegen
+        run: npm install -g @cosmwasm/ts-codegen
+
+      - name: Generate Typescript client
+        run: ./scripts/ts-client.sh
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ubuntu-latest
+          path: |
+            ./schema.zip
+            ./artifacts/*.wasm
+            ./artifacts/checksums.txt
+            ./ts/PclVault.client.ts  
+            ./ts/PclVault.types.ts
+
+  consolidate-and-release:
+      needs: release
+      runs-on: ubuntu-latest
+      steps:
+        - name: Checkout repository
+          uses: actions/checkout@v4
+
+        - name: Download all workflow run artifacts
+          uses: actions/download-artifact@v4
+          with:
+            path: artifacts
+
+        - name: Extract changelog section
+          run: |
+            version=${GITHUB_REF#refs/tags/}
+            awk -v version="$version" '$0 ~ "## \\[" version "\\]"{flag=1;next} /## \[/{flag=0}flag' CHANGELOG.md > "${GITHUB_WORKSPACE}/CHANGELOG_SECTION.txt"
+
+        - name: Create release and upload artifacts
+          uses: softprops/action-gh-release@v1
+          with:
+            body_path: ${{ github.workspace }}/CHANGELOG_SECTION.txt
+            files: |
+              artifacts/**/*.zip
+              artifacts/**/*.wasm
+              artifacts/**/*.txt
+              artifacts/**/*.ts
+            name: ${{ github.ref_name }}
+            tag_name: ${{ github.ref_name }}

@@ -1,0 +1,7 @@
+[alias]
+schema     = "run schema"
+wasm       = "build --release --lib --target wasm32-unknown-unknown --locked --workspace --exclude testing"
+wasm-debug = "build --lib --target wasm32-unknown-unknown --locked --workspace --exclude testing"
+
+[target.wasm32-unknown-unknown]
+rustflags = ["-C", "link-arg=-s"]
