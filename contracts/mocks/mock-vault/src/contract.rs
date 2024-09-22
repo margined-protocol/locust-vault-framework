@@ -2,14 +2,12 @@ use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{
     entry_point, BankMsg, Binary, Coin, Deps, DepsMut, Env, MessageInfo, Response, StdResult,
 };
-use cw_vault_standard::VaultStandardInfoResponse;
-
 #[cw_serde]
 pub struct InstantiateMsg {}
 
 use cw_vault_standard::VaultStandardExecuteMsg;
 
-pub type VaultExecuteMsg = VaultStandardExecuteMsg<ExtensionExecuteMsg>;
+pub type ExecuteMsg = VaultStandardExecuteMsg<ExtensionExecuteMsg>;
 
 #[cw_serde]
 pub enum ExtensionExecuteMsg {
@@ -45,13 +43,20 @@ pub fn execute(
     msg: ExecuteMsg,
 ) -> StdResult<Response> {
     match msg {
-        ExecuteMsg::Withdraw { tokens_to_withdraw } => withdraw(deps, info, tokens_to_withdraw),
-        ExecuteMsg::Repay {} => repay(deps, info),
+        ExecuteMsg::VaultExtension(msg) => match msg {
+            ExtensionExecuteMsg::Vaultenator(msg) => match msg {
+                VaultenatorExtensionExecuteMsg::Withdraw { tokens_to_withdraw } => {
+                    handle_withdraw(deps, info, tokens_to_withdraw)
+                }
+                VaultenatorExtensionExecuteMsg::Repay {} => handle_repay(deps, info),
+            },
+        },
+        _ => unimplemented!("unimplemented"),
     }
 }
 
 #[cfg(not(tarpaulin_include))]
-pub fn withdraw(
+pub fn handle_withdraw(
     _deps: DepsMut,
     info: MessageInfo,
     tokens_to_withdraw: Vec<Coin>,
@@ -69,7 +74,7 @@ pub fn withdraw(
 }
 
 #[cfg(not(tarpaulin_include))]
-pub fn repay(_deps: DepsMut, _info: MessageInfo) -> StdResult<Response> {
+pub fn handle_repay(_deps: DepsMut, _info: MessageInfo) -> StdResult<Response> {
     Ok(Response::default())
 }
 
