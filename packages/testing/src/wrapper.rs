@@ -1,10 +1,16 @@
 use crate::setup::TestEnv;
 
+use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{Coin, Decimal};
 use osmosis_std::types::cosmwasm::wasm::v1::MsgExecuteContractResponse;
 use osmosis_test_tube::{OsmosisTestApp, RunnerExecuteResult, RunnerResult, SigningAccount, Wasm};
 
 use interface::strategy::{ConfigResponse, ExecuteMsg, QueryMsg};
+
+#[cw_serde]
+pub enum AstroExecuteMsg {
+    AppendPrice { price: Decimal },
+}
 
 // Execute Functions
 impl TestEnv {
@@ -52,6 +58,18 @@ impl TestEnv {
         signer: &SigningAccount,
     ) -> RunnerExecuteResult<MsgExecuteContractResponse> {
         let msg = ExecuteMsg::SetGrants { grants };
+
+        wasm.execute(contract_addr, &msg, &[], signer)
+    }
+
+    pub fn set_astro_price(
+        &self,
+        wasm: &Wasm<OsmosisTestApp>,
+        contract_addr: &str,
+        price: Decimal,
+        signer: &SigningAccount,
+    ) -> RunnerExecuteResult<MsgExecuteContractResponse> {
+        let msg = AstroExecuteMsg::AppendPrice { price };
 
         wasm.execute(contract_addr, &msg, &[], signer)
     }
