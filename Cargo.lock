@@ -1130,6 +1130,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "mock-astro"
+version = "0.1.0"
+dependencies = [
+ "cosmwasm-schema",
+ "cosmwasm-std",
+ "cw-storage-plus",
+ "osmosis-std",
+ "serde",
+]
+
+[[package]]
 name = "mock-vault"
 version = "0.0.1"
 dependencies = [

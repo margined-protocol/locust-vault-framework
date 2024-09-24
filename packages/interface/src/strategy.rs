@@ -51,4 +51,9 @@ pub enum PoolInfo {
         token1: String,
     },
     Neutron {},
+    Astroport {
+        pool_address: String,
+        token0: String,
+        token1: String,
+    },
 }
