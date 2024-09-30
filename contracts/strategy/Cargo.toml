@@ -17,8 +17,8 @@ crate-type = [ "cdylib", "rlib" ]
 
 [features]
 backtraces = [ "cosmwasm-std/backtraces" ]
-default    = [ "astroport" ]
-# default    = [ "osmosis" ]
+# default    = [ "astroport" ] 
+default = [ "osmosis" ]
 library = [  ]
 
 astroport = [  ]

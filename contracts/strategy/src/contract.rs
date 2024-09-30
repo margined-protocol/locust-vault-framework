@@ -1,5 +1,6 @@
 use crate::{
     errors::ContractError,
+    events::event_migrate,
     handle::{handle_repay, handle_set_grants, handle_set_vault, handle_withdraw},
     query::{query_config, query_grants, query_spot_price, query_twap_price},
     state::{Config, CONFIG},
@@ -7,9 +8,10 @@ use crate::{
 };
 
 use cosmwasm_std::{
-    entry_point, to_json_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult,
+    entry_point, to_json_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdError,
+    StdResult,
 };
-use cw2::set_contract_version;
+use cw2::{get_contract_version, set_contract_version};
 use interface::strategy::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
 use std::iter::Iterator;
 
@@ -66,7 +68,10 @@ pub fn execute(
         ExecuteMsg::Withdraw { tokens_to_withdraw } => {
             handle_withdraw(deps, env, info, tokens_to_withdraw)
         }
-        ExecuteMsg::Repay { tokens_to_repay } => handle_repay(deps, env, info, tokens_to_repay),
+        ExecuteMsg::Repay {
+            tokens_to_repay,
+            cycle_profit,
+        } => handle_repay(deps, env, info, tokens_to_repay, cycle_profit),
         ExecuteMsg::SetVault { vault } => handle_set_vault(deps, env, info, vault),
         ExecuteMsg::SetGrants { grants } => handle_set_grants(deps, env, info, grants),
     }
@@ -86,6 +91,34 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn migrate(_deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
-    unimplemented!()
+pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
+    let contract_version = get_contract_version(deps.storage)?;
+
+    match contract_version.contract.as_ref() {
+        "crates.io:strategy" => match contract_version.version.as_ref() {
+            "0.0.1" => {
+                set_contract_version(
+                    deps.storage,
+                    format!("crates.io:{CONTRACT_NAME}"),
+                    CONTRACT_VERSION,
+                )?;
+            }
+            _ => {
+                return Err(ContractError::Std(StdError::generic_err(
+                    "Migration failed",
+                )))
+            }
+        },
+        _ => {
+            return Err(ContractError::Std(StdError::generic_err(
+                "Migration failed",
+            )))
+        }
+    }
+
+    Ok(Response::new().add_event(event_migrate(
+        CONTRACT_VERSION,
+        CONTRACT_NAME,
+        contract_version,
+    )))
 }

@@ -1,12 +1,15 @@
 use cosmwasm_std::Decimal;
+#[cfg(feature = "astroport")]
 use interface::strategy::PoolInfo;
 use osmosis_test_tube::{
     osmosis_std::types::osmosis::concentratedliquidity::v1beta1::MsgCreatePosition, Module, Wasm,
 };
 use std::str::FromStr;
+use testing::setup::TestEnv;
+#[cfg(feature = "astroport")]
 use testing::{
     helpers::get_default_instantiation_msg,
-    setup::{TestEnv, BASE_DENOM, QUOTE_DENOM},
+    setup::{BASE_DENOM, QUOTE_DENOM},
 };
 
 #[test]
@@ -23,8 +26,9 @@ fn test_query_grants() {
     assert_eq!(expected_grants, actual_grants);
 }
 
+#[cfg(feature = "osmosis")]
 #[test]
-fn test_query_spot_price() {
+fn test_query_spot_price_osmosis() {
     let env = TestEnv::new();
 
     let wasm = Wasm::new(&env.app);
@@ -37,6 +41,7 @@ fn test_query_spot_price() {
     assert_eq!(expected_spot_price, actual_spot_price);
 }
 
+#[cfg(feature = "astroport")]
 #[test]
 fn test_query_spot_price_astroport() {
     let env = TestEnv::new();
@@ -67,8 +72,9 @@ fn test_query_spot_price_astroport() {
     assert_eq!(expected_spot_price, actual_spot_price);
 }
 
+#[cfg(feature = "osmosis")]
 #[test]
-fn test_query_twap_price() {
+fn test_query_twap_price_osmosis() {
     let env = TestEnv::new();
 
     let wasm = Wasm::new(&env.app);
@@ -83,6 +89,7 @@ fn test_query_twap_price() {
     assert_eq!(expected_twap_price, actual_twap_price);
 }
 
+#[cfg(feature = "astroport")]
 #[test]
 fn test_query_twap_price_astroport() {
     let env = TestEnv::new();

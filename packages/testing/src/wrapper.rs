@@ -19,9 +19,13 @@ impl TestEnv {
         wasm: &Wasm<OsmosisTestApp>,
         contract_addr: &str,
         tokens_to_repay: Vec<Coin>,
+        cycle_profit: Option<Decimal>,
         signer: &SigningAccount,
     ) -> RunnerExecuteResult<MsgExecuteContractResponse> {
-        let msg = ExecuteMsg::Repay { tokens_to_repay };
+        let msg = ExecuteMsg::Repay {
+            tokens_to_repay,
+            cycle_profit,
+        };
 
         wasm.execute(contract_addr, &msg, &[], signer)
     }

@@ -1,5 +1,5 @@
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::Coin;
+use cosmwasm_std::{Coin, Decimal};
 
 #[cw_serde]
 pub struct InstantiateMsg {
@@ -16,10 +16,19 @@ pub struct MigrateMsg {}
 
 #[cw_serde]
 pub enum ExecuteMsg {
-    Withdraw { tokens_to_withdraw: Vec<Coin> },
-    Repay { tokens_to_repay: Vec<Coin> },
-    SetVault { vault: String },
-    SetGrants { grants: Vec<String> },
+    Withdraw {
+        tokens_to_withdraw: Vec<Coin>,
+    },
+    Repay {
+        tokens_to_repay: Vec<Coin>,
+        cycle_profit: Option<Decimal>,
+    },
+    SetVault {
+        vault: String,
+    },
+    SetGrants {
+        grants: Vec<String>,
+    },
 }
 
 #[cw_serde]

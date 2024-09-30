@@ -120,8 +120,14 @@ fn test_repay() {
         coin(repay_quote_amount, QUOTE_DENOM),
     ];
 
-    env.repay(&wasm, &contract_addr, tokens_to_repay, &env.controller)
-        .unwrap();
+    env.repay(
+        &wasm,
+        &contract_addr,
+        tokens_to_repay,
+        None,
+        &env.controller,
+    )
+    .unwrap();
 
     let repay_base_amount = 500_000_000u128;
     let repay_quote_amount = 5_000_000u128;
@@ -131,8 +137,14 @@ fn test_repay() {
         coin(repay_quote_amount, QUOTE_DENOM),
     ];
 
-    env.repay(&wasm, &contract_addr, tokens_to_repay, &env.controller)
-        .unwrap();
+    env.repay(
+        &wasm,
+        &contract_addr,
+        tokens_to_repay,
+        None,
+        &env.controller,
+    )
+    .unwrap();
 
     let vault_base_balance_after = env.get_balance(&vault_addr, BASE_DENOM);
     let vault_quote_balance_after = env.get_balance(&vault_addr, QUOTE_DENOM);
@@ -174,7 +186,7 @@ fn test_fail_repay() {
     let tokens_to_repay = vec![coin(1, BASE_DENOM)];
 
     let err = env
-        .repay(&wasm, &contract_addr, tokens_to_repay, &env.signer)
+        .repay(&wasm, &contract_addr, tokens_to_repay, None, &env.signer)
         .unwrap_err();
     assert_err(err, ContractError::Unauthorized {});
 }
