@@ -1,6 +1,7 @@
 use crate::contract::{CONTRACT_NAME, CONTRACT_VERSION};
 
 use cosmwasm_std::Event;
+use cw2::ContractVersion;
 
 pub fn event_withdraw(withdraw: String) -> Event {
     Event::new("withdraw").add_attributes([
@@ -31,5 +32,14 @@ pub fn event_set_grants(grants: Vec<String>) -> Event {
         ("version", CONTRACT_VERSION),
         ("contract", CONTRACT_NAME),
         ("grants", &grants.join(",")),
+    ])
+}
+
+pub fn event_migrate(version: &str, name: &str, contract_version: ContractVersion) -> Event {
+    Event::new("migrate").add_attributes([
+        ("previous_contract_name", &contract_version.contract),
+        ("previous_contract_version", &contract_version.version),
+        ("new_contract_name", &format!("crates.io:{name}")),
+        ("new_contract_version", &version.to_string()),
     ])
 }

@@ -1,6 +1,7 @@
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{
-    entry_point, BankMsg, Binary, Coin, Deps, DepsMut, Env, MessageInfo, Response, StdResult,
+    entry_point, BankMsg, Binary, Coin, Decimal, Deps, DepsMut, Env, MessageInfo, Response,
+    StdResult,
 };
 #[cw_serde]
 pub struct InstantiateMsg {}
@@ -17,7 +18,7 @@ pub enum ExtensionExecuteMsg {
 #[cw_serde]
 pub enum VaultenatorExtensionExecuteMsg {
     Withdraw { tokens_to_withdraw: Vec<Coin> },
-    Repay {},
+    Repay { cycle_profit: Option<Decimal> },
 }
 
 #[cw_serde]
@@ -48,7 +49,7 @@ pub fn execute(
                 VaultenatorExtensionExecuteMsg::Withdraw { tokens_to_withdraw } => {
                     handle_withdraw(deps, info, tokens_to_withdraw)
                 }
-                VaultenatorExtensionExecuteMsg::Repay {} => handle_repay(deps, info),
+                VaultenatorExtensionExecuteMsg::Repay { .. } => handle_repay(deps, info),
             },
         },
         _ => unimplemented!("unimplemented"),
