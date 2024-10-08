@@ -196,38 +196,3 @@ pub fn query_twap_price(deps: &Deps, _: Env, duration: u64) -> StdResult<Decimal
 
     Ok(res.price)
 }
-
-#[cfg(feature = "astroport")]
-pub fn query_grants(deps: &Deps, _: Env, duration: u64) -> StdResult<Decimal> {
-    let config = CONFIG.load(deps.storage)?;
-
-    #[cw_serde]
-    pub enum QueryMsg {
-        Simulation {
-            offer_asset: Asset,
-            ask_asset_info: Option<AssetInfo>,
-        },
-        Observe {
-            seconds_ago: u64,
-        },
-    }
-
-    let (pool_address, _, _) = match config.pool_info {
-        PoolInfo::Osmosis { .. } => unimplemented!(),
-        PoolInfo::Neutron {} => unimplemented!(),
-        PoolInfo::Astroport {
-            pool_address,
-            token0,
-            token1,
-        } => (pool_address, token0, token1),
-    };
-
-    let res: OracleObservation = deps.querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
-        contract_addr: pool_address,
-        msg: to_json_binary(&QueryMsg::Observe {
-            seconds_ago: duration,
-        })?,
-    }))?;
-
-    Ok(res.price)
-}
