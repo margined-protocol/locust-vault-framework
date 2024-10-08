@@ -68,6 +68,12 @@ neutrond tx wasm migrate $CONTRACT_ADDRESS $CODE_ID '{}'  --from=deployer --gas=
 neutrond tx wasm execute $CONTRACT_ADDRESS "{\"set_vault\": {\"vault\": \"neutron1puedrclm6rn33x3zv66xg6m23qcdagayqua6jj2wqzvfznlqef8qe53wr2\"}}"  --from=deployer --gas=auto --gas-prices 0.003untrn --gas-adjustment 1.3 --output=json --node=$NODE --chain-id=$CHAIN_ID
 ```
 
+#### Set Vault
+
+```bash
+neutrond tx wasm execute $CONTRACT_ADDRESS "{\"set_grants\": {\"grants\": [\"/cosmwasm.wasm.v1.MsgExecuteContract\",\"/neutron.dex.MsgPlaceLimitOrder\",\"/neutron.dex.MsgDeposit\",\"/neutron.dex.MsgWithdrawal\"]}}"  --from=deployer --gas=auto --gas-prices 0.008untrn --gas-adjustment 1.3 --output=json --node=$NODE --chain-id=$CHAIN_ID
+```
+
 ### Query
 
 #### Config

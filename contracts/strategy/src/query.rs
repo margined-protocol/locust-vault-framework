@@ -11,7 +11,6 @@ use cosmwasm_std::{
 use cosmwasm_std::{Decimal, Deps, Env, StdResult};
 use cw2::get_contract_version;
 use interface::strategy::{ConfigResponse, PoolInfo};
-
 use osmosis_std::{
     shim::Timestamp as OsmosisTimestamp,
     types::osmosis::{poolmanager::v1beta1::PoolmanagerQuerier, twap::v1beta1::TwapQuerier},
@@ -71,6 +70,7 @@ pub fn query_grants(deps: &Deps) -> StdResult<Vec<String>> {
     Ok(config.grants)
 }
 
+#[cfg(feature = "osmosis")]
 pub fn query_spot_price(deps: &Deps) -> StdResult<Decimal> {
     let config: Config = CONFIG.load(deps.storage)?;
 
@@ -89,6 +89,7 @@ pub fn query_spot_price(deps: &Deps) -> StdResult<Decimal> {
     Ok(price)
 }
 
+#[cfg(feature = "osmosis")]
 pub fn query_twap_price(deps: &Deps, env: Env, duration: u64) -> StdResult<Decimal> {
     let config = CONFIG.load(deps.storage)?;
 
@@ -163,6 +164,41 @@ pub fn query_spot_price(deps: &Deps) -> StdResult<Decimal> {
 
 #[cfg(feature = "astroport")]
 pub fn query_twap_price(deps: &Deps, _: Env, duration: u64) -> StdResult<Decimal> {
+    let config = CONFIG.load(deps.storage)?;
+
+    #[cw_serde]
+    pub enum QueryMsg {
+        Simulation {
+            offer_asset: Asset,
+            ask_asset_info: Option<AssetInfo>,
+        },
+        Observe {
+            seconds_ago: u64,
+        },
+    }
+
+    let (pool_address, _, _) = match config.pool_info {
+        PoolInfo::Osmosis { .. } => unimplemented!(),
+        PoolInfo::Neutron {} => unimplemented!(),
+        PoolInfo::Astroport {
+            pool_address,
+            token0,
+            token1,
+        } => (pool_address, token0, token1),
+    };
+
+    let res: OracleObservation = deps.querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
+        contract_addr: pool_address,
+        msg: to_json_binary(&QueryMsg::Observe {
+            seconds_ago: duration,
+        })?,
+    }))?;
+
+    Ok(res.price)
+}
+
+#[cfg(feature = "astroport")]
+pub fn query_grants(deps: &Deps, _: Env, duration: u64) -> StdResult<Decimal> {
     let config = CONFIG.load(deps.storage)?;
 
     #[cw_serde]

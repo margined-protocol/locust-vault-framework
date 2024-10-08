@@ -2,7 +2,7 @@ use crate::{
     errors::ContractError,
     events::{event_repay, event_set_grants, event_set_vault, event_withdraw},
     state::CONFIG,
-    utils::{create_authz_grant_messages, tokens_to_string},
+    utils::{create_authz_grant_messages, revoke_authz_grant_messages, tokens_to_string},
 };
 
 use cosmwasm_schema::cw_serde;
@@ -126,6 +126,16 @@ pub fn handle_set_grants(
 
     ensure!(config.admin == info.sender, ContractError::Unauthorized {});
 
+    let mut response = Response::new();
+
+    let revoke_msgs = revoke_authz_grant_messages(
+        env.contract.address.as_str(),
+        &config.controller,
+        config.grants.clone(),
+    );
+
+    response = response.add_messages(revoke_msgs);
+
     config.grants.clone_from(&grants);
     config.validate(&deps.as_ref())?;
 
@@ -137,7 +147,7 @@ pub fn handle_set_grants(
 
     CONFIG.save(deps.storage, &config)?;
 
-    Ok(Response::new()
+    Ok(response
         .add_event(event_set_grants(grants))
         .add_messages(authz_msgs))
 }

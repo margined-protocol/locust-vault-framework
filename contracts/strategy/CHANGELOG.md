@@ -6,11 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.0.2] - 2024-09-30
+## [0.0.2] - 2024-10-08
 
 ### Changed
 
-- Added option to provide estimate of cycle profit to the repay function.
+- Added revokation of `authz` permissions, if updated
 
 ## [0.0.1] - 2024-09-20
 

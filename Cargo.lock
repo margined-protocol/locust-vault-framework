@@ -364,7 +364,7 @@ dependencies = [
  "hex",
  "schemars",
  "serde",
- "serde-json-wasm",
+ "serde-json-wasm 0.5.2",
  "sha2 0.10.8",
  "static_assertions",
  "thiserror",
@@ -1787,6 +1787,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "serde-json-wasm"
+version = "1.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f05da0d153dd4595bdffd5099dc0e9ce425b205ee648eb93437ff7302af8c9a5"
+dependencies = [
+ "serde",
+]
+
+[[package]]
 name = "serde_bytes"
 version = "0.11.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1935,7 +1944,7 @@ checksum = "a2eb9349b6444b326872e140eb1cf5e7c522154d69e7a0ffb0fb81c06b37543f"
 
 [[package]]
 name = "strategy"
-version = "0.0.1"
+version = "0.0.2"
 dependencies = [
  "cosmwasm-schema",
  "cosmwasm-std",
@@ -1948,6 +1957,7 @@ dependencies = [
  "osmosis-test-tube",
  "prost 0.12.6",
  "serde",
+ "serde-json-wasm 1.0.1",
  "test-tube",
  "testing",
  "thiserror",
