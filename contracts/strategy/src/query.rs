@@ -4,17 +4,17 @@ use crate::state::{Config, CONFIG};
 use cosmwasm_schema::cw_serde;
 
 #[cfg(feature = "astroport")]
-use cosmwasm_std::{
-    to_json_binary, Addr, Decimal, Deps, Env, QueryRequest, StdResult, Uint128, WasmQuery,
-};
+use cosmwasm_std::{to_json_binary, Addr, QueryRequest, Uint128, WasmQuery};
 
 use cosmwasm_std::{Decimal, Deps, Env, StdResult};
 use cw2::get_contract_version;
 use interface::strategy::{ConfigResponse, PoolInfo};
+#[cfg(feature = "osmosis")]
 use osmosis_std::{
     shim::Timestamp as OsmosisTimestamp,
     types::osmosis::{poolmanager::v1beta1::PoolmanagerQuerier, twap::v1beta1::TwapQuerier},
 };
+#[cfg(feature = "osmosis")]
 use std::str::FromStr;
 
 #[cfg(feature = "astroport")]
