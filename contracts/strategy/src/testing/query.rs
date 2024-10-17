@@ -18,11 +18,11 @@ fn test_query_grants() {
 
     let wasm = Wasm::new(&env.app);
 
-    let contract_addr = env.deploy_strategy_contract(&wasm, None);
+    let strategy_addr = env.deploy_strategy_contract(&wasm, None);
 
     let expected_grants = vec![MsgCreatePosition::TYPE_URL.to_string()];
 
-    let actual_grants = env.query_grants_strategy(&wasm, &contract_addr).unwrap();
+    let actual_grants = env.query_grants_strategy(&wasm, &strategy_addr).unwrap();
     assert_eq!(expected_grants, actual_grants);
 }
 
@@ -33,12 +33,12 @@ fn test_query_spot_price_osmosis() {
 
     let wasm = Wasm::new(&env.app);
 
-    let contract_addr = env.deploy_strategy_contract(&wasm, None);
+    let strategy_addr = env.deploy_strategy_contract(&wasm, None);
 
     let expected_spot_price = Decimal::from_str("1.250000000000000001").unwrap();
 
     let actual_spot_price = env
-        .query_spot_price_strategy(&wasm, &contract_addr)
+        .query_spot_price_strategy(&wasm, &strategy_addr)
         .unwrap();
     assert_eq!(expected_spot_price, actual_spot_price);
 }
@@ -66,12 +66,12 @@ fn test_query_spot_price_astroport() {
         token1: QUOTE_DENOM.to_string(),
     };
 
-    let contract_addr = env.deploy_strategy_contract(&wasm, Some(msg));
+    let strategy_addr = env.deploy_strategy_contract(&wasm, Some(msg));
 
     let expected_spot_price = Decimal::from_str("1.25").unwrap();
 
     let actual_spot_price = env
-        .query_spot_price_strategy(&wasm, &contract_addr)
+        .query_spot_price_strategy(&wasm, &strategy_addr)
         .unwrap();
     assert_eq!(expected_spot_price, actual_spot_price);
 }
@@ -83,12 +83,12 @@ fn test_query_twap_price_osmosis() {
 
     let wasm = Wasm::new(&env.app);
 
-    let contract_addr = env.deploy_strategy_contract(&wasm, None);
+    let strategy_addr = env.deploy_strategy_contract(&wasm, None);
 
     let expected_twap_price = Decimal::from_str("1.250000000000000001").unwrap();
 
     let actual_twap_price = env
-        .query_twap_price_strategy(&wasm, &contract_addr, 3600u64)
+        .query_twap_price_strategy(&wasm, &strategy_addr, 3600u64)
         .unwrap();
     assert_eq!(expected_twap_price, actual_twap_price);
 }
@@ -116,12 +116,12 @@ fn test_query_twap_price_astroport() {
         token1: QUOTE_DENOM.to_string(),
     };
 
-    let contract_addr = env.deploy_strategy_contract(&wasm, Some(msg));
+    let strategy_addr = env.deploy_strategy_contract(&wasm, Some(msg));
 
     let expected_twap_price = Decimal::from_str("1.25").unwrap();
 
     let actual_twap_price = env
-        .query_twap_price_strategy(&wasm, &contract_addr, 3600u64)
+        .query_twap_price_strategy(&wasm, &strategy_addr, 3600u64)
         .unwrap();
     assert_eq!(expected_twap_price, actual_twap_price);
 }

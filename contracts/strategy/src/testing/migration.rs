@@ -45,7 +45,7 @@ fn test_migration() {
 
     let funds = vec![coin(1_000_000_000, BASE_DENOM)];
 
-    let contract_addr = wasm
+    let strategy_addr = wasm
         .instantiate(
             fund_vault_v003,
             &msg,
@@ -58,7 +58,7 @@ fn test_migration() {
         .data
         .address;
 
-    let config = env.query_config_strategy(&wasm, &contract_addr).unwrap();
+    let config = env.query_config_strategy(&wasm, &strategy_addr).unwrap();
 
     assert_eq!(
         config,
@@ -87,7 +87,7 @@ fn test_migration() {
         .execute(
             MsgMigrateContract {
                 sender: env.signer.address(),
-                contract: contract_addr.clone(),
+                contract: strategy_addr.clone(),
                 code_id,
                 msg: serde_json_wasm::to_vec(&MigrateMsg {}).unwrap(),
             },
@@ -102,18 +102,18 @@ fn test_migration() {
         .query(
             "/cosmwasm.wasm.v1.Query/ContractInfo",
             &QueryContractInfoRequest {
-                address: contract_addr.clone(),
+                address: strategy_addr.clone(),
             },
         )
         .unwrap();
 
     let contract_info = res.contract_info.unwrap();
 
-    assert_eq!(res.address, contract_addr);
+    assert_eq!(res.address, strategy_addr);
     assert_eq!(contract_info.code_id, code_id);
     assert_eq!(contract_info.creator, env.signer.address());
     assert_eq!(contract_info.label, "strategy");
-    let config = env.query_config_strategy(&wasm, &contract_addr).unwrap();
+    let config = env.query_config_strategy(&wasm, &strategy_addr).unwrap();
 
     assert_eq!(
         config,

@@ -275,7 +275,7 @@ impl Handle<Config, State> for StructuredVault {
 
         match contract_version.contract.as_ref() {
             "crates.io:fund-vault" => match contract_version.version.as_ref() {
-                "0.0.3" => {
+                "0.0.4" => {
                     set_contract_version(
                         deps.storage,
                         format!("crates.io:{CONTRACT_NAME}"),
@@ -339,7 +339,9 @@ pub fn handle_withdraw(
 
         let balance = get_balance(&deps.as_ref(), env.contract.address.as_str(), &token.denom)?;
 
-        let remaining_balance = balance.min(token.amount);
+        let remaining_balance = balance
+            .checked_sub(token.amount)
+            .map_err(map_to_contract_error)?;
 
         let total_balance = balance
             .checked_add(state.get_total_withdrawn_tokens(&token.denom))
@@ -353,22 +355,24 @@ pub fn handle_withdraw(
             token.amount
         };
 
-        // Update total staked assets
-        state.add_to_total_withdrawn_tokens(amount_to_withdraw, &token.denom)?;
+        // Create withdrawal message
+        if !amount_to_withdraw.is_zero() {
+            // Update total staked assets
+            state.add_to_total_withdrawn_tokens(amount_to_withdraw, &token.denom)?;
+            state.save_to_storage(&mut deps)?;
 
-        state.save_to_storage(&mut deps)?;
+            let withdraw_amount = Coin {
+                denom: token.denom.to_string(),
+                amount: amount_to_withdraw,
+            };
 
-        let withdraw_amount = Coin {
-            denom: token.denom.to_string(),
-            amount: amount_to_withdraw,
-        };
+            // Set mint_to_address to recipient if set, sender if not
+            let msg = create_bank_message(config.controller.clone(), vec![withdraw_amount.clone()]);
 
-        // Set mint_to_address to recipient if set, sender if not
-        let msg = create_bank_message(config.controller.clone(), vec![withdraw_amount.clone()]);
-
-        response = response
-            .add_event(event_withdraw(info.sender.to_string(), withdraw_amount))
-            .add_message(msg);
+            response = response
+                .add_event(event_withdraw(info.sender.to_string(), withdraw_amount))
+                .add_message(msg);
+        }
     }
 
     Ok(response)

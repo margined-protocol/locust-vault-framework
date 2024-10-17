@@ -15,7 +15,7 @@ use osmosis_test_tube::{
 };
 use std::str::FromStr;
 
-pub const DEFAULT_STRUCTURED_LIQUIDITY: u128 = 1_000_000u128;
+pub const DEFAULT_LIQUIDITY: u128 = 1_000_000u128;
 pub const PROPOSAL_DURATION: u64 = 1000;
 pub const STRATEGY_CAP: Uint128 = Uint128::new(10_000_000_000_000u128); // 10,000 @6dp
 pub const TICK_SPACING: u64 = 100;

@@ -44,7 +44,6 @@ impl Query<Config, State> for StructuredVault {
         unimplemented!()
     }
 
-    // NOTE: this is still todo, as it needs to account for other deposited assets
     fn query_total_assets(deps: Deps, env: Env) -> StdResult<Uint128> {
         let config =
             Config::get_from_storage(deps).map_err(|e| StdError::generic_err(e.to_string()))?;

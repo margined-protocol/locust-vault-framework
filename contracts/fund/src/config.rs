@@ -7,9 +7,6 @@ use interface::fund::{InstantiateMsg, UpdateConfig};
 use serde::{de::DeserializeOwned, Serialize};
 use vaultenator::{config::Configure, errors::ContractError, state::OWNER};
 
-pub const DEFAULT_SLIPPAGE: &str = "0.01";
-pub const MIN_PENALTY_DURATION: u64 = 604800; // 1 week
-
 #[cw_serde]
 pub struct Config {
     pub controller: String,

@@ -57,39 +57,6 @@ pub fn get_strategy_denom(env: &Env, contract_name: &str) -> String {
     format!("factory/{}/{}", env.contract.address, contract_name).to_string()
 }
 
-// Helper function to map any Display error to ContractError
-pub fn map_to_contract_error<E: Display>(e: E) -> ContractError {
-    ContractError::Std(StdError::generic_err(e.to_string()))
-}
-
-// pub fn calculate_total_value(
-//     deps: &Deps,
-//     env: &Env,
-//     pool_id: &u64,
-//     quote_denom: &str,
-//     assets: &[&BaseCoin],
-//     twap_period: &u64,
-// ) -> StdResult<Uint128> {
-//     let mut total = Uint128::zero();
-//     let start_time = env.block.time.minus_seconds(*twap_period);
-
-//     for asset in assets {
-//         if asset.denom == quote_denom {
-//             let amount = Uint128::from_str(&asset.amount.to_string())?;
-
-//             total = total.checked_add(amount)?;
-//         } else {
-//             let twap =
-//                 get_arithmetic_twap_to_now(deps, pool_id, &asset.denom, quote_denom, start_time)?;
-
-//             let amount = Uint128::from_str(&asset.amount.to_string())?;
-
-//             total += twap * amount;
-//         }
-//     }
-//     Ok(total)
-// }
-
 pub fn calculate_total_value(
     deps: &Deps,
     controller_addr: &str,
@@ -267,4 +234,8 @@ pub fn get_token_deposits(config: &Config, tokens: Vec<Coin>) -> StdResult<(Coin
     };
 
     Ok((token0, token1))
+}
+
+pub fn map_to_contract_error<E: Display>(e: E) -> ContractError {
+    ContractError::Std(StdError::generic_err(e.to_string()))
 }

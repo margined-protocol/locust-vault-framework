@@ -6,13 +6,13 @@ edition      = "2021"
 homepage     = "https://github.com/margined-protocol/locust-vaults"
 keywords     = [ "cosmos", "osmosis", "vault", "vaultenator" ]
 license      = "MIT OR Apache-2.0"
-name         = "fund-vault"
+name         = "fund"
 publish      = false
 readme       = "README.md"
 repository   = "https://github.com/margined-protocol/locust-vaults"
 resolver     = "2"
 rust-version = { workspace = true }
-version      = "0.0.4"
+version      = "0.0.5"
 
 [lib]
 crate-type = [ "cdylib", "rlib" ]
@@ -22,7 +22,6 @@ backtraces = [ "cosmwasm-std/backtraces" ]
 library    = [  ]
 
 [dependencies]
-# common            = { workspace = true }
 cosmwasm-schema   = { workspace = true }
 cosmwasm-std      = { workspace = true }
 cw-controllers    = { workspace = true }

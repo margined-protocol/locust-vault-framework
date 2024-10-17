@@ -24,7 +24,7 @@ fn test_instantiation() {
 
     let code_id = store_code(&wasm, &env.signer, "strategy").unwrap();
 
-    let contract_addr = wasm
+    let strategy_addr = wasm
         .instantiate(
             code_id,
             &InstantiateMsg {
@@ -48,7 +48,7 @@ fn test_instantiation() {
         .data
         .address;
 
-    let config = env.query_config_strategy(&wasm, &contract_addr).unwrap();
+    let config = env.query_config_strategy(&wasm, &strategy_addr).unwrap();
 
     assert_eq!(
         config,
@@ -114,7 +114,7 @@ fn test_set_vault() {
 
     let code_id = store_code(&wasm, &env.signer, "strategy").unwrap();
 
-    let contract_addr = wasm
+    let strategy_addr = wasm
         .instantiate(
             code_id,
             &InstantiateMsg {
@@ -140,13 +140,13 @@ fn test_set_vault() {
 
     env.set_vault_strategy(
         &wasm,
-        &contract_addr,
+        &strategy_addr,
         &env.controller.address(),
         &env.signer,
     )
     .unwrap();
 
-    let config = env.query_config_strategy(&wasm, &contract_addr).unwrap();
+    let config = env.query_config_strategy(&wasm, &strategy_addr).unwrap();
 
     assert_eq!(
         config,
@@ -176,7 +176,7 @@ fn test_set_grants() {
 
     let code_id = store_code(&wasm, &env.signer, "strategy").unwrap();
 
-    let contract_addr = wasm
+    let strategy_addr = wasm
         .instantiate(
             code_id,
             &InstantiateMsg {
@@ -202,13 +202,13 @@ fn test_set_grants() {
 
     env.set_grants_strategy(
         &wasm,
-        &contract_addr,
+        &strategy_addr,
         vec![MsgAddToPosition::TYPE_URL.to_string()],
         &env.signer,
     )
     .unwrap();
 
-    let config = env.query_config_strategy(&wasm, &contract_addr).unwrap();
+    let config = env.query_config_strategy(&wasm, &strategy_addr).unwrap();
 
     assert_eq!(
         config,

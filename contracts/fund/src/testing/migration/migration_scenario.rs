@@ -17,26 +17,13 @@ use testing::{
     utils::store_code,
 };
 
-#[cw_serde]
-pub struct OldInstantiateMsg {
-    pub admin: String,
-    pub controller: String,
-    pub treasury: String,
-    pub strategy_cap: Uint128,
-    pub float: Uint128,
-    pub token0: String,
-    pub token1: Option<String>,
-    pub performance_fee_rate: Decimal,
-    pub vault_type: String,
-}
-
 #[test]
 fn test_migration() {
     let env = TestEnv::new();
     let wasm = Wasm::new(&env.app);
 
     let wasm_byte_code =
-        std::fs::read("../../contracts/fund-vault/src/testing/artifacts/fund_vault-v003.wasm")
+        std::fs::read("../../contracts/fund-vault/src/testing/artifacts/fund_vault-v004.wasm")
             .unwrap();
 
     let fund_vault_v003 = wasm
@@ -89,9 +76,9 @@ fn test_migration() {
     let version = env.query_version(&wasm, &contract_addr).unwrap();
 
     assert_eq!(version.name, "crates.io:fund-vault".to_string());
-    assert_eq!(version.version, "0.0.2".to_string());
+    assert_eq!(version.version, "0.0.4".to_string());
 
-    let code_id = store_code(&wasm, &env.signer, "fund_vault").unwrap();
+    let code_id = store_code(&wasm, &env.signer, "fund").unwrap();
 
     // migrate contract
     let _res: ExecuteResponse<MsgMigrateContractResponse> = env
