@@ -127,21 +127,6 @@ pub fn coins_to_string(coins: Vec<Coin>) -> String {
         .join(", ")
 }
 
-pub fn get_vault_coins(deps: &Deps, config: &Config, contract_addr: &str) -> StdResult<Vec<Coin>> {
-    let mut tokens = Vec::new();
-
-    tokens.push(coin(
-        get_balance(deps, contract_addr, &config.token0)?.into(),
-        &config.token0,
-    ));
-
-    if let Some(denom) = &config.token1 {
-        tokens.push(coin(get_balance(deps, contract_addr, denom)?.into(), denom));
-    }
-
-    Ok(tokens)
-}
-
 pub fn get_amount_to_mint(
     deps: &Deps,
     current_assets: &Uint128,
@@ -234,6 +219,21 @@ pub fn get_token_deposits(config: &Config, tokens: Vec<Coin>) -> StdResult<(Coin
     };
 
     Ok((token0, token1))
+}
+
+pub fn get_vault_coins(deps: &Deps, config: &Config, contract_addr: &str) -> StdResult<Vec<Coin>> {
+    let mut tokens = Vec::new();
+
+    tokens.push(coin(
+        get_balance(deps, contract_addr, &config.token0)?.into(),
+        &config.token0,
+    ));
+
+    if let Some(denom) = &config.token1 {
+        tokens.push(coin(get_balance(deps, contract_addr, denom)?.into(), denom));
+    }
+
+    Ok(tokens)
 }
 
 pub fn map_to_contract_error<E: Display>(e: E) -> ContractError {

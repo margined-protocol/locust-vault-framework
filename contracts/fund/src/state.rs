@@ -120,3 +120,27 @@ impl State {
         Ok(())
     }
 }
+
+impl UserDeposit {
+    pub fn empty_deposit(timestamp: u64) -> Self {
+        Self {
+            total_deposits: Uint128::zero(),
+            timestamp,
+        }
+    }
+    pub fn add_to_user_deposits(&mut self, amount: Uint128) -> Result<(), ContractError> {
+        self.total_deposits = self
+            .total_deposits
+            .checked_add(amount)
+            .map_err(ContractError::Overflow)?;
+        Ok(())
+    }
+
+    pub fn remove_from_user_deposits(&mut self, amount: Uint128) -> Result<(), ContractError> {
+        self.total_deposits = self
+            .total_deposits
+            .checked_sub(amount)
+            .map_err(ContractError::Overflow)?;
+        Ok(())
+    }
+}

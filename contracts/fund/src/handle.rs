@@ -1,5 +1,5 @@
 use crate::{
-    config::{migrate_config, Config},
+    config::Config,
     contract::{StructuredVault, CONTRACT_NAME, CONTRACT_VERSION},
     events::{
         event_deposit, event_fees, event_migrate, event_mint, event_redeem, event_repay,
@@ -110,16 +110,10 @@ impl Handle<Config, State> for StructuredVault {
         // Initialise or fetch user deposit record
         let mut user_deposit = USER_DEPOSITS
             .may_load(deps.storage, info.sender.clone())?
-            .unwrap_or(UserDeposit {
-                total_deposits: Uint128::zero(),
-                timestamp: env.block.time.seconds(),
-            });
+            .unwrap_or(UserDeposit::empty_deposit(env.block.time.seconds()));
 
         // Add deposit to user record
-        user_deposit.total_deposits = user_deposit
-            .total_deposits
-            .checked_add(deposit_value)
-            .map_err(ContractError::Overflow)?;
+        user_deposit.add_to_user_deposits(deposit_value)?;
 
         USER_DEPOSITS.save(deps.storage, info.sender.clone(), &user_deposit)?;
 
@@ -217,10 +211,7 @@ impl Handle<Config, State> for StructuredVault {
         let user_deposit_redeemed = user_deposit.total_deposits * burn_ratio;
 
         // Compute the net deduction so we can decrement the global counter
-        user_deposit.total_deposits = user_deposit
-            .total_deposits
-            .checked_sub(user_deposit_redeemed)
-            .map_err(ContractError::Overflow)?;
+        user_deposit.remove_from_user_deposits(user_deposit_redeemed)?;
 
         // Update total staked assets
         state.remove_from_total_staked_tokens(user_deposit_redeemed)?;
@@ -281,8 +272,6 @@ impl Handle<Config, State> for StructuredVault {
                         format!("crates.io:{CONTRACT_NAME}"),
                         CONTRACT_VERSION,
                     )?;
-
-                    migrate_config(deps)?;
                 }
                 _ => {
                     return Err(ContractError::Std(StdError::generic_err(
