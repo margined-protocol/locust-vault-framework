@@ -1,6 +1,8 @@
-# Overview - Fund Vault and Strategy Contract
+# Transfigure
 
-This repo contains the code base for the `Fund Vault` and `Strategy` contracts.
+This repo contains the code base for `Transfigure` a framework that enables non-custodial execution of sophisticated strategies.
+
+To do this the framework is compromised of a `Fund Vault` and `Strategy Contract`. The fund vault simply holds funds and the strategy contract executes actions with said funds.
 
 The objective of the `Fund Vault` and `Strategy` is to be able to execute sophisticated strategies on behalf of the users without becoming custodian of users funds. Therefore it leverages `authz` to enable an off-chain service to execute the strategy on behalf of the user. The contract allows profit's to be booked in multiple ways as defined and appropriate to a specific strategy.
 
