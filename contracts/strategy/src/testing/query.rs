@@ -8,7 +8,7 @@ use std::str::FromStr;
 use testing::setup::TestEnv;
 #[cfg(feature = "astroport")]
 use testing::{
-    helpers::get_default_instantiation_msg,
+    deployment::get_default_instantiation_msg,
     setup::{BASE_DENOM, QUOTE_DENOM},
 };
 
@@ -22,7 +22,7 @@ fn test_query_grants() {
 
     let expected_grants = vec![MsgCreatePosition::TYPE_URL.to_string()];
 
-    let actual_grants = env.query_grants(&wasm, &contract_addr).unwrap();
+    let actual_grants = env.query_grants_strategy(&wasm, &contract_addr).unwrap();
     assert_eq!(expected_grants, actual_grants);
 }
 
@@ -37,7 +37,9 @@ fn test_query_spot_price_osmosis() {
 
     let expected_spot_price = Decimal::from_str("1.250000000000000001").unwrap();
 
-    let actual_spot_price = env.query_spot_price(&wasm, &contract_addr).unwrap();
+    let actual_spot_price = env
+        .query_spot_price_strategy(&wasm, &contract_addr)
+        .unwrap();
     assert_eq!(expected_spot_price, actual_spot_price);
 }
 
@@ -49,7 +51,7 @@ fn test_query_spot_price_astroport() {
     let wasm = Wasm::new(&env.app);
 
     let astro_addr = env.deploy_mock_astro(&wasm);
-    env.set_astro_price(
+    env.set_astro_price_strategy(
         &wasm,
         &astro_addr,
         Decimal::from_str("1.25").unwrap(),
@@ -68,7 +70,9 @@ fn test_query_spot_price_astroport() {
 
     let expected_spot_price = Decimal::from_str("1.25").unwrap();
 
-    let actual_spot_price = env.query_spot_price(&wasm, &contract_addr).unwrap();
+    let actual_spot_price = env
+        .query_spot_price_strategy(&wasm, &contract_addr)
+        .unwrap();
     assert_eq!(expected_spot_price, actual_spot_price);
 }
 
@@ -84,7 +88,7 @@ fn test_query_twap_price_osmosis() {
     let expected_twap_price = Decimal::from_str("1.250000000000000001").unwrap();
 
     let actual_twap_price = env
-        .query_twap_price(&wasm, &contract_addr, 3600u64)
+        .query_twap_price_strategy(&wasm, &contract_addr, 3600u64)
         .unwrap();
     assert_eq!(expected_twap_price, actual_twap_price);
 }
@@ -97,7 +101,7 @@ fn test_query_twap_price_astroport() {
     let wasm = Wasm::new(&env.app);
 
     let astro_addr = env.deploy_mock_astro(&wasm);
-    env.set_astro_price(
+    env.set_astro_price_strategy(
         &wasm,
         &astro_addr,
         Decimal::from_str("1.25").unwrap(),
@@ -117,7 +121,7 @@ fn test_query_twap_price_astroport() {
     let expected_twap_price = Decimal::from_str("1.25").unwrap();
 
     let actual_twap_price = env
-        .query_twap_price(&wasm, &contract_addr, 3600u64)
+        .query_twap_price_strategy(&wasm, &contract_addr, 3600u64)
         .unwrap();
     assert_eq!(expected_twap_price, actual_twap_price);
 }

@@ -1,0 +1,48 @@
+[package]
+authors      = [ "FMG <max.grabner@margined.io>" ]
+categories   = [ "wasm" ]
+description  = "A locust vault that is a fund controlled by a manager"
+edition      = "2021"
+homepage     = "https://github.com/margined-protocol/locust-vaults"
+keywords     = [ "cosmos", "osmosis", "vault", "vaultenator" ]
+license      = "MIT OR Apache-2.0"
+name         = "fund-vault"
+publish      = false
+readme       = "README.md"
+repository   = "https://github.com/margined-protocol/locust-vaults"
+resolver     = "2"
+rust-version = { workspace = true }
+version      = "0.0.4"
+
+[lib]
+crate-type = [ "cdylib", "rlib" ]
+
+[features]
+backtraces = [ "cosmwasm-std/backtraces" ]
+library    = [  ]
+
+[dependencies]
+# common            = { workspace = true }
+cosmwasm-schema   = { workspace = true }
+cosmwasm-std      = { workspace = true }
+cw-controllers    = { workspace = true }
+cw-storage-plus   = { workspace = true }
+cw-utils          = { workspace = true }
+cw-vault-standard = { workspace = true }
+cw2               = { workspace = true }
+cw_margined       = { workspace = true }
+interface         = { workspace = true }
+num_enum          = { workspace = true }
+osmosis-std       = { workspace = true }
+prost             = { workspace = true }
+prost-types       = { workspace = true }
+serde             = { workspace = true }
+serde-json-wasm   = { workspace = true }
+serde_json        = { workspace = true }
+strum             = { workspace = true }
+vaultenator       = { workspace = true }
+
+[dev-dependencies]
+osmosis-test-tube = { workspace = true }
+test-tube         = { workspace = true }
+testing           = { workspace = true }

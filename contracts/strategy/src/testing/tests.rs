@@ -48,7 +48,7 @@ fn test_instantiation() {
         .data
         .address;
 
-    let config = env.query_config(&wasm, &contract_addr).unwrap();
+    let config = env.query_config_strategy(&wasm, &contract_addr).unwrap();
 
     assert_eq!(
         config,
@@ -138,10 +138,15 @@ fn test_set_vault() {
         .data
         .address;
 
-    env.set_vault(&wasm, &contract_addr, env.controller.address(), &env.signer)
-        .unwrap();
+    env.set_vault_strategy(
+        &wasm,
+        &contract_addr,
+        &env.controller.address(),
+        &env.signer,
+    )
+    .unwrap();
 
-    let config = env.query_config(&wasm, &contract_addr).unwrap();
+    let config = env.query_config_strategy(&wasm, &contract_addr).unwrap();
 
     assert_eq!(
         config,
@@ -195,7 +200,7 @@ fn test_set_grants() {
         .data
         .address;
 
-    env.set_grants(
+    env.set_grants_strategy(
         &wasm,
         &contract_addr,
         vec![MsgAddToPosition::TYPE_URL.to_string()],
@@ -203,7 +208,7 @@ fn test_set_grants() {
     )
     .unwrap();
 
-    let config = env.query_config(&wasm, &contract_addr).unwrap();
+    let config = env.query_config_strategy(&wasm, &contract_addr).unwrap();
 
     assert_eq!(
         config,

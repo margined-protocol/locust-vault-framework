@@ -3,12 +3,12 @@ use cosmwasm_std::{Coin, Decimal};
 
 #[cw_serde]
 pub struct InstantiateMsg {
-    pub admin: String,
-    pub controller: String,
+    pub admin: String,      // manages contract configuration
+    pub controller: String, // manages grant execution
     pub token0: String,
     pub token1: Option<String>,
-    pub grants: Vec<String>,
-    pub pool_info: PoolInfo,
+    pub grants: Vec<String>, // grants given to controller
+    pub pool_info: PoolInfo, // oracle support
 }
 
 #[cw_serde]

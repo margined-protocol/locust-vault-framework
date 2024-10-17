@@ -58,7 +58,7 @@ fn test_migration() {
         .data
         .address;
 
-    let config = env.query_config(&wasm, &contract_addr).unwrap();
+    let config = env.query_config_strategy(&wasm, &contract_addr).unwrap();
 
     assert_eq!(
         config,
@@ -113,7 +113,7 @@ fn test_migration() {
     assert_eq!(contract_info.code_id, code_id);
     assert_eq!(contract_info.creator, env.signer.address());
     assert_eq!(contract_info.label, "strategy");
-    let config = env.query_config(&wasm, &contract_addr).unwrap();
+    let config = env.query_config_strategy(&wasm, &contract_addr).unwrap();
 
     assert_eq!(
         config,

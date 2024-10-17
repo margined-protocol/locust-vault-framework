@@ -14,7 +14,7 @@ pub enum AstroExecuteMsg {
 
 // Execute Functions
 impl TestEnv {
-    pub fn repay(
+    pub fn repay_strategy(
         &self,
         wasm: &Wasm<OsmosisTestApp>,
         contract_addr: &str,
@@ -30,7 +30,7 @@ impl TestEnv {
         wasm.execute(contract_addr, &msg, &[], signer)
     }
 
-    pub fn withdraw(
+    pub fn withdraw_strategy(
         &self,
         wasm: &Wasm<OsmosisTestApp>,
         contract_addr: &str,
@@ -42,19 +42,21 @@ impl TestEnv {
         wasm.execute(contract_addr, &msg, &[], signer)
     }
 
-    pub fn set_vault(
+    pub fn set_vault_strategy(
         &self,
         wasm: &Wasm<OsmosisTestApp>,
         contract_addr: &str,
-        vault: String,
+        vault: &str,
         signer: &SigningAccount,
     ) -> RunnerExecuteResult<MsgExecuteContractResponse> {
-        let msg = ExecuteMsg::SetVault { vault };
+        let msg = ExecuteMsg::SetVault {
+            vault: vault.to_string(),
+        };
 
         wasm.execute(contract_addr, &msg, &[], signer)
     }
 
-    pub fn set_grants(
+    pub fn set_grants_strategy(
         &self,
         wasm: &Wasm<OsmosisTestApp>,
         contract_addr: &str,
@@ -66,7 +68,7 @@ impl TestEnv {
         wasm.execute(contract_addr, &msg, &[], signer)
     }
 
-    pub fn set_astro_price(
+    pub fn set_astro_price_strategy(
         &self,
         wasm: &Wasm<OsmosisTestApp>,
         contract_addr: &str,
@@ -81,7 +83,7 @@ impl TestEnv {
 
 // Query Functions
 impl TestEnv {
-    pub fn query_config(
+    pub fn query_config_strategy(
         &self,
         wasm: &Wasm<OsmosisTestApp>,
         contract_addr: &str,
@@ -91,7 +93,7 @@ impl TestEnv {
         wasm.query(contract_addr, &query_msg)
     }
 
-    pub fn query_grants(
+    pub fn query_grants_strategy(
         &self,
         wasm: &Wasm<OsmosisTestApp>,
         contract_addr: &str,
@@ -101,7 +103,7 @@ impl TestEnv {
         wasm.query(contract_addr, &query_msg)
     }
 
-    pub fn query_spot_price(
+    pub fn query_spot_price_strategy(
         &self,
         wasm: &Wasm<OsmosisTestApp>,
         contract_addr: &str,
@@ -111,7 +113,7 @@ impl TestEnv {
         wasm.query(contract_addr, &query_msg)
     }
 
-    pub fn query_twap_price(
+    pub fn query_twap_price_strategy(
         &self,
         wasm: &Wasm<OsmosisTestApp>,
         contract_addr: &str,
