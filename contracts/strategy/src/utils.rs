@@ -1,10 +1,12 @@
-use cosmwasm_std::{Binary, Coin, CosmosMsg};
+use crate::errors::ContractError;
+
+use cosmwasm_std::{Binary, Coin, CosmosMsg, StdError};
 use osmosis_std::{
     shim::Any,
     types::cosmos::authz::v1beta1::{GenericAuthorization, Grant, MsgGrant, MsgRevoke},
 };
-
 use prost::Message;
+use std::fmt::Display;
 
 pub fn tokens_to_string(tokens: Vec<Coin>) -> String {
     tokens
@@ -69,4 +71,8 @@ pub fn revoke_authz_grant_messages(
             ),
         })
         .collect()
+}
+
+pub fn map_to_contract_error<E: Display>(e: E) -> ContractError {
+    ContractError::Std(StdError::generic_err(e.to_string()))
 }

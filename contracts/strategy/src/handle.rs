@@ -2,12 +2,15 @@ use crate::{
     errors::ContractError,
     events::{event_repay, event_set_grants, event_set_vault, event_withdraw},
     state::CONFIG,
-    utils::{create_authz_grant_messages, revoke_authz_grant_messages, tokens_to_string},
+    utils::{
+        create_authz_grant_messages, map_to_contract_error, revoke_authz_grant_messages,
+        tokens_to_string,
+    },
 };
 
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{
-    ensure, to_json_binary, Coin, Decimal, DepsMut, Env, MessageInfo, Response, StdError, WasmMsg,
+    ensure, to_json_binary, Coin, Decimal, DepsMut, Env, MessageInfo, Response, WasmMsg,
 };
 use cw_utils::nonpayable;
 use cw_vault_standard::VaultStandardExecuteMsg;
@@ -31,7 +34,7 @@ pub fn handle_withdraw(
     info: MessageInfo,
     tokens_to_withdraw: Vec<Coin>,
 ) -> Result<Response, ContractError> {
-    nonpayable(&info).map_err(|e| ContractError::Std(StdError::generic_err(e.to_string())))?;
+    nonpayable(&info).map_err(map_to_contract_error)?;
 
     let config = CONFIG.load(deps.storage)?;
 
@@ -126,15 +129,13 @@ pub fn handle_set_grants(
 
     ensure!(config.admin == info.sender, ContractError::Unauthorized {});
 
-    let mut response = Response::new();
-
     let revoke_msgs = revoke_authz_grant_messages(
         env.contract.address.as_str(),
         &config.controller,
         config.grants.clone(),
     );
 
-    response = response.add_messages(revoke_msgs);
+    let response = Response::new().add_messages(revoke_msgs);
 
     config.grants.clone_from(&grants);
     config.validate(&deps.as_ref())?;
