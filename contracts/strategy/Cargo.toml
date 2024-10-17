@@ -2,7 +2,7 @@
 authors = [ "Margined Protocol" ]
 edition = "2021"
 name    = "strategy"
-version = "0.0.1"
+version = "0.0.2"
 
 exclude = [
  # Those files are rust-optimizer artifacts. You might want to commit them for convenience but they should not be part of the source code publication.
@@ -17,15 +17,14 @@ crate-type = [ "cdylib", "rlib" ]
 
 [features]
 backtraces = [ "cosmwasm-std/backtraces" ]
-# default    = [ "astroport" ] 
-default = [ "osmosis" ]
-library = [  ]
+default    = [ "osmosis" ]
+library    = [  ]
 
 astroport = [  ]
 osmosis   = [  ]
 
 [package.metadata.optimizer]
-builds        = [ { name = "astroport", default-features = false }, { name = "osmosis", default-features = false } ]
+builds        = [ { name = "astroport", features = [ "astroport" ], default-features = false }, { name = "osmosis", features = [ "osmosis" ], default-features = false } ]
 default-build = true
 
 [dependencies]
@@ -39,6 +38,7 @@ interface         = { workspace = true }
 osmosis-std       = { workspace = true }
 prost             = { workspace = true }
 serde             = { workspace = true }
+serde-json-wasm   = { workspace = true }
 thiserror         = { workspace = true }
 
 [dev-dependencies]

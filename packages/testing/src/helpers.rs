@@ -1,18 +1,9 @@
-use crate::{
-    setup::{TestEnv, BASE_DENOM, QUOTE_DENOM},
-    utils::store_code,
-};
+use crate::setup::TestEnv;
 
-use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{Coin, Decimal, Uint128};
-use interface::strategy::{InstantiateMsg, PoolInfo};
+use cosmwasm_std::{Decimal, Uint128};
 use osmosis_std::types::{
     cosmos::{bank::v1beta1::MsgSend, base::v1beta1::Coin as OsmoCoin},
-    cosmwasm::wasm::v1::MsgInstantiateContractResponse,
-    osmosis::{
-        concentratedliquidity::v1beta1::MsgCreatePosition,
-        poolmanager::v1beta1::{PoolRequest, SpotPriceRequest},
-    },
+    osmosis::poolmanager::v1beta1::{PoolRequest, SpotPriceRequest},
 };
 use osmosis_test_tube::{
     cosmrs::proto::traits::Message,
@@ -20,91 +11,11 @@ use osmosis_test_tube::{
         cosmos::bank::v1beta1::{QueryBalanceRequest, QueryTotalSupplyRequest},
         osmosis::concentratedliquidity::v1beta1::Pool,
     },
-    Account, Bank, Module, OsmosisTestApp, PoolManager, RunnerExecuteResult, SigningAccount, Wasm,
+    Account, Bank, Module, PoolManager, SigningAccount,
 };
-use serde::Serialize;
 use std::str::FromStr;
 
-#[cw_serde]
-pub struct MockInstantiateMsg {}
-
-pub fn get_default_instantiation_msg(env: &TestEnv) -> InstantiateMsg {
-    InstantiateMsg {
-        admin: env.signer.address(),
-        controller: env.controller.address(),
-        token0: BASE_DENOM.to_string(),
-        token1: None,
-        grants: vec![MsgCreatePosition::TYPE_URL.to_string()],
-        pool_info: PoolInfo::Osmosis {
-            id: 1,
-            token0: BASE_DENOM.to_string(),
-            token1: QUOTE_DENOM.to_string(),
-        },
-    }
-}
-
 impl TestEnv {
-    pub fn instantiate_contract<M>(
-        &self,
-        wasm: &Wasm<OsmosisTestApp>,
-        msg: &M,
-        funds: Vec<Coin>,
-        signer: &SigningAccount,
-        contract_name: &str,
-    ) -> RunnerExecuteResult<MsgInstantiateContractResponse>
-    where
-        M: Serialize,
-    {
-        let code_id = store_code(wasm, signer, contract_name).unwrap();
-        wasm.instantiate(
-            code_id,
-            msg,
-            Some(&self.signer.address()),
-            Some("vault"),
-            &funds,
-            signer,
-        )
-    }
-
-    pub fn deploy_strategy_contract(
-        &self,
-        wasm: &Wasm<OsmosisTestApp>,
-        msg: Option<InstantiateMsg>,
-    ) -> String {
-        let msg = msg.unwrap_or_else(|| get_default_instantiation_msg(self));
-
-        self.instantiate_contract(wasm, &msg, vec![], &self.signer, "strategy")
-            .unwrap()
-            .data
-            .address
-    }
-
-    pub fn deploy_mock_vault(&self, wasm: &Wasm<OsmosisTestApp>) -> String {
-        self.instantiate_contract(
-            wasm,
-            &MockInstantiateMsg {},
-            vec![],
-            &self.signer,
-            "mock_vault",
-        )
-        .unwrap()
-        .data
-        .address
-    }
-
-    pub fn deploy_mock_astro(&self, wasm: &Wasm<OsmosisTestApp>) -> String {
-        self.instantiate_contract(
-            wasm,
-            &MockInstantiateMsg {},
-            vec![],
-            &self.signer,
-            "mock_astro",
-        )
-        .unwrap()
-        .data
-        .address
-    }
-
     pub fn send(&self, to_address: &str, amount: OsmoCoin, sender: &SigningAccount) {
         let bank = Bank::new(&self.app);
 

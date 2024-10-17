@@ -1,8 +1,9 @@
 use cosmwasm_std::{Binary, Coin, CosmosMsg};
 use osmosis_std::{
     shim::Any,
-    types::cosmos::authz::v1beta1::{GenericAuthorization, Grant, MsgGrant},
+    types::cosmos::authz::v1beta1::{GenericAuthorization, Grant, MsgGrant, MsgRevoke},
 };
+
 use prost::Message;
 
 pub fn tokens_to_string(tokens: Vec<Coin>) -> String {
@@ -45,6 +46,27 @@ pub fn create_authz_grant_messages(
                     .encode_to_vec(),
                 ),
             }
+        })
+        .collect()
+}
+
+pub fn revoke_authz_grant_messages(
+    granter: &str,
+    grantee: &str,
+    grants: Vec<String>,
+) -> Vec<CosmosMsg> {
+    grants
+        .iter()
+        .map(|msg_type| CosmosMsg::Stargate {
+            type_url: MsgRevoke::TYPE_URL.to_string(),
+            value: Binary::from(
+                MsgRevoke {
+                    granter: granter.to_string(),
+                    grantee: grantee.to_string(),
+                    msg_type_url: msg_type.to_string(),
+                }
+                .encode_to_vec(),
+            ),
         })
         .collect()
 }

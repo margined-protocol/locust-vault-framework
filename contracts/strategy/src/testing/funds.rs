@@ -5,7 +5,7 @@ use osmosis_test_tube::{
     osmosis_std::types::cosmos::base::v1beta1::Coin as BaseCoin, Module, Wasm,
 };
 use testing::{
-    helpers::get_default_instantiation_msg,
+    deployment::get_default_instantiation_msg,
     setup::{TestEnv, BASE_DENOM, QUOTE_DENOM},
     utils::assert_err,
 };
@@ -48,7 +48,7 @@ fn test_withdraw() {
     let msg = get_default_instantiation_msg(&env);
 
     let contract_addr = env.deploy_strategy_contract(&wasm, Some(msg));
-    env.set_vault(&wasm, &contract_addr, vault_addr.clone(), &env.signer)
+    env.set_vault_strategy(&wasm, &contract_addr, &vault_addr, &env.signer)
         .unwrap();
 
     let tokens_to_withdraw = vec![
@@ -56,7 +56,7 @@ fn test_withdraw() {
         coin(quote_amount, QUOTE_DENOM),
     ];
 
-    env.withdraw(&wasm, &contract_addr, tokens_to_withdraw, &env.controller)
+    env.withdraw_strategy(&wasm, &contract_addr, tokens_to_withdraw, &env.controller)
         .unwrap();
 
     let vault_base_balance_assert = env.get_balance(&vault_addr, BASE_DENOM);
@@ -101,7 +101,7 @@ fn test_repay() {
     let msg = get_default_instantiation_msg(&env);
 
     let contract_addr = env.deploy_strategy_contract(&wasm, Some(msg));
-    env.set_vault(&wasm, &contract_addr, vault_addr.clone(), &env.signer)
+    env.set_vault_strategy(&wasm, &contract_addr, &vault_addr, &env.signer)
         .unwrap();
 
     let tokens_to_withdraw = vec![
@@ -109,7 +109,7 @@ fn test_repay() {
         coin(quote_amount, QUOTE_DENOM),
     ];
 
-    env.withdraw(&wasm, &contract_addr, tokens_to_withdraw, &env.controller)
+    env.withdraw_strategy(&wasm, &contract_addr, tokens_to_withdraw, &env.controller)
         .unwrap();
 
     let repay_base_amount = 500_000_000u128;
@@ -120,7 +120,7 @@ fn test_repay() {
         coin(repay_quote_amount, QUOTE_DENOM),
     ];
 
-    env.repay(
+    env.repay_strategy(
         &wasm,
         &contract_addr,
         tokens_to_repay,
@@ -137,7 +137,7 @@ fn test_repay() {
         coin(repay_quote_amount, QUOTE_DENOM),
     ];
 
-    env.repay(
+    env.repay_strategy(
         &wasm,
         &contract_addr,
         tokens_to_repay,
@@ -170,7 +170,7 @@ fn test_fail_withdraw() {
     let tokens_to_withdraw = vec![coin(1, BASE_DENOM)];
 
     let err = env
-        .withdraw(&wasm, &contract_addr, tokens_to_withdraw, &env.signer)
+        .withdraw_strategy(&wasm, &contract_addr, tokens_to_withdraw, &env.signer)
         .unwrap_err();
     assert_err(err, ContractError::Unauthorized {});
 }
@@ -186,7 +186,7 @@ fn test_fail_repay() {
     let tokens_to_repay = vec![coin(1, BASE_DENOM)];
 
     let err = env
-        .repay(&wasm, &contract_addr, tokens_to_repay, None, &env.signer)
+        .repay_strategy(&wasm, &contract_addr, tokens_to_repay, None, &env.signer)
         .unwrap_err();
     assert_err(err, ContractError::Unauthorized {});
 }
