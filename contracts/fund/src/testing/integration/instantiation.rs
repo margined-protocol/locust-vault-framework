@@ -33,7 +33,7 @@ fn test_instantiation() {
             &msg,
             coins(deposit_amount, BASE_DENOM),
             &env.signer,
-            "fund_vault",
+            "fund",
         )
         .unwrap()
         .data
@@ -45,7 +45,7 @@ fn test_instantiation() {
         admin: env.signer.address().to_string(),
         strategy_cap: STRATEGY_CAP,
         float: Decimal::zero(),
-        strategy_denom: format!("factory/{}/fund-vault", vault_addr),
+        strategy_denom: format!("factory/{}/fund", vault_addr),
         controller: env.signer.address(),
         token0: BASE_DENOM.to_string(),
         token1: None,
@@ -105,7 +105,7 @@ fn test_fail_instantiation_strategy_cap_zero() {
     };
 
     let err = env
-        .instantiate_contract(&wasm, &msg, vec![], &env.signer, "fund_vault")
+        .instantiate_contract(&wasm, &msg, vec![], &env.signer, "fund")
         .unwrap_err();
     assert_err(
         err,
@@ -133,7 +133,7 @@ fn test_fail_instantiation_performance_fee_rate_invalid() {
     };
 
     let err = env
-        .instantiate_contract(&wasm, &msg, vec![], &env.signer, "fund_vault")
+        .instantiate_contract(&wasm, &msg, vec![], &env.signer, "fund")
         .unwrap_err();
     assert_err(
         err,
@@ -161,7 +161,7 @@ fn test_fail_instantiation_float_invalid() {
     };
 
     let err = env
-        .instantiate_contract(&wasm, &msg, vec![], &env.signer, "fund_vault")
+        .instantiate_contract(&wasm, &msg, vec![], &env.signer, "fund")
         .unwrap_err();
     assert_err(
         err,

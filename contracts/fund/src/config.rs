@@ -2,13 +2,9 @@ use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{
     ensure, Decimal, DepsMut, Env, Event, MessageInfo, Response, StdError, Uint128,
 };
-use cw_storage_plus::Item;
 use interface::fund::{InstantiateMsg, UpdateConfig};
 use serde::{de::DeserializeOwned, Serialize};
 use vaultenator::{config::Configure, errors::ContractError, state::OWNER};
-
-pub const DEFAULT_SLIPPAGE: &str = "0.01";
-pub const MIN_PENALTY_DURATION: u64 = 604800; // 1 week
 
 #[cw_serde]
 pub struct Config {
@@ -151,44 +147,4 @@ impl Configure for Config {
 
         Ok(())
     }
-}
-
-#[cw_serde]
-pub struct OldConfig {
-    pub controller: String,
-    pub admin: String,
-    pub treasury: String,
-    pub strategy_cap: Uint128,
-    pub float: Uint128,
-    pub strategy_denom: String,
-    pub token0: String,
-    pub token1: Option<String>,
-    pub performance_fee_rate: Decimal,
-    pub estimate_cycle_profit: Option<Decimal>,
-    pub vault_type: String,
-}
-
-pub fn migrate_config(mut deps: DepsMut) -> Result<Response, ContractError> {
-    let old_config: Item<OldConfig> = Item::new("config");
-
-    let cfg = old_config.load(deps.storage)?;
-
-    let new_config = Config {
-        controller: cfg.controller,
-        admin: cfg.admin,
-        treasury: cfg.treasury,
-        strategy_cap: cfg.strategy_cap,
-        float: Decimal::zero(),
-        strategy_denom: cfg.strategy_denom,
-        token0: cfg.token0,
-        token1: cfg.token1,
-        performance_fee_rate: cfg.performance_fee_rate,
-        estimate_cycle_profit: cfg.estimate_cycle_profit,
-        vault_type: cfg.vault_type,
-    };
-
-    new_config.validate(&mut deps)?;
-    new_config.save_to_storage(&mut deps)?;
-
-    Ok(Response::new().add_event(Event::new("migrate_config")))
 }

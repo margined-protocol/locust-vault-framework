@@ -1,8 +1,9 @@
-use cosmwasm_std::{coin, coins};
+use cosmwasm_std::{coin, coins, Decimal, Uint128};
 use interface::fund::StateResponse;
 use osmosis_test_tube::{Module, Wasm};
+use std::str::FromStr;
 use testing::{
-    setup::{TestEnv, BASE_DENOM},
+    setup::{TestEnv, BASE_DENOM, QUOTE_DENOM},
     utils::assert_err,
 };
 use vaultenator::errors::ContractError;
@@ -121,6 +122,77 @@ fn test_withdraw_twice() {
 
     let state = env.query_state_fund(&wasm, &vault_addr).unwrap();
     assert_eq!(state, expected_state);
+}
+
+#[test]
+fn test_withdraw_with_float() {
+    let env = TestEnv::new();
+    let wasm = Wasm::new(&env.app);
+
+    let strategy_addr = env.deploy_strategy_contract(&wasm, None);
+
+    let mut msg = env.default_fund_instantiation_msg();
+    msg.controller = strategy_addr.to_string();
+    msg.float = Decimal::from_str("0.05").unwrap();
+
+    let vault_addr = env.deploy_fund_contract(&wasm, msg);
+
+    env.set_vault_strategy(&wasm, &strategy_addr, &vault_addr, &env.signer)
+        .unwrap();
+
+    env.set_open_fund(&wasm, &vault_addr, &env.signer).unwrap();
+
+    let base_deposit = coin(10_000_000, BASE_DENOM);
+    let quote_deposit = coin(5_000_000, QUOTE_DENOM);
+    env.deposit_fund(
+        &wasm,
+        &vault_addr,
+        &[base_deposit.clone(), quote_deposit.clone()],
+        &env.traders[0],
+    )
+    .unwrap();
+
+    let vault_base_before = env.get_balance(&vault_addr, BASE_DENOM);
+    assert_eq!(vault_base_before, Uint128::from(11_000_000u128));
+    let vault_quote_before = env.get_balance(&vault_addr, QUOTE_DENOM);
+    assert_eq!(vault_quote_before, Uint128::from(5_000_000u128));
+
+    let strategy_base_before = env.get_balance(&strategy_addr, BASE_DENOM);
+    assert!(strategy_base_before.is_zero());
+    let strategy_quote_before = env.get_balance(&strategy_addr, QUOTE_DENOM);
+    assert!(strategy_quote_before.is_zero());
+
+    env.withdraw_strategy(
+        &wasm,
+        &strategy_addr,
+        vec![
+            coin(vault_base_before.u128(), BASE_DENOM),
+            coin(vault_quote_before.u128(), QUOTE_DENOM),
+        ],
+        &env.controller,
+    )
+    .unwrap();
+
+    let vault_base_after = env.get_balance(&vault_addr, BASE_DENOM);
+    assert_eq!(vault_base_after, Uint128::from(550_000u128));
+    let vault_quote_after = env.get_balance(&vault_addr, QUOTE_DENOM);
+    assert_eq!(vault_quote_after, Uint128::from(250_000u128));
+
+    let strategy_base_after = env.get_balance(&strategy_addr, BASE_DENOM);
+    assert_eq!(strategy_base_after, Uint128::from(10_450_000u128));
+    let strategy_quote_after = env.get_balance(&strategy_addr, QUOTE_DENOM);
+    assert_eq!(strategy_quote_after, Uint128::from(4_750_000u128));
+
+    env.withdraw_strategy(
+        &wasm,
+        &strategy_addr,
+        vec![
+            coin(vault_base_after.u128(), BASE_DENOM),
+            coin(vault_quote_after.u128(), QUOTE_DENOM),
+        ],
+        &env.controller,
+    )
+    .unwrap();
 }
 
 #[test]

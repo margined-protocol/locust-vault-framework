@@ -66,5 +66,5 @@ pub fn contains_event(
 }
 
 pub fn get_strategy_denom_fund(contract_addr: &str) -> String {
-    format!("factory/{}/fund-vault", contract_addr)
+    format!("factory/{}/fund", contract_addr)
 }

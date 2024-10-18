@@ -1,5 +1,5 @@
 use crate::{
-    setup::{TestEnv, BASE_DENOM, DEFAULT_STRUCTURED_LIQUIDITY, QUOTE_DENOM, STRATEGY_CAP},
+    setup::{TestEnv, BASE_DENOM, DEFAULT_LIQUIDITY, QUOTE_DENOM, STRATEGY_CAP},
     utils::store_code,
 };
 
@@ -84,9 +84,9 @@ impl TestEnv {
         wasm: &Wasm<OsmosisTestApp>,
         msg: Fund::InstantiateMsg,
     ) -> String {
-        let funds = vec![coin(DEFAULT_STRUCTURED_LIQUIDITY, BASE_DENOM)];
+        let funds = vec![coin(DEFAULT_LIQUIDITY, BASE_DENOM)];
 
-        self.instantiate_contract(wasm, &msg, funds, &self.signer, "fund_vault")
+        self.instantiate_contract(wasm, &msg, funds, &self.signer, "fund")
             .unwrap()
             .data
             .address
