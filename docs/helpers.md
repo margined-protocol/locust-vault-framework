@@ -34,6 +34,7 @@ CODE_ID=6947
 NODE=https://neutron-testnet-rpc.polkachu.com:443
 CHAIN_ID="pion-1"
 CONTRACT_NAME=strategy-astroport.wasm
+CONTRACT_NAME=fund.wasm
 CONTRACT_ADDRESS=neutron1yyyzx2f0p9t0huf5fy0aqlg8tq34vdv3sxehzzkvq4vw04qqsm0qslfnrx
 CONTRACT_ADDRESS=neutron1pausm8t24783f764gku6cmth22z478t608w9t9c2heem74vcxxnqvq7t7f
 CODE_ID=6947
