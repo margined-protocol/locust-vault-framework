@@ -23,7 +23,7 @@ osmosis-std       = { version = "0.25.0" }
 osmosis-test-tube = { version = "25.0.0" }
 prost             = { version = "0.12.4" }
 prost-types       = { version = "0.12.4" }
-regex             = { version = "1.10.5" }
+regex             = { version = "1.11.1" }
 serde             = { version = "1.0.201" }
 serde-json-wasm   = { version = "1.0.1" }
 serde_json        = { version = "1.0.117" }
