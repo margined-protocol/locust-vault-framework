@@ -16,6 +16,7 @@ pub struct Config {
     pub strategy_denom: String,
     pub token0: String,
     pub token1: Option<String>,
+    pub management_fee_rate: Decimal,
     pub performance_fee_rate: Decimal,
     pub estimate_cycle_profit: Option<Decimal>,
     pub vault_type: String,
@@ -44,6 +45,7 @@ impl Configure for Config {
             strategy_denom: "".to_string(),
             token0: msg.token0,
             token1: msg.token1,
+            management_fee_rate: msg.management_fee_rate,
             performance_fee_rate: msg.performance_fee_rate,
             estimate_cycle_profit: None,
             vault_type: msg.vault_type,
@@ -145,6 +147,23 @@ impl Configure for Config {
             ))
         );
 
+        ensure!(
+            self.management_fee_rate <= Decimal::percent(5),
+            ContractError::Std(StdError::generic_err(
+                "Management fee must be less or equal to five percent"
+            ))
+        );
+
         Ok(())
+    }
+}
+
+impl Config {
+    pub fn get_denoms(&self) -> Vec<String> {
+        if let Some(token1) = &self.token1 {
+            vec![self.token0.clone(), token1.to_string()]
+        } else {
+            vec![self.token0.clone()]
+        }
     }
 }

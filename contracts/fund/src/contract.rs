@@ -73,7 +73,7 @@ pub fn execute(
                 VaultenatorExtensionExecuteMsg::ClaimOwnership {} => StructuredVault
                     .handle_claim_ownership(deps, info, env, OWNER, OWNERSHIP_PROPOSAL),
                 VaultenatorExtensionExecuteMsg::Crank {} => {
-                    unimplemented!("Crank is not implemented")
+                    StructuredVault.handle_crank(deps, env, info)
                 }
                 VaultenatorExtensionExecuteMsg::Pause {} => {
                     StructuredVault.handle_pause_contract(deps, info)

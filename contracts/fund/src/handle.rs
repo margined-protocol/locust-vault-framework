@@ -6,11 +6,12 @@ use crate::{
         event_withdraw,
     },
     helpers::{
-        calculate_performance_fees, calculate_vault_assets, check_is_valid_token,
+        calculate_assets_value, calculate_performance_fees, check_is_valid_token,
         check_strategy_cap, get_amount_to_mint, get_deposit_value, get_sent_tokens,
         get_strategy_denom, get_token_deposits, get_vault_coins, map_to_contract_error,
     },
     messages::{create_bank_message, create_burn_message, create_mint_message},
+    process::process_management_fees_and_modify_response,
     queries::{get_balance, get_total_supply},
     reply::ReplyIDs,
     state::{State, UserDeposit, USER_DEPOSITS},
@@ -83,7 +84,7 @@ impl Handle<Config, State> for StructuredVault {
 
     fn handle_deposit(
         &self,
-        mut deps: DepsMut,
+        deps: DepsMut,
         env: Env,
         info: MessageInfo,
         _amount: Uint128, // not used when sending funds
@@ -92,10 +93,18 @@ impl Handle<Config, State> for StructuredVault {
         State::is_open_and_unpaused(deps.as_ref())?;
 
         let config = Config::get_from_storage(deps.as_ref())?;
-        let mut state = State::get_from_storage(deps.as_ref())?;
 
         let sent_tokens = get_sent_tokens(&info, &config)?;
         let deposit_value = get_deposit_value(&deps.as_ref(), &config, sent_tokens.clone())?;
+
+        let (mut response, mut deps) = process_management_fees_and_modify_response(
+            deps,
+            Response::default(),
+            env.clone(),
+            Some(sent_tokens.clone()),
+        )?;
+
+        let mut state = State::get_from_storage(deps.as_ref())?;
 
         // Update total staked assets
         state.add_to_total_staked_tokens(deposit_value)?;
@@ -117,7 +126,7 @@ impl Handle<Config, State> for StructuredVault {
 
         USER_DEPOSITS.save(deps.storage, info.sender.clone(), &user_deposit)?;
 
-        let current_assets = calculate_vault_assets(
+        let current_assets = calculate_assets_value(
             &deps.as_ref(),
             &config,
             &state,
@@ -134,8 +143,6 @@ impl Handle<Config, State> for StructuredVault {
             &previous_assets,
             &config.strategy_denom,
         )?;
-
-        let mut response = Response::default();
 
         if !amount_to_mint.is_zero() {
             let mint_msg = create_mint_message(
@@ -166,12 +173,19 @@ impl Handle<Config, State> for StructuredVault {
 
     fn handle_redeem(
         &self,
-        mut deps: DepsMut,
+        deps: DepsMut,
         env: Env,
         info: MessageInfo,
         _amount: Uint128, // not used when sending funds
         _recipient: Option<String>,
     ) -> Result<Response, ContractError> {
+        let (mut response, mut deps) = process_management_fees_and_modify_response(
+            deps,
+            Response::default(),
+            env.clone(),
+            None,
+        )?;
+
         State::is_open_and_unpaused(deps.as_ref())?;
 
         // Load config and state
@@ -220,7 +234,6 @@ impl Handle<Config, State> for StructuredVault {
 
         USER_DEPOSITS.save(deps.storage, info.sender.clone(), &user_deposit)?;
 
-        let mut response = Response::default();
         for asset in assets_to_redeem.iter() {
             if !asset.amount.is_zero() {
                 response = response.add_message(create_bank_message(
@@ -295,21 +308,28 @@ impl Handle<Config, State> for StructuredVault {
 
     fn handle_crank(
         &self,
-        _deps: DepsMut,
-        _env: Env,
-        _info: MessageInfo,
+        deps: DepsMut,
+        env: Env,
+        info: MessageInfo,
     ) -> Result<Response, ContractError> {
-        unimplemented!("Crank not implemented")
+        nonpayable(&info).map_err(map_to_contract_error)?;
+
+        let (response, _) =
+            process_management_fees_and_modify_response(deps, Response::default(), env, None)?;
+
+        Ok(response)
     }
 }
 
 pub fn handle_withdraw(
-    mut deps: DepsMut,
+    deps: DepsMut,
     env: Env,
     info: MessageInfo,
     tokens_to_withdraw: Vec<Coin>,
 ) -> Result<Response, ContractError> {
     nonpayable(&info).map_err(map_to_contract_error)?;
+    let (mut response, mut deps) =
+        process_management_fees_and_modify_response(deps, Response::default(), env.clone(), None)?;
 
     State::is_open_and_unpaused(deps.as_ref())?;
 
@@ -320,8 +340,6 @@ pub fn handle_withdraw(
         config.controller == info.sender,
         ContractError::Unauthorized {}
     );
-
-    let mut response = Response::default();
 
     for token in tokens_to_withdraw.iter() {
         check_is_valid_token(&config, &token.denom)?;
@@ -368,11 +386,14 @@ pub fn handle_withdraw(
 }
 
 pub fn handle_repay(
-    mut deps: DepsMut,
-    _env: Env,
+    deps: DepsMut,
+    env: Env,
     info: MessageInfo,
     cycle_profit: Option<Decimal>,
 ) -> Result<Response, ContractError> {
+    let (mut response, mut deps) =
+        process_management_fees_and_modify_response(deps, Response::default(), env.clone(), None)?;
+
     State::is_open_and_unpaused(deps.as_ref())?;
 
     let config = Config::get_from_storage(deps.as_ref())?;
@@ -390,8 +411,6 @@ pub fn handle_repay(
     } else {
         config.estimate_cycle_profit.unwrap_or(Decimal::zero())
     };
-
-    let mut response = Response::default();
 
     for repayment in repayment_tokens.iter() {
         let total_withdrawn = state.get_total_withdrawn_tokens(&repayment.denom);

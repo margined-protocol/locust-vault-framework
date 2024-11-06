@@ -1,5 +1,5 @@
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{Addr, Deps, DepsMut, Env, Timestamp, Uint128};
+use cosmwasm_std::{Addr, Coin, Deps, DepsMut, Env, Timestamp, Uint128};
 use cw_storage_plus::Map;
 use std::collections::HashMap;
 use vaultenator::{errors::ContractError, state::ManageState};
@@ -20,6 +20,7 @@ pub struct State {
     pub is_paused: bool,
     pub last_pause: Timestamp,
     pub last_claim: Timestamp,
+    pub pending_management_fees: Vec<Coin>,
     pub total_staked_tokens: Uint128,
     pub total_withdrawn_tokens: HashMap<String, Uint128>,
 }
@@ -51,6 +52,7 @@ impl ManageState for State {
             is_paused: false,
             last_pause: env.block.time,
             last_claim: env.block.time,
+            pending_management_fees: vec![],
             total_staked_tokens: Uint128::zero(),
             total_withdrawn_tokens: HashMap::new(),
         };
@@ -116,6 +118,18 @@ impl State {
             .or_insert(Uint128::zero());
 
         *entry = entry.saturating_sub(amount);
+
+        Ok(())
+    }
+
+    pub fn update_last_claim(&mut self, latest_timestamp: Timestamp) -> Result<(), ContractError> {
+        self.last_claim = latest_timestamp;
+
+        Ok(())
+    }
+
+    pub fn update_pending_management_fees(&mut self, fees: Vec<Coin>) -> Result<(), ContractError> {
+        self.pending_management_fees = fees;
 
         Ok(())
     }

@@ -2,6 +2,8 @@ use crate::queries::get_total_supply;
 
 use cosmwasm_std::{Decimal, Deps, StdResult, Uint128};
 
+pub const YEAR_IN_SECONDS: u64 = 365 * 24 * 60 * 60;
+
 pub fn get_amount_to_mint(
     deps: Deps,
     current_assets: &Uint128,
@@ -23,4 +25,18 @@ pub fn calculate_amount_to_mint(
     let normalized_delta = Decimal::from_ratio(delta_liquidity, *previous_assets);
 
     normalized_delta * total_supply
+}
+
+pub fn calculate_management_fee(
+    amount: Uint128,
+    management_fee: Decimal,
+    time_elapsed_seconds: u64,
+    year_in_seconds: u64,
+) -> Uint128 {
+    let elapsed_time_multiplier =
+        Decimal::from_ratio(time_elapsed_seconds as u128, year_in_seconds as u128);
+
+    let fee_multiplier = management_fee * elapsed_time_multiplier;
+
+    fee_multiplier * amount
 }

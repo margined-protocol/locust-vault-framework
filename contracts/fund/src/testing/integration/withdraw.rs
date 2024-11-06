@@ -39,6 +39,7 @@ fn test_withdraw() {
         &env.controller,
     )
     .unwrap();
+    let latest_block_time = env.app.get_block_timestamp();
 
     let strategy_base_after = env.get_balance(&strategy_addr, BASE_DENOM);
     assert_eq!(strategy_base_after, withdraw_amount);
@@ -49,7 +50,8 @@ fn test_withdraw() {
         total_staked_tokens: deposit.amount,
         total_withdrawn_tokens: coins(withdraw_amount.into(), BASE_DENOM),
         last_pause: block_time,
-        last_claim: block_time,
+        last_claim: latest_block_time,
+        pending_management_fees: vec![],
     };
 
     let state = env.query_state_fund(&wasm, &vault_addr).unwrap();
@@ -98,6 +100,7 @@ fn test_withdraw_twice() {
         &env.controller,
     )
     .unwrap();
+    let latest_block_time = env.app.get_block_timestamp();
 
     let strategy_base_after = env.get_balance(&strategy_addr, BASE_DENOM);
     assert_eq!(
@@ -117,7 +120,8 @@ fn test_withdraw_twice() {
             BASE_DENOM,
         ),
         last_pause: block_time,
-        last_claim: block_time,
+        last_claim: latest_block_time,
+        pending_management_fees: vec![],
     };
 
     let state = env.query_state_fund(&wasm, &vault_addr).unwrap();

@@ -44,6 +44,7 @@ fn test_repay() {
     let repay_amount = coins(withdraw_amount.into(), BASE_DENOM);
     env.repay_strategy(&wasm, &strategy_addr, repay_amount, None, &env.controller)
         .unwrap();
+    let latest_block_time = env.app.get_block_timestamp();
 
     let strategy_base_after = env.get_balance(&strategy_addr, BASE_DENOM);
 
@@ -55,7 +56,8 @@ fn test_repay() {
         total_staked_tokens: deposit.amount,
         total_withdrawn_tokens: coins(0u128, BASE_DENOM),
         last_pause: block_time,
-        last_claim: block_time,
+        last_claim: latest_block_time,
+        pending_management_fees: vec![],
     };
 
     let state = env.query_state_fund(&wasm, &vault_addr).unwrap();
@@ -242,6 +244,7 @@ fn test_repay_alt_denom() {
     let repay_amount = coins(withdraw_amount_quote.into(), QUOTE_DENOM);
     env.repay_strategy(&wasm, &strategy_addr, repay_amount, None, &env.controller)
         .unwrap();
+    let latest_block_time = env.app.get_block_timestamp();
 
     let strategy_quote_after = env.get_balance(&strategy_addr, BASE_DENOM);
 
@@ -251,9 +254,10 @@ fn test_repay_alt_denom() {
         is_open: true,
         is_paused: false,
         total_staked_tokens: Uint128::from(162_500_000u128),
-        total_withdrawn_tokens: vec![coin(0u128, BASE_DENOM), coin(0u128, QUOTE_DENOM)],
+        total_withdrawn_tokens: vec![coin(0u128, QUOTE_DENOM), coin(0u128, BASE_DENOM)],
         last_pause: block_time,
-        last_claim: block_time,
+        last_claim: latest_block_time,
+        pending_management_fees: vec![],
     };
 
     let state = env.query_state_fund(&wasm, &vault_addr).unwrap();
@@ -317,6 +321,7 @@ fn test_repay_alt_denom_single_transaction() {
         &env.controller,
     )
     .unwrap();
+    let latest_block_time = env.app.get_block_timestamp();
 
     let strategy_base_after = env.get_balance(&strategy_addr, BASE_DENOM);
 
@@ -330,9 +335,10 @@ fn test_repay_alt_denom_single_transaction() {
         is_open: true,
         is_paused: false,
         total_staked_tokens: Uint128::from(162_500_000u128),
-        total_withdrawn_tokens: vec![coin(0u128, BASE_DENOM), coin(0u128, QUOTE_DENOM)],
+        total_withdrawn_tokens: vec![coin(0u128, QUOTE_DENOM), coin(0u128, BASE_DENOM)],
         last_pause: block_time,
-        last_claim: block_time,
+        last_claim: latest_block_time,
+        pending_management_fees: vec![],
     };
 
     let state = env.query_state_fund(&wasm, &vault_addr).unwrap();
@@ -386,6 +392,7 @@ fn test_repay_post_withdraw_twice() {
     let repay_amount = coins(withdraw_amount_2.into(), BASE_DENOM);
     env.repay_strategy(&wasm, &strategy_addr, repay_amount, None, &env.controller)
         .unwrap();
+    let latest_block_time = env.app.get_block_timestamp();
 
     let expected_state = StateResponse {
         is_open: true,
@@ -393,7 +400,8 @@ fn test_repay_post_withdraw_twice() {
         total_staked_tokens: Uint128::from(10_000_000u128),
         total_withdrawn_tokens: coins(0u128, BASE_DENOM),
         last_pause: block_time,
-        last_claim: block_time,
+        last_claim: latest_block_time,
+        pending_management_fees: vec![],
     };
 
     let state = env.query_state_fund(&wasm, &vault_addr).unwrap();

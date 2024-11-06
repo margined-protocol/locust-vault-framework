@@ -1,6 +1,7 @@
 pub mod admin;
 pub mod config;
 pub mod deposit;
+pub mod fees;
 pub mod instantiation;
 pub mod query;
 pub mod redeem;

@@ -65,6 +65,28 @@ pub fn contains_event(
         .any(|event| event.ty == event_type_with_prefix)
 }
 
+pub fn contains_event_with_attributes(
+    response: &ExecuteResponse<MsgExecuteContractResponse>,
+    event_type: &str,
+    attribute_key: Option<&str>,
+    attribute_value: Option<&str>,
+) -> bool {
+    // Add the wasm prefix to the event type
+    let event_type_with_prefix = format!("wasm-{}", event_type);
+
+    // Search through the events for the specified type
+    response.events.iter().any(|event| {
+        event.ty == event_type_with_prefix &&
+            // If both key and value are specified, match them within the event's attributes
+            match (attribute_key, attribute_value) {
+                (Some(key), Some(value)) => event.attributes.iter().any(|attr| attr.key == key && attr.value == value),
+                (Some(key), None) => event.attributes.iter().any(|attr| attr.key == key),
+                (None, Some(value)) => event.attributes.iter().any(|attr| attr.value == value),
+                (None, None) => true,
+            }
+    })
+}
+
 pub fn get_strategy_denom_fund(contract_addr: &str) -> String {
     format!("factory/{}/fund", contract_addr)
 }

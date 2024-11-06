@@ -11,6 +11,7 @@ pub struct InstantiateMsg {
     pub float: Decimal,        // percentage of balance sheet that can be withdrawn
     pub token0: String,
     pub token1: Option<String>,
+    pub management_fee_rate: Decimal,
     pub performance_fee_rate: Decimal,
     pub vault_type: String,
 }
@@ -66,6 +67,7 @@ pub struct ConfigResponse {
     pub strategy_denom: String,
     pub token0: String,
     pub token1: Option<String>,
+    pub management_fee_rate: Decimal,
     pub performance_fee_rate: Decimal,
     pub estimate_cycle_profit: Option<Decimal>,
     pub vault_type: String,
@@ -77,6 +79,7 @@ pub struct UpdateConfig {
     pub float: Option<Decimal>,
     pub controller: Option<String>,
     pub treasury: Option<String>,
+    pub management_fee_rate: Option<Decimal>,
     pub performance_fee_rate: Option<Decimal>,
     pub instant_withdraw_penalty: Option<Decimal>,
     pub penalty_duration: Option<u64>,
@@ -91,6 +94,7 @@ pub struct StateResponse {
     pub last_claim: Timestamp,
     pub total_staked_tokens: Uint128,
     pub total_withdrawn_tokens: Vec<Coin>,
+    pub pending_management_fees: Vec<Coin>,
 }
 
 #[cw_serde]
