@@ -39,7 +39,7 @@ pub fn handle_withdraw(
     let config = CONFIG.load(deps.storage)?;
 
     ensure!(
-        config.controller == info.sender,
+        config.controller == info.sender.to_string(),
         ContractError::Unauthorized {}
     );
 
@@ -75,7 +75,7 @@ pub fn handle_repay(
     let config = CONFIG.load(deps.storage)?;
 
     ensure!(
-        config.controller == info.sender,
+        config.controller == info.sender.to_string(),
         ContractError::Unauthorized {}
     );
 
@@ -109,7 +109,10 @@ pub fn handle_set_vault(
 ) -> Result<Response, ContractError> {
     let mut config = CONFIG.load(deps.storage)?;
 
-    ensure!(config.admin == info.sender, ContractError::Unauthorized {});
+    ensure!(
+        config.admin == info.sender.to_string(),
+        ContractError::Unauthorized {}
+    );
 
     config.vault = Some(vault.clone());
     config.validate(&deps.as_ref())?;
@@ -127,7 +130,10 @@ pub fn handle_set_grants(
 ) -> Result<Response, ContractError> {
     let mut config = CONFIG.load(deps.storage)?;
 
-    ensure!(config.admin == info.sender, ContractError::Unauthorized {});
+    ensure!(
+        config.admin == info.sender.to_string(),
+        ContractError::Unauthorized {}
+    );
 
     let revoke_msgs = revoke_authz_grant_messages(
         env.contract.address.as_str(),

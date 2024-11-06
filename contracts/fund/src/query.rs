@@ -1,7 +1,7 @@
 use crate::{
     config::Config,
     contract::StructuredVault,
-    helpers::calculate_vault_assets,
+    helpers::{calculate_amount_withdrawable, calculate_vault_assets},
     math::get_amount_to_mint,
     queries::{get_balance, get_total_supply},
     state::State,
@@ -9,7 +9,7 @@ use crate::{
 
 use cosmwasm_std::{Coin, Decimal, Deps, Env, StdError, StdResult, Uint128};
 use cw2::get_contract_version;
-use cw_vault_standard::VaultInfoResponse;
+use cw_vault_standard::msg::VaultInfoResponse;
 use interface::fund::{StateResponse, VersionResponse};
 use vaultenator::{config::Configure, query::Query, state::ManageState};
 
@@ -86,7 +86,7 @@ impl Query<Config, State> for StructuredVault {
 
         let share = Decimal::from_ratio(amount, total_supply);
 
-        Ok(current_assets * share)
+        Ok(current_assets.mul_floor(share))
     }
 }
 
@@ -138,7 +138,7 @@ pub fn query_estimate_vault_assets(amount: Uint128, deps: Deps, env: Env) -> Std
 
         let current_assets = token_balance.checked_add(total_withdrawn)?;
 
-        let amount_to_redeem = Coin::new((current_assets * share).into(), &token);
+        let amount_to_redeem = Coin::new(current_assets.mul_floor(share), &token);
 
         assets.push(amount_to_redeem);
     }
@@ -153,4 +153,31 @@ pub fn query_version(deps: Deps) -> StdResult<VersionResponse> {
         name: res.contract,
         version: res.version,
     })
+}
+
+pub fn query_withdrawable_amount(deps: Deps, env: Env) -> StdResult<Vec<Coin>> {
+    let config =
+        Config::get_from_storage(deps).map_err(|e| StdError::generic_err(e.to_string()))?;
+    let state = State::get_from_storage(deps).map_err(|e| StdError::generic_err(e.to_string()))?;
+
+    let tokens = if let Some(token1) = config.token1.clone() {
+        vec![config.token0.clone(), token1]
+    } else {
+        vec![config.token0.clone()]
+    };
+
+    let mut assets = Vec::new();
+    for token in tokens {
+        let amount_withdrawable = calculate_amount_withdrawable(
+            &deps,
+            &config,
+            &state,
+            env.contract.address.as_str(),
+            &token,
+        )?;
+
+        assets.push(Coin::new(amount_withdrawable, &token));
+    }
+
+    Ok(assets)
 }

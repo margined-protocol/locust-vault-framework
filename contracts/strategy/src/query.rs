@@ -2,19 +2,21 @@ use crate::state::{Config, CONFIG};
 
 #[cfg(feature = "astroport")]
 use cosmwasm_schema::cw_serde;
-
 #[cfg(feature = "astroport")]
 use cosmwasm_std::{to_json_binary, Addr, QueryRequest, Uint128, WasmQuery};
-
 use cosmwasm_std::{Decimal, Deps, Env, StdResult};
+#[cfg(feature = "slinky")]
+use cosmwasm_std::{StdError, Uint128};
 use cw2::get_contract_version;
 use interface::strategy::{ConfigResponse, PoolInfo};
+#[cfg(feature = "slinky")]
+use neutron_std::types::slinky::{oracle::v1::OracleQuerier, types::v1::CurrencyPair};
 #[cfg(feature = "osmosis")]
 use osmosis_std::{
     shim::Timestamp as OsmosisTimestamp,
     types::osmosis::{poolmanager::v1beta1::PoolmanagerQuerier, twap::v1beta1::TwapQuerier},
 };
-#[cfg(feature = "osmosis")]
+#[cfg(any(feature = "osmosis", feature = "slinky"))]
 use std::str::FromStr;
 
 #[cfg(feature = "astroport")]
@@ -70,53 +72,8 @@ pub fn query_grants(deps: &Deps) -> StdResult<Vec<String>> {
     Ok(config.grants)
 }
 
-#[cfg(feature = "osmosis")]
-pub fn query_spot_price(deps: &Deps) -> StdResult<Decimal> {
-    let config: Config = CONFIG.load(deps.storage)?;
-
-    let (id, token0, token1) = match config.pool_info {
-        PoolInfo::Osmosis { id, token0, token1 } => (id, token0, token1),
-        PoolInfo::Neutron {} => unimplemented!(),
-        PoolInfo::Astroport { .. } => unimplemented!(),
-    };
-
-    let querier = PoolmanagerQuerier::new(&deps.querier);
-
-    let res = querier.spot_price(id, token0, token1)?;
-
-    let price = Decimal::from_str(&res.spot_price).unwrap();
-
-    Ok(price)
-}
-
-#[cfg(feature = "osmosis")]
-pub fn query_twap_price(deps: &Deps, env: Env, duration: u64) -> StdResult<Decimal> {
-    let config = CONFIG.load(deps.storage)?;
-
-    let (id, token0, token1) = match config.pool_info {
-        PoolInfo::Osmosis { id, token0, token1 } => (id, token0, token1),
-        PoolInfo::Neutron {} => unimplemented!(),
-        PoolInfo::Astroport { .. } => unimplemented!(),
-    };
-
-    let querier = TwapQuerier::new(&deps.querier);
-
-    let start_time = env.block.time.minus_seconds(duration);
-
-    let start_time = OsmosisTimestamp {
-        seconds: start_time.seconds() as i64,
-        nanos: start_time.subsec_nanos() as i32,
-    };
-
-    let res = querier.arithmetic_twap_to_now(id, token0, token1, Some(start_time))?;
-
-    let price = Decimal::from_str(&res.arithmetic_twap).unwrap();
-
-    Ok(price)
-}
-
 #[cfg(feature = "astroport")]
-pub fn query_spot_price(deps: &Deps) -> StdResult<Decimal> {
+pub fn query_spot_price(deps: &Deps, env: Env) -> StdResult<Decimal> {
     let config: Config = CONFIG.load(deps.storage)?;
 
     #[cw_serde]
@@ -132,7 +89,7 @@ pub fn query_spot_price(deps: &Deps) -> StdResult<Decimal> {
 
     let (pool_address, token0, token1) = match config.pool_info {
         PoolInfo::Osmosis { .. } => unimplemented!(),
-        PoolInfo::Neutron {} => unimplemented!(),
+        PoolInfo::Slinky { .. } => unimplemented!(),
         PoolInfo::Astroport {
             pool_address,
             token0,
@@ -179,7 +136,7 @@ pub fn query_twap_price(deps: &Deps, _: Env, duration: u64) -> StdResult<Decimal
 
     let (pool_address, _, _) = match config.pool_info {
         PoolInfo::Osmosis { .. } => unimplemented!(),
-        PoolInfo::Neutron {} => unimplemented!(),
+        PoolInfo::Slinky { .. } => unimplemented!(),
         PoolInfo::Astroport {
             pool_address,
             token0,
@@ -195,4 +152,99 @@ pub fn query_twap_price(deps: &Deps, _: Env, duration: u64) -> StdResult<Decimal
     }))?;
 
     Ok(res.price)
+}
+
+#[cfg(feature = "osmosis")]
+pub fn query_spot_price(deps: &Deps, env: Env) -> StdResult<Decimal> {
+    let config: Config = CONFIG.load(deps.storage)?;
+
+    let (id, token0, token1) = match config.pool_info {
+        PoolInfo::Osmosis { id, token0, token1 } => (id, token0, token1),
+        PoolInfo::Slinky { .. } => unimplemented!(),
+        PoolInfo::Astroport { .. } => unimplemented!(),
+    };
+
+    let querier = PoolmanagerQuerier::new(&deps.querier);
+
+    let res = querier.spot_price(id, token0, token1)?;
+
+    let price = Decimal::from_str(&res.spot_price).unwrap();
+
+    Ok(price)
+}
+
+#[cfg(feature = "osmosis")]
+pub fn query_twap_price(deps: &Deps, env: Env, duration: u64) -> StdResult<Decimal> {
+    let config = CONFIG.load(deps.storage)?;
+
+    let (id, token0, token1) = match config.pool_info {
+        PoolInfo::Osmosis { id, token0, token1 } => (id, token0, token1),
+        PoolInfo::Slinky { .. } => unimplemented!(),
+        PoolInfo::Astroport { .. } => unimplemented!(),
+    };
+
+    let querier = TwapQuerier::new(&deps.querier);
+
+    let start_time = env.block.time.minus_seconds(duration);
+
+    let start_time = OsmosisTimestamp {
+        seconds: start_time.seconds() as i64,
+        nanos: start_time.subsec_nanos() as i32,
+    };
+
+    let res = querier.arithmetic_twap_to_now(id, token0, token1, Some(start_time))?;
+
+    let price = Decimal::from_str(&res.arithmetic_twap).unwrap();
+
+    Ok(price)
+}
+
+#[cfg(feature = "slinky")]
+pub fn query_spot_price(deps: &Deps, env: Env) -> StdResult<Decimal> {
+    get_slinky_price(deps, env)
+}
+
+#[cfg(feature = "slinky")]
+pub fn query_twap_price(deps: &Deps, env: Env, _duration: u64) -> StdResult<Decimal> {
+    get_slinky_price(deps, env)
+}
+
+#[cfg(feature = "slinky")]
+fn get_slinky_price(deps: &Deps, env: Env) -> StdResult<Decimal> {
+    let config: Config = CONFIG.load(deps.storage)?;
+
+    let (base, quote, timeout) = match config.pool_info {
+        PoolInfo::Osmosis { .. } => unimplemented!(),
+        PoolInfo::Slinky {
+            base,
+            quote,
+            timeout,
+        } => (base, quote, timeout),
+        PoolInfo::Astroport { .. } => unimplemented!(),
+    };
+
+    let querier = OracleQuerier::new(&deps.querier);
+
+    let res = querier.get_price(Some(CurrencyPair { base, quote }))?;
+
+    let price = match res.price {
+        None => {
+            return Err(StdError::generic_err("Price not available"));
+        }
+        Some(p) => {
+            let timestamp = p.block_timestamp.unwrap();
+
+            if timestamp.seconds < (env.block.time.seconds() - timeout) as i64 {
+                return Err(StdError::generic_err("Price is stale"));
+            }
+
+            p.price
+        }
+    };
+
+    let uint_price = Uint128::from_str(&price)?;
+
+    let price = Decimal::from_atomics(uint_price, res.decimals as u32).unwrap();
+
+    Ok(price)
 }

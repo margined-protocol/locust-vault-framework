@@ -35,6 +35,7 @@ pub struct TestEnv {
     pub traders: Vec<SigningAccount>,
     pub default_pool: Pool,
 }
+
 impl TestEnv {
     pub fn new() -> Self {
         let app = OsmosisTestApp::new();
@@ -154,6 +155,7 @@ pub fn create_cl_pool(
                 denom1,
                 tick_spacing: TICK_SPACING,
                 spread_factor: Decimal::from_str("0.01").unwrap().atomics().to_string(),
+                exponent_at_price_one: "".to_string(),
             }],
         },
         signer.address(),

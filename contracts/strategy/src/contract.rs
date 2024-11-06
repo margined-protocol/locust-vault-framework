@@ -83,7 +83,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
         QueryMsg::Config {} => to_json_binary(&query_config(&deps)?),
         QueryMsg::Grants {} => to_json_binary(&query_grants(&deps)?),
-        QueryMsg::SpotPrice {} => to_json_binary(&query_spot_price(&deps)?),
+        QueryMsg::SpotPrice {} => to_json_binary(&query_spot_price(&deps, env)?),
         QueryMsg::TwapPrice { duration } => {
             to_json_binary(&query_twap_price(&deps, env, duration)?)
         }

@@ -1,7 +1,9 @@
 use crate::{
     config::Config,
     handle::{handle_repay, handle_withdraw},
-    query::{query_estimate_vault_assets, query_state_wrapper, query_version},
+    query::{
+        query_estimate_vault_assets, query_state_wrapper, query_version, query_withdrawable_amount,
+    },
     state::State,
 };
 
@@ -62,9 +64,11 @@ pub fn execute(
     msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
     match msg {
+        #[allow(deprecated)]
         ExecuteMsg::Deposit { amount, recipient } => {
             StructuredVault.handle_deposit(deps, env, info, amount, recipient)
         }
+        #[allow(deprecated)]
         ExecuteMsg::Redeem { recipient, amount } => {
             StructuredVault.handle_redeem(deps, env, info, amount, recipient)
         }
@@ -116,18 +120,23 @@ pub fn execute(
 pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
         QueryMsg::VaultStandardInfo {} => to_json_binary(&VaultStandardInfoResponse {
-            version: StructuredVault::VAULT_STANDARD_VERSION,
+            version: StructuredVault::VAULT_STANDARD_VERSION.to_string(),
             extensions: StructuredVault::VAULT_STANDARD_EXTENSIONS
                 .iter()
                 .map(|&s| s.into())
                 .collect(),
         }),
         QueryMsg::Info {} => to_json_binary(&StructuredVault::query_info(deps, env)?),
-        QueryMsg::PreviewDeposit { amount } => {
-            to_json_binary(&StructuredVault::query_preview_deposit(amount, deps, env)?)
+        #[allow(deprecated)]
+        QueryMsg::PreviewDeposit { .. } => {
+            unimplemented!("PreviewDeposit is not implemented")
         }
-        QueryMsg::PreviewRedeem { amount } => {
-            to_json_binary(&StructuredVault::query_preview_redeem(amount, deps, env)?)
+        #[allow(deprecated)]
+        QueryMsg::PreviewRedeem { .. } => {
+            unimplemented!("PreviewRedeem is not implemented")
+        }
+        QueryMsg::VaultTokenExchangeRate { .. } => {
+            unimplemented!("VaultTokenExchangeRate is not implemented")
         }
         QueryMsg::TotalAssets {} => {
             to_json_binary(&StructuredVault::query_total_assets(deps, env)?)
@@ -159,6 +168,9 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
                     &StructuredVault::query_ownership_proposal(deps, OWNERSHIP_PROPOSAL)?,
                 ),
                 VaultenatorExtensionQueryMsg::Version {} => to_json_binary(&query_version(deps)?),
+                VaultenatorExtensionQueryMsg::WithdrawableAmount {} => {
+                    to_json_binary(&query_withdrawable_amount(deps, env)?)
+                }
             },
         },
     }

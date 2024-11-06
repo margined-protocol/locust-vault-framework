@@ -36,6 +36,7 @@ pub enum VaultenatorExtensionQueryMsg {
     State {},
     Version {},
     EstimateVaultAssets { amount: Uint128 },
+    WithdrawableAmount {},
 }
 
 #[cw_serde]

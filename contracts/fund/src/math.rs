@@ -22,5 +22,5 @@ pub fn calculate_amount_to_mint(
     let delta_liquidity = current_assets.saturating_sub(*previous_assets);
     let normalized_delta = Decimal::from_ratio(delta_liquidity, *previous_assets);
 
-    normalized_delta * total_supply
+    total_supply.mul_floor(normalized_delta)
 }

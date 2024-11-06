@@ -105,7 +105,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
 pub fn return_simulation(deps: Deps) -> StdResult<SimulationResponse> {
     let price = KEY_PRICES.load(deps.storage)?;
 
-    let return_amount = price * ONE_SIX_DECIMALS;
+    let return_amount = ONE_SIX_DECIMALS.mul_floor(price);
 
     Ok(SimulationResponse {
         return_amount,

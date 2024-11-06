@@ -6,9 +6,10 @@ use crate::{
         event_withdraw,
     },
     helpers::{
-        calculate_performance_fees, calculate_vault_assets, check_is_valid_token,
-        check_strategy_cap, get_amount_to_mint, get_deposit_value, get_sent_tokens,
-        get_strategy_denom, get_token_deposits, get_vault_coins, map_to_contract_error,
+        calculate_amount_withdrawable, calculate_performance_fees, calculate_vault_assets,
+        check_is_valid_token, check_strategy_cap, get_amount_to_mint, get_deposit_value,
+        get_sent_tokens, get_strategy_denom, get_token_deposits, get_vault_coins,
+        map_to_contract_error,
     },
     messages::{create_bank_message, create_burn_message, create_mint_message},
     queries::{get_balance, get_total_supply},
@@ -197,7 +198,7 @@ impl Handle<Config, State> for StructuredVault {
         let mut assets_to_redeem =
             get_vault_coins(&deps.as_ref(), &config, env.contract.address.as_str())?;
         for coin in &mut assets_to_redeem {
-            let amount_to_redeem = coin.amount * withdraw_percentage;
+            let amount_to_redeem = coin.amount.mul_floor(withdraw_percentage);
 
             coin.amount = amount_to_redeem
         }
@@ -208,7 +209,7 @@ impl Handle<Config, State> for StructuredVault {
         let mut user_deposit = USER_DEPOSITS.load(deps.storage, info.sender.clone())?;
 
         // Reduce total deposits by the ratio being burned
-        let user_deposit_redeemed = user_deposit.total_deposits * burn_ratio;
+        let user_deposit_redeemed = user_deposit.total_deposits.mul_floor(burn_ratio);
 
         // Compute the net deduction so we can decrement the global counter
         user_deposit.remove_from_user_deposits(user_deposit_redeemed)?;
@@ -265,8 +266,8 @@ impl Handle<Config, State> for StructuredVault {
         let contract_version = get_contract_version(deps.storage)?;
 
         match contract_version.contract.as_ref() {
-            "crates.io:fund-vault" => match contract_version.version.as_ref() {
-                "0.0.4" => {
+            "crates.io:fund" => match contract_version.version.as_ref() {
+                "0.0.5" => {
                     set_contract_version(
                         deps.storage,
                         format!("crates.io:{CONTRACT_NAME}"),
@@ -317,7 +318,7 @@ pub fn handle_withdraw(
     let mut state = State::get_from_storage(deps.as_ref())?;
 
     ensure!(
-        config.controller == info.sender,
+        config.controller == info.sender.to_string(),
         ContractError::Unauthorized {}
     );
 
@@ -326,23 +327,15 @@ pub fn handle_withdraw(
     for token in tokens_to_withdraw.iter() {
         check_is_valid_token(&config, &token.denom)?;
 
-        let balance = get_balance(&deps.as_ref(), env.contract.address.as_str(), &token.denom)?;
+        let max_withdrawable = calculate_amount_withdrawable(
+            &deps.as_ref(),
+            &config,
+            &state,
+            env.contract.address.as_str(),
+            &token.denom,
+        )?;
 
-        let remaining_balance = balance
-            .checked_sub(token.amount)
-            .map_err(map_to_contract_error)?;
-
-        let total_balance = balance
-            .checked_add(state.get_total_withdrawn_tokens(&token.denom))
-            .map_err(map_to_contract_error)?;
-
-        let float_amount = config.float * total_balance;
-
-        let amount_to_withdraw = if remaining_balance < float_amount {
-            balance.saturating_sub(float_amount)
-        } else {
-            token.amount
-        };
+        let amount_to_withdraw = max_withdrawable.min(token.amount);
 
         // Create withdrawal message
         if !amount_to_withdraw.is_zero() {
@@ -359,7 +352,7 @@ pub fn handle_withdraw(
             let msg = create_bank_message(config.controller.clone(), vec![withdraw_amount.clone()]);
 
             response = response
-                .add_event(event_withdraw(info.sender.to_string(), withdraw_amount))
+                .add_event(event_withdraw(info.sender.as_str(), withdraw_amount))
                 .add_message(msg);
         }
     }
@@ -379,7 +372,7 @@ pub fn handle_repay(
     let mut state = State::get_from_storage(deps.as_ref())?;
 
     ensure!(
-        config.controller == info.sender,
+        config.controller == info.sender.to_string(),
         ContractError::Unauthorized {}
     );
 
@@ -397,7 +390,7 @@ pub fn handle_repay(
         let total_withdrawn = state.get_total_withdrawn_tokens(&repayment.denom);
 
         let profit = if repayment.amount < total_withdrawn {
-            repayment.amount * profit_percentage
+            repayment.amount.mul_floor(profit_percentage)
         } else {
             repayment.amount.saturating_sub(total_withdrawn)
         };

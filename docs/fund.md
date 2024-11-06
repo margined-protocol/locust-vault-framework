@@ -15,10 +15,10 @@ USER_ADDRESS=
 ### Testnet
 
 ```
-NODE=https://testnet.rpc.osmosis.zone:443
-CHAIN_ID="osmo-test-5"
+NODE=https://neutron-testnet-rpc.polkachu.com:443
+CHAIN_ID="pion-1"
 CONTRACT_NAME=fund-aarch64.wasm
-CODE_ID=7548
+CODE_ID=7951
 CONTRACT_ADDRESS=neutron148hshtgsu503zgnegc2zh2x5f8cmcax59fcj3fe2wu7yrlh6yx4scck99m
 ```
 
@@ -105,6 +105,12 @@ neutrond query wasm contract-state smart $CONTRACT_ADDRESS "{\"total_vault_token
 
 ```bash
 neutrond query wasm contract-state smart $CONTRACT_ADDRESS "{\"vault_extension\": {\"vaultenator\": {\"version\": {}}}}" --node=$NODE --output=json | jq .
+```
+
+#### Withdrawable Amount
+
+```bash
+neutrond query wasm contract-state smart $CONTRACT_ADDRESS "{\"vault_extension\": {\"vaultenator\": {\"withdrawable_amount\": {}}}}" --node=$NODE --output=json | jq .
 ```
 
 ```

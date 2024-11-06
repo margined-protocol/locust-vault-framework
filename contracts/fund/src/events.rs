@@ -6,11 +6,11 @@ use crate::{
 use cosmwasm_std::{Coin, Event};
 use cw2::ContractVersion;
 
-pub fn event_withdraw(user: String, amount_withdrawn: Coin) -> Event {
+pub fn event_withdraw(user: &str, amount_withdrawn: Coin) -> Event {
     Event::new("withdraw_and_swap").add_attributes([
         ("version", CONTRACT_VERSION),
         ("contract", CONTRACT_NAME),
-        ("user", &user),
+        ("user", user),
         ("amount_withdrawn", &amount_withdrawn.to_string()),
     ])
 }

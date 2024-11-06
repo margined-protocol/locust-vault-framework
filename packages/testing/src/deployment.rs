@@ -131,14 +131,6 @@ impl TestEnv {
         .address
     }
 
-    // pub fn set_vault(&self, wasm: &Wasm<OsmosisTestApp>, address: &str, vault: &str) {
-    //     let msg = StrategyContractExecuteMsg::SetVault {
-    //         vault: vault.to_string(),
-    //     };
-
-    //     wasm.execute(address, &msg, &[], &self.signer).unwrap();
-    // }
-
     pub fn default_fund_instantiation_msg(&self) -> Fund::InstantiateMsg {
         Fund::InstantiateMsg {
             admin: self.signer.address().to_string(),

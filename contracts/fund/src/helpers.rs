@@ -50,7 +50,23 @@ pub fn calculate_amount_to_mint(
 
     let normalized_delta = Decimal::from_ratio(delta_liquidity, *previous_assets);
 
-    normalized_delta * total_supply
+    total_supply.mul_floor(normalized_delta)
+}
+
+pub fn calculate_amount_withdrawable(
+    deps: &Deps,
+    config: &Config,
+    state: &State,
+    contract_address: &str,
+    denom: &str,
+) -> StdResult<Uint128> {
+    let balance = get_balance(deps, contract_address, denom)?;
+
+    let total_balance = balance.checked_add(state.get_total_withdrawn_tokens(denom))?;
+
+    let float_amount = total_balance.mul_floor(config.float);
+
+    Ok(balance.saturating_sub(float_amount))
 }
 
 pub fn get_strategy_denom(env: &Env, contract_name: &str) -> String {
@@ -75,7 +91,7 @@ pub fn calculate_total_value(
 
             let amount = Uint128::from_str(&asset.amount.to_string())?;
 
-            total += twap * amount;
+            total += amount.mul_floor(twap);
         }
     }
     Ok(total)
@@ -86,7 +102,7 @@ pub fn calculate_performance_fees(coins: Vec<Coin>, fee_rate: Decimal) -> StdRes
 
     for coin in coins {
         let initial_amount = coin.amount;
-        let fee = initial_amount * fee_rate;
+        let fee = initial_amount.mul_floor(fee_rate);
 
         if !fee.is_zero() {
             fees.push(cosmwasm_std::coin(fee.u128(), coin.denom.clone()));

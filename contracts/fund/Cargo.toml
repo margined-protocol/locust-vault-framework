@@ -18,8 +18,7 @@ version      = "0.0.5"
 crate-type = [ "cdylib", "rlib" ]
 
 [features]
-backtraces = [ "cosmwasm-std/backtraces" ]
-library    = [  ]
+library = [  ]
 
 [dependencies]
 cosmwasm-schema   = { workspace = true }

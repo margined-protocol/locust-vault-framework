@@ -59,7 +59,11 @@ pub enum PoolInfo {
         token0: String,
         token1: String,
     },
-    Neutron {},
+    Slinky {
+        base: String,
+        quote: String,
+        timeout: u64, // time in seconds before we consider the price stale
+    },
     Astroport {
         pool_address: String,
         token0: String,
