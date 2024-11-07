@@ -1,8 +1,11 @@
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{ensure, Deps, StdError, StdResult};
+use cw_controllers::Admin;
 use cw_storage_plus::Item;
-use interface::strategy::PoolInfo;
+use interface::strategy::{OwnerProposal, PoolInfo};
 
+pub const OWNER: Admin = Admin::new("owner");
+pub const OWNERSHIP_PROPOSAL: Item<OwnerProposal> = Item::new("ownership_proposals");
 pub const CONFIG: Item<Config> = Item::new("config");
 
 #[cw_serde]

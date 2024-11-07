@@ -1,4 +1,7 @@
-use crate::state::{Config, CONFIG};
+use crate::{
+    errors::ContractError,
+    state::{Config, CONFIG, OWNER},
+};
 
 #[cfg(feature = "astroport")]
 use cosmwasm_schema::cw_serde;
@@ -6,7 +9,7 @@ use cosmwasm_schema::cw_serde;
 #[cfg(feature = "astroport")]
 use cosmwasm_std::{to_json_binary, Addr, QueryRequest, Uint128, WasmQuery};
 
-use cosmwasm_std::{Decimal, Deps, Env, StdResult};
+use cosmwasm_std::{Addr, Decimal, Deps, Env, StdError, StdResult};
 use cw2::get_contract_version;
 use interface::strategy::{ConfigResponse, PoolInfo};
 #[cfg(feature = "osmosis")]
@@ -195,4 +198,12 @@ pub fn query_twap_price(deps: &Deps, _: Env, duration: u64) -> StdResult<Decimal
     }))?;
 
     Ok(res.price)
+}
+
+pub fn query_owner(deps: Deps) -> Result<Addr, ContractError> {
+    if let Some(owner) = OWNER.get(deps)? {
+        Ok(owner)
+    } else {
+        Err(ContractError::Std(StdError::generic_err("Owner not set")))
+    }
 }
