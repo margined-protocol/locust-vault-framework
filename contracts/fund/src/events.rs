@@ -24,6 +24,16 @@ pub fn event_repay(user: String, token_in: Coin) -> Event {
     ])
 }
 
+pub fn event_sudo(to: &str, from: &str, amount: &Coin) -> Event {
+    Event::new("sudo").add_attributes([
+        ("version", CONTRACT_VERSION),
+        ("contract", CONTRACT_NAME),
+        ("to", to),
+        ("from", from),
+        ("amount", &amount.to_string()),
+    ])
+}
+
 pub fn event_burn(
     version: &str,
     name: &str,

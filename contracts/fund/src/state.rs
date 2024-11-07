@@ -1,5 +1,5 @@
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{Addr, Coin, Deps, DepsMut, Env, Timestamp, Uint128};
+use cosmwasm_std::{Addr, Coin, Decimal, Deps, DepsMut, Env, Storage, Timestamp, Uint128};
 use cw_storage_plus::Map;
 use std::collections::HashMap;
 use vaultenator::{errors::ContractError, state::ManageState};
@@ -157,4 +157,21 @@ impl UserDeposit {
             .map_err(ContractError::Overflow)?;
         Ok(())
     }
+}
+
+pub fn update_user_deposit(
+    storage: &mut dyn Storage,
+    sender: Addr,
+    burn_ratio: Decimal,
+    state: &mut State,
+) -> Result<(), ContractError> {
+    let mut user_deposit = USER_DEPOSITS.load(storage, sender.clone())?;
+    let user_deposit_redeemed = user_deposit.total_deposits * burn_ratio;
+
+    user_deposit.remove_from_user_deposits(user_deposit_redeemed)?;
+    state.remove_from_total_staked_tokens(user_deposit_redeemed)?;
+
+    USER_DEPOSITS.save(storage, sender, &user_deposit)?;
+
+    Ok(())
 }

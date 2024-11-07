@@ -54,6 +54,15 @@ pub enum VaultenatorExtensionExecuteMsg {
     Repay { cycle_profit: Option<Decimal> },
 }
 
+#[cw_serde]
+pub enum SudoMsg {
+    BlockBeforeSend {
+        from: String,
+        to: String,
+        amount: Coin,
+    },
+}
+
 pub type ExecuteMsg = VaultStandardExecuteMsg<ExtensionExecuteMsg>;
 pub type QueryMsg = VaultStandardQueryMsg<ExtensionQueryMsg>;
 
