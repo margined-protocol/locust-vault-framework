@@ -174,7 +174,7 @@ pub fn get_assets(
 
 pub fn get_deposit_value(deps: &Deps, config: &Config, tokens: Vec<Coin>) -> StdResult<Uint128> {
     let deposit_value = match &config.token1 {
-        Some(_) => {
+        Some(token1) => {
             let base_tokens: Vec<Coin> = tokens
                 .iter()
                 .map(|t| Coin {
@@ -188,7 +188,7 @@ pub fn get_deposit_value(deps: &Deps, config: &Config, tokens: Vec<Coin>) -> Std
             calculate_total_value(
                 deps,
                 config.controller.as_str(),
-                &config.token0,
+                token1,
                 base_tokens.as_slice(),
             )?
         }

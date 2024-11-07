@@ -103,8 +103,8 @@ fn test_partial_repay_multiple_denom() {
     assert!(strategy_token_balance < total_supply);
 
     let expected_share_before = vec![
-        coin(100_382_262u128, BASE_DENOM),
-        coin(49_694_189u128, QUOTE_DENOM), // we have a small loss because initial liquidity was provided single sided
+        coin(100_283_687u128, BASE_DENOM),
+        coin(49_645_390u128, QUOTE_DENOM), // we have a small loss because initial liquidity was provided single sided
     ];
     let share_before = env
         .query_estimate_vault_assets_fund(&wasm, &vault_addr, strategy_token_balance)
@@ -169,8 +169,8 @@ fn test_partial_repay_multiple_denom() {
     .unwrap();
 
     let expected_share_post_withdraw = vec![
-        coin(109_327_217u128, BASE_DENOM),
-        coin(54_166_666u128, QUOTE_DENOM), // we have a small loss because initial liquidity was provided single sided
+        coin(109_219_858u128, BASE_DENOM),
+        coin(51_113_475u128, QUOTE_DENOM), // we have a small loss because initial liquidity was provided single sided
     ];
     let share_post_withdraw = env
         .query_estimate_vault_assets_fund(&wasm, &vault_addr, strategy_token_balance)
@@ -253,7 +253,7 @@ fn test_repay_alt_denom() {
     let expected_state = StateResponse {
         is_open: true,
         is_paused: false,
-        total_staked_tokens: Uint128::from(162_500_000u128),
+        total_staked_tokens: Uint128::from(175_000_000u128),
         total_withdrawn_tokens: vec![coin(0u128, QUOTE_DENOM), coin(0u128, BASE_DENOM)],
         last_pause: block_time,
         last_claim: latest_block_time,
@@ -334,7 +334,7 @@ fn test_repay_alt_denom_single_transaction() {
     let expected_state = StateResponse {
         is_open: true,
         is_paused: false,
-        total_staked_tokens: Uint128::from(162_500_000u128),
+        total_staked_tokens: Uint128::from(175_000_000u128),
         total_withdrawn_tokens: vec![coin(0u128, QUOTE_DENOM), coin(0u128, BASE_DENOM)],
         last_pause: block_time,
         last_claim: latest_block_time,
@@ -397,7 +397,7 @@ fn test_repay_post_withdraw_twice() {
     let expected_state = StateResponse {
         is_open: true,
         is_paused: false,
-        total_staked_tokens: Uint128::from(10_000_000u128),
+        total_staked_tokens: Uint128::from(12_500_000u128),
         total_withdrawn_tokens: coins(0u128, BASE_DENOM),
         last_pause: block_time,
         last_claim: latest_block_time,
