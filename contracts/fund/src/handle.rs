@@ -1,17 +1,14 @@
 use crate::{
     config::Config,
     contract::{StructuredVault, CONTRACT_NAME, CONTRACT_VERSION},
-    events::{
-        event_deposit, event_fees, event_migrate, event_mint, event_redeem, event_repay,
-        event_withdraw,
-    },
+    events::{event_deposit, event_fees, event_migrate, event_mint, event_repay, event_withdraw},
     helpers::{
         calculate_assets_to_redeem, calculate_assets_value, calculate_performance_fees,
-        check_is_valid_token, check_strategy_cap, get_amount_to_mint, get_deposit_value,
-        get_sent_tokens, get_strategy_denom, get_token_deposits, get_vault_coins,
+        check_is_valid_token, check_strategy_cap, ensure_no_duplicate_denoms, get_amount_to_mint,
+        get_deposit_value, get_sent_tokens, get_strategy_denom, get_token_deposits,
         map_to_contract_error,
     },
-    messages::{create_bank_message, create_burn_message, create_mint_message},
+    messages::{create_bank_message, create_mint_message},
     process::{process_management_fees_and_modify_response, process_redeem},
     queries::{get_balance, get_total_supply},
     reply::ReplyIDs,
@@ -221,7 +218,7 @@ impl Handle<Config, State> for StructuredVault {
         response = process_redeem(
             response,
             &info,
-            &assets_to_redeem,
+            assets_to_redeem,
             &config,
             &env,
             strategy_denom_sent,
@@ -304,6 +301,8 @@ pub fn handle_withdraw(
         config.controller == info.sender,
         ContractError::Unauthorized {}
     );
+
+    ensure_no_duplicate_denoms(&tokens_to_withdraw)?;
 
     for token in tokens_to_withdraw.iter() {
         check_is_valid_token(&config, &token.denom)?;
