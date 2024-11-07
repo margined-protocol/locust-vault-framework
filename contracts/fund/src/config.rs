@@ -93,8 +93,16 @@ impl Configure for Config {
             config.controller = deps.api.addr_validate(&new_controller)?.to_string();
         }
 
+        if let Some(management_fee_rate) = update_msg.management_fee_rate {
+            config.management_fee_rate = management_fee_rate;
+        }
+
         if let Some(performance_fee_rate) = update_msg.performance_fee_rate {
             config.performance_fee_rate = performance_fee_rate;
+        }
+
+        if let Some(estimate_cycle_profit) = update_msg.estimate_cycle_profit {
+            config.estimate_cycle_profit = Some(estimate_cycle_profit);
         }
 
         if let Some(treasury) = update_msg.treasury {
