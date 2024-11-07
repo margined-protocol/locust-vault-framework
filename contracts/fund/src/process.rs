@@ -1,7 +1,7 @@
 use crate::{
     config::Config,
     contract::{CONTRACT_NAME, CONTRACT_VERSION},
-    events::{event_fees, event_mint, event_redeem},
+    events::{event_burn, event_fees, event_mint, event_redeem},
     helpers::{get_assets, get_management_fees, get_token_deposits, get_vault_coins},
     messages::{create_bank_message, create_burn_message, create_mint_message},
     state::State,
@@ -123,13 +123,22 @@ pub fn process_redeem(
         config.strategy_denom.clone(),
     );
 
-    Ok(response.add_message(burn_msg).add_event(event_redeem(
-        CONTRACT_VERSION,
-        CONTRACT_NAME,
-        info.sender.as_ref(),
-        token0,
-        token1,
-        coin(0u128, config.token0.clone()),
-        None,
-    )))
+    Ok(response.add_message(burn_msg).add_events([
+        event_burn(
+            CONTRACT_VERSION,
+            CONTRACT_NAME,
+            info.sender.as_ref(),
+            &strategy_denom_sent.to_string(),
+            None,
+        ),
+        event_redeem(
+            CONTRACT_VERSION,
+            CONTRACT_NAME,
+            info.sender.as_ref(),
+            token0,
+            token1,
+            coin(0u128, config.token0.clone()),
+            None,
+        ),
+    ]))
 }
