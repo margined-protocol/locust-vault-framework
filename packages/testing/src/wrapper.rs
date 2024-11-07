@@ -2,8 +2,11 @@ use crate::setup::TestEnv;
 
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{Coin, Decimal};
-use osmosis_std::types::cosmwasm::wasm::v1::MsgExecuteContractResponse;
-use osmosis_test_tube::{OsmosisTestApp, RunnerExecuteResult, RunnerResult, SigningAccount, Wasm};
+use neutron_std::types::cosmwasm::wasm::v1::MsgExecuteContractResponse;
+use neutron_test_tube::{
+    NeutronTestApp as OsmosisTestApp, RunnerExecuteResult, RunnerResult, SigningAccount, Wasm,
+};
+// use osmosis_test_tube::{OsmosisTestApp, RunnerExecuteResult, RunnerResult, SigningAccount, Wasm};
 
 use interface::strategy::{ConfigResponse, ExecuteMsg, QueryMsg};
 

@@ -46,9 +46,9 @@ checksum = "5c6cb57a04249c6480766f7f7cef5467412af1490f8d1e243141daddada3264f"
 
 [[package]]
 name = "anyhow"
-version = "1.0.92"
+version = "1.0.93"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "74f37166d7d48a0284b99dd824694c26119c700b53bf0d1540cdb147dbdaaf13"
+checksum = "4c95c10ba0b00a02636238b814946408b1322d5ac4760326e6fb8ec956d85775"
 
 [[package]]
 name = "ark-bls12-381"
@@ -268,26 +268,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "bindgen"
-version = "0.70.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f49d8fed880d473ea71efb9bf597651e77201bdd4893efe54c9e5d65ae04ce6f"
-dependencies = [
- "bitflags 2.6.0",
- "cexpr",
- "clang-sys",
- "itertools 0.13.0",
- "log",
- "prettyplease",
- "proc-macro2",
- "quote",
- "regex",
- "rustc-hash",
- "shlex",
- "syn 2.0.87",
-]
-
-[[package]]
 name = "bip32"
 version = "0.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -371,9 +351,9 @@ dependencies = [
 
 [[package]]
 name = "cc"
-version = "1.1.35"
+version = "1.1.36"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0f57c4b4da2a9d619dd035f27316d7a426305b75be93d09e92f2b9229c34feaf"
+checksum = "baee610e9452a8f6f0a1b6194ec09ff9e2d85dea54432acdae41aa0761c95d70"
 dependencies = [
  "shlex",
 ]
@@ -714,7 +694,9 @@ dependencies = [
 
 [[package]]
 name = "cw-vault-standard-margined"
-version = "2.0.1"
+version = "2.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6a3a8fedeaa12c7d578f14079d20f6cc40de2fb6350af3a2dfb6284161999138"
 dependencies = [
  "cosmwasm-schema",
  "cosmwasm-std",
@@ -739,7 +721,9 @@ dependencies = [
 
 [[package]]
 name = "cw_margined"
-version = "2.0.1"
+version = "2.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fc7aaed60def7d28ca2474fe7ac5eacdcede75e1fcedcb76a6514540994fe380"
 dependencies = [
  "cosmwasm-std",
 ]
@@ -1012,9 +996,9 @@ dependencies = [
  "cw2",
  "cw_margined",
  "interface",
+ "neutron-test-tube",
  "num_enum",
  "osmosis-std",
- "osmosis-test-tube",
  "prost 0.13.3",
  "prost-types 0.13.3",
  "serde",
@@ -1597,15 +1581,15 @@ checksum = "a7a70ba024b9dc04c27ea2f0c0548feb474ec5c54bba33a7f72f873a39d07b24"
 
 [[package]]
 name = "margined-neutron-std"
-version = "5.0.0"
+version = "4.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7e8989a0fb4d28e0364cb65fa0666f37d6d97f6ae77808f29e4c7d39f0687252"
+checksum = "5240db561faabe0918d01d517758786955075e18d4095bef5fbe91db79faf663"
 dependencies = [
  "chrono",
  "cosmwasm-std",
  "injective-std-derive",
- "prost 0.13.3",
- "prost-types 0.13.3",
+ "prost 0.12.6",
+ "prost-types 0.12.6",
  "schemars",
  "serde",
  "serde-cw-value",
@@ -1613,11 +1597,13 @@ dependencies = [
 
 [[package]]
 name = "margined-neutron-std"
-version = "5.0.1"
+version = "5.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7e8989a0fb4d28e0364cb65fa0666f37d6d97f6ae77808f29e4c7d39f0687252"
 dependencies = [
  "chrono",
  "cosmwasm-std",
- "osmosis-std-derive",
+ "injective-std-derive",
  "prost 0.13.3",
  "prost-types 0.13.3",
  "schemars",
@@ -1690,9 +1676,11 @@ dependencies = [
 [[package]]
 name = "neutron-test-tube"
 version = "5.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1387b50cf3aa0a988bd342dca0eda489ba0f03c3b44bf306fa0882d7e211496e"
 dependencies = [
  "base64 0.21.7",
- "bindgen 0.60.1",
+ "bindgen",
  "cosmrs",
  "cosmwasm-std",
  "hex",
@@ -1832,24 +1820,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "osmosis-test-tube"
-version = "26.0.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8bb569512b10f8fb1fa4fe2e2dc0b474f1fca7ed80500a4328593fc85ad0c3e6"
-dependencies = [
- "base64 0.22.1",
- "bindgen 0.70.1",
- "cosmrs",
- "cosmwasm-std",
- "osmosis-std",
- "prost 0.13.3",
- "serde",
- "serde_json",
- "test-tube",
- "thiserror",
-]
-
-[[package]]
 name = "p256"
 version = "0.13.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1964,16 +1934,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "prettyplease"
-version = "0.2.25"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "64d1ec885c64d0457d564db4ec299b2dae3f9c02808b8ad9c3a089c591b18033"
-dependencies = [
- "proc-macro2",
- "syn 2.0.87",
-]
-
-[[package]]
 name = "primeorder"
 version = "0.13.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2012,6 +1972,16 @@ dependencies = [
 
 [[package]]
 name = "prost"
+version = "0.12.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "deb1435c188b76130da55f17a466d252ff7b1418b2ad3e037d127b94e3411f29"
+dependencies = [
+ "bytes",
+ "prost-derive 0.12.6",
+]
+
+[[package]]
+name = "prost"
 version = "0.13.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7b0487d90e047de87f984913713b85c601c05609aad5b0df4b4573fbf69aa13f"
@@ -2035,6 +2005,19 @@ dependencies = [
 
 [[package]]
 name = "prost-derive"
+version = "0.12.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "81bddcdb20abf9501610992b6759a4c888aef7d1a7247ef75e2404275ac24af1"
+dependencies = [
+ "anyhow",
+ "itertools 0.10.5",
+ "proc-macro2",
+ "quote",
+ "syn 2.0.87",
+]
+
+[[package]]
+name = "prost-derive"
 version = "0.13.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e9552f850d5f0964a4e4d0bf306459ac29323ddfbae05e35a7c0d35cb0803cc5"
@@ -2053,6 +2036,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "213622a1460818959ac1181aaeb2dc9c7f63df720db7d788b3e24eacd1983e13"
 dependencies = [
  "prost 0.11.9",
+]
+
+[[package]]
+name = "prost-types"
+version = "0.12.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9091c90b0a32608e984ff2fa4091273cbdd755d54935c51d520887f4a1dbd5b0"
+dependencies = [
+ "prost 0.12.6",
 ]
 
 [[package]]
@@ -2617,10 +2609,9 @@ dependencies = [
  "cw-vault-standard-margined",
  "cw2",
  "interface",
- "margined-neutron-std 5.0.1",
+ "margined-neutron-std 5.0.0",
  "neutron-test-tube",
  "osmosis-std",
- "osmosis-test-tube",
  "prost 0.13.3",
  "serde",
  "serde-json-wasm",
@@ -2848,7 +2839,6 @@ dependencies = [
  "base64 0.22.1",
  "cosmrs",
  "cosmwasm-std",
- "osmosis-std",
  "prost 0.13.3",
  "serde",
  "serde_json",
@@ -2880,13 +2870,13 @@ dependencies = [
  "cw-vault-standard-margined",
  "cw_margined",
  "interface",
- "margined-neutron-std 5.0.1",
+ "margined-neutron-std 5.0.0",
  "neutron-test-tube",
  "osmosis-std",
- "osmosis-test-tube",
  "prost 0.13.3",
  "regex",
  "serde",
+ "test-tube-ntrn",
  "vaultenator",
 ]
 
@@ -3127,6 +3117,8 @@ checksum = "f8c5f0a0af699448548ad1a2fbf920fb4bee257eae39953ba95cb84891a0446a"
 [[package]]
 name = "vaultenator"
 version = "2.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "716b28a7b94bff80c8adddad2f6f64d58eacc578e62e4b0026175f81c1db6e0a"
 dependencies = [
  "cosmwasm-schema",
  "cosmwasm-std",
@@ -3135,7 +3127,7 @@ dependencies = [
  "cw-utils",
  "cw-vault-standard-margined",
  "cw2",
- "margined-neutron-std 5.0.1",
+ "margined-neutron-std 4.2.3",
  "serde",
  "serde_json",
  "thiserror",

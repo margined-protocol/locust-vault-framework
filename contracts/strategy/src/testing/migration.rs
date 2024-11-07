@@ -2,14 +2,22 @@ use crate::contract::{CONTRACT_NAME, CONTRACT_VERSION};
 
 use cosmwasm_std::coin;
 use interface::strategy::{ConfigResponse, InstantiateMsg, MigrateMsg, PoolInfo};
-use osmosis_std::types::{
+// use osmosis_std::types::{
+//     cosmwasm::wasm::v1::{
+//         MsgMigrateContract, MsgMigrateContractResponse, QueryContractInfoRequest,
+//         QueryContractInfoResponse,
+//     },
+//     osmosis::concentratedliquidity::v1beta1::DefaultMsg as DefaultMsg,
+// };
+// use osmosis_test_tube::{Account, Module, Runner, Wasm};
+use neutron_std::types::{
     cosmwasm::wasm::v1::{
         MsgMigrateContract, MsgMigrateContractResponse, QueryContractInfoRequest,
         QueryContractInfoResponse,
     },
-    osmosis::concentratedliquidity::v1beta1::MsgCreatePosition,
+    neutron::dex::MsgPlaceLimitOrder as DefaultMsg,
 };
-use osmosis_test_tube::{Account, Module, Runner, Wasm};
+use neutron_test_tube::{Account, Module, Runner, Wasm};
 use test_tube::ExecuteResponse;
 use testing::{
     setup::{TestEnv, BASE_DENOM, QUOTE_DENOM},
@@ -35,7 +43,7 @@ fn test_migration() {
         controller: env.controller.address(),
         token0: BASE_DENOM.to_string(),
         token1: None,
-        grants: vec![MsgCreatePosition::TYPE_URL.to_string()],
+        grants: vec![DefaultMsg::TYPE_URL.to_string()],
         pool_info: PoolInfo::Osmosis {
             id: 1,
             token0: BASE_DENOM.to_string(),
@@ -73,7 +81,7 @@ fn test_migration() {
                 token0: BASE_DENOM.to_string(),
                 token1: QUOTE_DENOM.to_string(),
             },
-            grants: vec![MsgCreatePosition::TYPE_URL.to_string()],
+            grants: vec![DefaultMsg::TYPE_URL.to_string()],
             name: format!("crates.io:{}", CONTRACT_NAME),
             version: "0.0.1".to_string(),
         }
@@ -128,7 +136,7 @@ fn test_migration() {
                 token0: BASE_DENOM.to_string(),
                 token1: QUOTE_DENOM.to_string(),
             },
-            grants: vec![MsgCreatePosition::TYPE_URL.to_string()],
+            grants: vec![DefaultMsg::TYPE_URL.to_string()],
             name: format!("crates.io:{}", CONTRACT_NAME),
             version: CONTRACT_VERSION.to_string(),
         }

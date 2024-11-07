@@ -4,13 +4,20 @@ use crate::{
 };
 
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{coin, Coin, Decimal};
+use cosmwasm_std::{coin, Decimal};
 use interface::{fund as Fund, strategy as Strategy};
-use osmosis_std::types::{
-    cosmwasm::wasm::v1::MsgInstantiateContractResponse,
-    osmosis::concentratedliquidity::v1beta1::MsgCreatePosition,
+use neutron_std::types::{
+    cosmos::base::v1beta1::Coin, cosmwasm::wasm::v1::MsgInstantiateContractResponse,
+    neutron::dex::MsgPlaceLimitOrder as DefaultMsg,
 };
-use osmosis_test_tube::{Account, OsmosisTestApp, RunnerExecuteResult, SigningAccount, Wasm};
+use neutron_test_tube::{
+    Account, NeutronTestApp as OsmosisTestApp, RunnerExecuteResult, SigningAccount, Wasm,
+};
+// use osmosis_std::types::{
+//     cosmwasm::wasm::v1::MsgInstantiateContractResponse,
+//     osmosis::concentratedliquidity::v1beta1::MsgCreatePosition as DefaultMsg,
+// };
+// use osmosis_test_tube::{Account, OsmosisTestApp, RunnerExecuteResult, SigningAccount, Wasm};
 use serde::Serialize;
 
 #[cw_serde]
@@ -47,7 +54,7 @@ pub fn get_default_instantiation_msg(env: &TestEnv) -> Strategy::InstantiateMsg 
         controller: env.controller.address(),
         token0: BASE_DENOM.to_string(),
         token1: None,
-        grants: vec![MsgCreatePosition::TYPE_URL.to_string()],
+        grants: vec![DefaultMsg::TYPE_URL.to_string()],
         pool_info: Strategy::PoolInfo::Osmosis {
             id: 1,
             token0: BASE_DENOM.to_string(),
@@ -84,7 +91,7 @@ impl TestEnv {
         wasm: &Wasm<OsmosisTestApp>,
         msg: Fund::InstantiateMsg,
     ) -> String {
-        let funds = vec![coin(DEFAULT_LIQUIDITY, BASE_DENOM)];
+        let funds = vec![coin(DEFAULT_LIQUIDITY, BASE_DENOM).into()];
 
         self.instantiate_contract(wasm, &msg, funds, &self.signer, "fund")
             .unwrap()

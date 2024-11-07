@@ -211,6 +211,7 @@ pub fn query_twap_price(deps: &Deps, env: Env, _duration: u64) -> StdResult<Deci
 
 #[cfg(feature = "slinky")]
 fn get_slinky_price(deps: &Deps, env: Env) -> StdResult<Decimal> {
+    deps.api.debug("get_slinky_price");
     let config: Config = CONFIG.load(deps.storage)?;
 
     let (base, quote, timeout) = match config.pool_info {
@@ -233,6 +234,8 @@ fn get_slinky_price(deps: &Deps, env: Env) -> StdResult<Decimal> {
         }
         Some(p) => {
             let timestamp = p.block_timestamp.unwrap();
+
+            deps.api.debug(&format!("Price: {:?}", p));
 
             if timestamp.seconds < (env.block.time.seconds() - timeout) as i64 {
                 return Err(StdError::generic_err("Price is stale"));

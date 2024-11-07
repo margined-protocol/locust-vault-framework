@@ -1,13 +1,19 @@
 use crate::setup::TestEnv;
 
-use cosmwasm_std::{Addr, Coin, Decimal, Uint128};
+use cosmwasm_std::{Addr, Coin as StdCoin, Decimal, Uint128};
 use cw_vault_standard::VaultInfoResponse;
 use interface::fund::{
     ConfigResponse, ExecuteMsg, ExtensionExecuteMsg, ExtensionQueryMsg, QueryMsg, StateResponse,
     UpdateConfig, VaultenatorExtensionExecuteMsg, VaultenatorExtensionQueryMsg, VersionResponse,
 };
-use osmosis_std::types::cosmwasm::wasm::v1::MsgExecuteContractResponse;
-use osmosis_test_tube::{OsmosisTestApp, RunnerExecuteResult, RunnerResult, SigningAccount, Wasm};
+use neutron_std::types::{
+    cosmos::base::v1beta1::Coin, cosmwasm::wasm::v1::MsgExecuteContractResponse,
+};
+use neutron_test_tube::{
+    NeutronTestApp as OsmosisTestApp, RunnerExecuteResult, RunnerResult, SigningAccount, Wasm,
+};
+// use osmosis_std::types::cosmwasm::wasm::v1::MsgExecuteContractResponse;
+// use osmosis_test_tube::{OsmosisTestApp, RunnerExecuteResult, RunnerResult, SigningAccount, Wasm};
 use vaultenator::ownership::OwnerProposal;
 
 // Execute Functions
@@ -62,7 +68,7 @@ impl TestEnv {
         &self,
         wasm: &Wasm<OsmosisTestApp>,
         contract_addr: &str,
-        tokens_to_withdraw: Vec<Coin>,
+        tokens_to_withdraw: Vec<StdCoin>,
         signer: &SigningAccount,
     ) -> RunnerExecuteResult<MsgExecuteContractResponse> {
         let set_open_msg = ExecuteMsg::VaultExtension(ExtensionExecuteMsg::Vaultenator(
