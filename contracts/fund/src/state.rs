@@ -142,6 +142,17 @@ impl UserDeposit {
             timestamp,
         }
     }
+
+    pub fn load_or_initialize_user_deposit(
+        storage: &dyn Storage,
+        sender: &Addr,
+        current_time: u64,
+    ) -> Result<UserDeposit, ContractError> {
+        Ok(USER_DEPOSITS
+            .may_load(storage, sender.clone())?
+            .unwrap_or(UserDeposit::empty_deposit(current_time)))
+    }
+
     pub fn add_to_user_deposits(&mut self, amount: Uint128) -> Result<(), ContractError> {
         self.total_deposits = self
             .total_deposits

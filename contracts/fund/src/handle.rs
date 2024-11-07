@@ -1,15 +1,15 @@
 use crate::{
     config::Config,
     contract::{StructuredVault, CONTRACT_NAME, CONTRACT_VERSION},
-    events::{event_deposit, event_fees, event_migrate, event_mint, event_repay, event_withdraw},
+    events::{event_deposit, event_fees, event_migrate, event_repay, event_withdraw},
     helpers::{
         calculate_assets_to_redeem, calculate_assets_value, calculate_performance_fees,
         check_is_valid_token, check_strategy_cap, ensure_no_duplicate_denoms, get_amount_to_mint,
         get_deposit_value, get_sent_tokens, get_strategy_denom, get_token_deposits,
         map_to_contract_error,
     },
-    messages::{create_bank_message, create_mint_message},
-    process::{process_management_fees_and_modify_response, process_redeem},
+    messages::create_bank_message,
+    process::{process_deposit, process_management_fees_and_modify_response, process_redeem},
     queries::{get_balance, get_total_supply},
     reply::ReplyIDs,
     state::{update_user_deposit, State, UserDeposit, USER_DEPOSITS},
@@ -88,13 +88,14 @@ impl Handle<Config, State> for StructuredVault {
         _amount: Uint128, // not used when sending funds
         _recipient: Option<String>,
     ) -> Result<Response, ContractError> {
+        // Ensure the contract is open and unpaused
         State::is_open_and_unpaused(deps.as_ref())?;
 
         let config = Config::get_from_storage(deps.as_ref())?;
-
         let sent_tokens = get_sent_tokens(&info, &config)?;
         let deposit_value = get_deposit_value(&deps.as_ref(), &config, sent_tokens.clone())?;
 
+        // Process management fees and modify the response accordingly
         let (mut response, mut deps) = process_management_fees_and_modify_response(
             deps,
             Response::default(),
@@ -102,24 +103,22 @@ impl Handle<Config, State> for StructuredVault {
             Some(sent_tokens.clone()),
         )?;
 
+        // Update contract state with new deposit
         let mut state = State::get_from_storage(deps.as_ref())?;
 
-        // Update total staked assets
         state.add_to_total_staked_tokens(deposit_value)?;
-
-        // Check the deposit doesn't exceed the strategy cap
         check_strategy_cap(&config, &state)?;
 
         state.save_to_storage(&mut deps)?;
 
         let (token0, token1) = get_token_deposits(&config, sent_tokens)?;
 
-        // Initialise or fetch user deposit record
-        let mut user_deposit = USER_DEPOSITS
-            .may_load(deps.storage, info.sender.clone())?
-            .unwrap_or(UserDeposit::empty_deposit(env.block.time.seconds()));
-
-        // Add deposit to user record
+        // Update user's deposit record
+        let mut user_deposit = UserDeposit::load_or_initialize_user_deposit(
+            deps.storage,
+            &info.sender,
+            env.block.time.seconds(),
+        )?;
         user_deposit.add_to_user_deposits(deposit_value)?;
 
         USER_DEPOSITS.save(deps.storage, info.sender.clone(), &user_deposit)?;
@@ -142,23 +141,13 @@ impl Handle<Config, State> for StructuredVault {
             &config.strategy_denom,
         )?;
 
-        if !amount_to_mint.is_zero() {
-            let mint_msg = create_mint_message(
-                &env.contract.address,
-                info.sender.to_string(),
-                amount_to_mint,
-                config.strategy_denom.to_string(),
-            );
-
-            response = response
-                .add_event(event_mint(
-                    CONTRACT_VERSION,
-                    CONTRACT_NAME,
-                    info.sender.as_ref(),
-                    &amount_to_mint.to_string(),
-                ))
-                .add_message(mint_msg)
-        }
+        response = process_deposit(
+            response,
+            amount_to_mint,
+            &info.sender,
+            &env.contract.address,
+            &config,
+        )?;
 
         Ok(response.add_event(event_deposit(
             CONTRACT_VERSION,
