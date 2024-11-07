@@ -1,6 +1,6 @@
 use cosmwasm_std::{assert_approx_eq, coin, coins, Uint128};
 use interface::fund::StateResponse;
-use osmosis_test_tube::{Account, Module, Wasm};
+use neutron_test_tube::{Account, Module, Wasm};
 use testing::setup::{TestEnv, BASE_DENOM, QUOTE_DENOM};
 
 #[test]

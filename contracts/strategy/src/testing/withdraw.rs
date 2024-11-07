@@ -1,7 +1,7 @@
 use crate::errors::ContractError;
 
 use cosmwasm_std::coin;
-use osmosis_test_tube::{Module, Wasm};
+use neutron_test_tube::{Module, Wasm};
 use testing::{
     deployment::get_default_instantiation_msg,
     setup::{TestEnv, BASE_DENOM, DEFAULT_LIQUIDITY, QUOTE_DENOM},

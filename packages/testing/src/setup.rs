@@ -15,7 +15,7 @@ use neutron_test_tube::{
     SigningAccount, Slinky,
 };
 use std::str::FromStr;
-use test_tube_ntrn::runner::app::SlinkyPrices;
+use test_tube::runner::app::SlinkyPrices;
 
 pub const DEFAULT_LIQUIDITY: u128 = 1_000_000u128;
 pub const PROPOSAL_DURATION: u64 = 1000;

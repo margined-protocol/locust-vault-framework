@@ -1005,7 +1005,7 @@ dependencies = [
  "serde-json-wasm",
  "serde_json",
  "strum",
- "test-tube",
+ "test-tube-ntrn",
  "testing",
  "vaultenator",
 ]
@@ -1675,9 +1675,9 @@ dependencies = [
 
 [[package]]
 name = "neutron-test-tube"
-version = "5.0.0"
+version = "5.0.0-patch1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1387b50cf3aa0a988bd342dca0eda489ba0f03c3b44bf306fa0882d7e211496e"
+checksum = "e26d60faa34034c42d6ff31dae62621c64782dbee4c26f559aff0630d75fdb33"
 dependencies = [
  "base64 0.21.7",
  "bindgen",
@@ -2615,7 +2615,7 @@ dependencies = [
  "prost 0.13.3",
  "serde",
  "serde-json-wasm",
- "test-tube",
+ "test-tube-ntrn",
  "testing",
  "thiserror",
 ]
@@ -2831,25 +2831,10 @@ dependencies = [
 ]
 
 [[package]]
-name = "test-tube"
-version = "0.8.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dc02a1036b1d92445cb09078bcc933a84937586e6acb28ee5dfa7b5c20be569f"
-dependencies = [
- "base64 0.22.1",
- "cosmrs",
- "cosmwasm-std",
- "prost 0.13.3",
- "serde",
- "serde_json",
- "thiserror",
-]
-
-[[package]]
 name = "test-tube-ntrn"
-version = "0.1.6"
+version = "0.1.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fd884b1609a9ce3b48d420af7957d41d63e9ac0d10c7e054b7ecec08e2d7a020"
+checksum = "23080d94d4c958c9ad55f643a3f3bd97a2968f225e461d4274d0f95decfa26b1"
 dependencies = [
  "base64 0.21.7",
  "cosmrs",

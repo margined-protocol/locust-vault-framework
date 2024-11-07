@@ -2,7 +2,7 @@ use crate::reply::INITIAL_TOKEN_SUPPLY;
 
 use cosmwasm_std::{coins, Decimal, StdError, Uint128};
 use interface::fund::{ConfigResponse, InstantiateMsg, StateResponse};
-use osmosis_test_tube::{Account, Module, Wasm};
+use neutron_test_tube::{Account, Module, Wasm};
 use testing::{
     setup::{TestEnv, BASE_DENOM, QUOTE_DENOM, STRATEGY_CAP},
     utils::assert_err,

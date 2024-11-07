@@ -22,7 +22,7 @@ cw_margined = { version = "2.0.0" }
 # cw_margined       = { version = "2.0.1", path = "../packages/packages/cw_margined" }
 neutron-std = { package = "margined-neutron-std", version = "5.0.0" }
 # neutron-std       = { package = "margined-neutron-std", version = "5.0.1", path = "../neutron-std/packages/neutron-std" }
-neutron-test-tube = { version = "5.0.0" }
+neutron-test-tube = { version = "=5.0.0-patch1" }
 # neutron-test-tube = { version = "5.0.0", path = "../neutron-test-tube/packages/neutron-test-tube" }
 num_enum    = { version = "0.7.2" }
 osmosis-std = { version = "0.26.0" }
@@ -34,10 +34,11 @@ serde           = { version = "1.0.201" }
 serde-json-wasm = { version = "1.0.1" }
 serde_json      = { version = "1.0.117" }
 strum           = { version = "0.26.2", features = [ "derive" ] }
-test-tube       = { version = "0.8.0" }
-test-tube-ntrn  = { version = "0.1.6" }
-thiserror       = { version = "1.0.44" }
-vaultenator     = { version = "2.0.1" }
+# test-tube       = { version = "0.8.0" }
+test-tube = { package = "test-tube-ntrn", version = "0.1.7" }
+# test-tube-ntrn  = { version = "0.1.7" }
+thiserror   = { version = "1.0.44" }
+vaultenator = { version = "2.0.1" }
 # vaultenator       = { version = "2.0.1", path = "../vaultenator" }
 
 # packages

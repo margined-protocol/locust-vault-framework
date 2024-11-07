@@ -1,6 +1,5 @@
-// mod migration;
+mod migration;
 mod query;
-// mod repay;
-// // mod slinky;
-// mod tests;
-// mod withdraw;
+mod repay;
+mod tests;
+mod withdraw;

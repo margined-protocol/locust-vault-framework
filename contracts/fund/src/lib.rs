@@ -11,5 +11,5 @@ pub mod query;
 pub mod reply;
 pub mod state;
 
-// #[cfg(test)]
-// mod testing;
+#[cfg(test)]
+mod testing;

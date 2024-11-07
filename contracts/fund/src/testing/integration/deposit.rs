@@ -1,6 +1,6 @@
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{assert_approx_eq, coin, coins, Uint128};
-use osmosis_test_tube::{Account, Module, Wasm};
+use neutron_test_tube::{Account, Module, Wasm};
 use testing::{
     setup::{TestEnv, BASE_DENOM, QUOTE_DENOM},
     utils::{assert_err, get_strategy_denom_fund},

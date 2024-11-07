@@ -5,9 +5,9 @@ use crate::{
 
 use cosmwasm_std::StdError;
 use interface::strategy::{ConfigResponse, InstantiateMsg, PoolInfo};
-use osmosis_test_tube::{
-    osmosis_std::types::osmosis::concentratedliquidity::v1beta1::{
-        MsgAddToPosition, MsgCreatePosition,
+use neutron_test_tube::{
+    neutron_std::types::neutron::dex::{
+        MsgCancelLimitOrder as SecondMsg, MsgPlaceLimitOrder as DefaultMsg,
     },
     Account, Module, Wasm,
 };
@@ -32,7 +32,7 @@ fn test_instantiation() {
                 controller: env.controller.address(),
                 token0: BASE_DENOM.to_string(),
                 token1: None,
-                grants: vec![MsgCreatePosition::TYPE_URL.to_string()],
+                grants: vec![DefaultMsg::TYPE_URL.to_string()],
                 pool_info: PoolInfo::Osmosis {
                     id: 1,
                     token0: BASE_DENOM.to_string(),
@@ -63,7 +63,7 @@ fn test_instantiation() {
                 token0: BASE_DENOM.to_string(),
                 token1: QUOTE_DENOM.to_string(),
             },
-            grants: vec![MsgCreatePosition::TYPE_URL.to_string()],
+            grants: vec![DefaultMsg::TYPE_URL.to_string()],
             name: format!("crates.io:{}", CONTRACT_NAME),
             version: CONTRACT_VERSION.to_string(),
         }
@@ -122,7 +122,7 @@ fn test_set_vault() {
                 controller: env.controller.address(),
                 token0: BASE_DENOM.to_string(),
                 token1: None,
-                grants: vec![MsgCreatePosition::TYPE_URL.to_string()],
+                grants: vec![DefaultMsg::TYPE_URL.to_string()],
                 pool_info: PoolInfo::Osmosis {
                     id: 1,
                     token0: BASE_DENOM.to_string(),
@@ -161,7 +161,7 @@ fn test_set_vault() {
                 token0: BASE_DENOM.to_string(),
                 token1: QUOTE_DENOM.to_string(),
             },
-            grants: vec![MsgCreatePosition::TYPE_URL.to_string()],
+            grants: vec![DefaultMsg::TYPE_URL.to_string()],
             name: format!("crates.io:{}", CONTRACT_NAME),
             version: CONTRACT_VERSION.to_string(),
         }
@@ -184,7 +184,7 @@ fn test_set_grants() {
                 controller: env.controller.address(),
                 token0: BASE_DENOM.to_string(),
                 token1: None,
-                grants: vec![MsgCreatePosition::TYPE_URL.to_string()],
+                grants: vec![DefaultMsg::TYPE_URL.to_string()],
                 pool_info: PoolInfo::Osmosis {
                     id: 1,
                     token0: BASE_DENOM.to_string(),
@@ -203,7 +203,7 @@ fn test_set_grants() {
     env.set_grants_strategy(
         &wasm,
         &strategy_addr,
-        vec![MsgAddToPosition::TYPE_URL.to_string()],
+        vec![SecondMsg::TYPE_URL.to_string()],
         &env.signer,
     )
     .unwrap();
@@ -223,7 +223,7 @@ fn test_set_grants() {
                 token0: BASE_DENOM.to_string(),
                 token1: QUOTE_DENOM.to_string(),
             },
-            grants: vec![MsgAddToPosition::TYPE_URL.to_string()],
+            grants: vec![SecondMsg::TYPE_URL.to_string()],
             name: format!("crates.io:{}", CONTRACT_NAME),
             version: CONTRACT_VERSION.to_string(),
         }

@@ -4,10 +4,11 @@ use crate::{
 };
 
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{coin, Decimal};
+use cosmwasm_std::{coin, Coin, Decimal};
 use interface::{fund as Fund, strategy as Strategy};
 use neutron_std::types::{
-    cosmos::base::v1beta1::Coin, cosmwasm::wasm::v1::MsgInstantiateContractResponse,
+    // cosmos::base::v1beta1::Coin,
+    cosmwasm::wasm::v1::MsgInstantiateContractResponse,
     neutron::dex::MsgPlaceLimitOrder as DefaultMsg,
 };
 use neutron_test_tube::{
@@ -55,10 +56,15 @@ pub fn get_default_instantiation_msg(env: &TestEnv) -> Strategy::InstantiateMsg 
         token0: BASE_DENOM.to_string(),
         token1: None,
         grants: vec![DefaultMsg::TYPE_URL.to_string()],
-        pool_info: Strategy::PoolInfo::Osmosis {
-            id: 1,
-            token0: BASE_DENOM.to_string(),
-            token1: QUOTE_DENOM.to_string(),
+        // pool_info: Strategy::PoolInfo::Osmosis {
+        //     id: 1,
+        //     token0: BASE_DENOM.to_string(),
+        //     token1: QUOTE_DENOM.to_string(),
+        // },
+        pool_info: Strategy::PoolInfo::Slinky {
+            base: BASE_DENOM.to_uppercase(),
+            quote: QUOTE_DENOM.to_uppercase(),
+            timeout: 3_600u64,
         },
     }
 }

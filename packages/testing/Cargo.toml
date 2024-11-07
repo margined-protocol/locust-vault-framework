@@ -16,7 +16,7 @@ interface         = { workspace = true }
 neutron-std       = { workspace = true }
 neutron-test-tube = { workspace = true }
 osmosis-std       = { workspace = true }
-test-tube-ntrn    = { workspace = true }
+test-tube         = { workspace = true }
 # osmosis-test-tube = { workspace = true }
 prost       = { workspace = true }
 regex       = { workspace = true }

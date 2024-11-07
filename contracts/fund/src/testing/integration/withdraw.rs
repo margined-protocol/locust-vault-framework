@@ -1,6 +1,6 @@
 use cosmwasm_std::{coin, coins, Decimal, Uint128};
 use interface::fund::StateResponse;
-use osmosis_test_tube::{Module, Wasm};
+use neutron_test_tube::{Module, Wasm};
 use std::str::FromStr;
 use testing::{
     setup::{TestEnv, BASE_DENOM, QUOTE_DENOM},

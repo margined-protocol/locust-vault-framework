@@ -6,7 +6,7 @@ use crate::{
 use cosmwasm_std::{coin, StdError, Uint128};
 use cw_vault_standard::{VaultStandardInfoResponse, VaultStandardQueryMsg};
 use interface::fund::QueryMsg;
-use osmosis_test_tube::{Account, Module, Wasm};
+use neutron_test_tube::{Account, Module, Wasm};
 use testing::{
     setup::{TestEnv, BASE_DENOM, QUOTE_DENOM},
     utils::assert_err,
