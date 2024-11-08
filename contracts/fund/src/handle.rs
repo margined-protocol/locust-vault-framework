@@ -398,7 +398,7 @@ pub fn handle_repay(
                 event_repay(
                     config.controller.clone(),
                     Coin {
-                        denom: config.token0.clone(),
+                        denom: repayment.denom.clone(),
                         amount: repayment.amount,
                     },
                 ),
