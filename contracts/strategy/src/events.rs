@@ -35,6 +35,15 @@ pub fn event_set_grants(grants: Vec<String>) -> Event {
     ])
 }
 
+pub fn event_update_config(grants: Option<Vec<String>>, controller: Option<String>) -> Event {
+    Event::new("set_grants").add_attributes([
+        ("version", CONTRACT_VERSION),
+        ("contract", CONTRACT_NAME),
+        ("grants", &grants.unwrap_or_default().join(",")),
+        ("controller", &controller.unwrap_or_default()),
+    ])
+}
+
 pub fn event_migrate(version: &str, name: &str, contract_version: ContractVersion) -> Event {
     Event::new("migrate").add_attributes([
         ("previous_contract_name", &contract_version.contract),
