@@ -27,10 +27,11 @@ pub fn calculate_assets_value(
 pub fn calculate_assets_to_redeem(
     deps: &Deps,
     config: &Config,
+    state: &State,
     contract_addr: &str,
     withdraw_percentage: Decimal,
 ) -> Result<Vec<Coin>, ContractError> {
-    let mut assets = get_vault_coins(deps, config, contract_addr)?;
+    let mut assets = get_assets(deps, config, state, contract_addr)?;
     for asset in &mut assets {
         asset.amount = asset.amount * withdraw_percentage;
     }

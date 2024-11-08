@@ -194,6 +194,7 @@ impl Handle<Config, State> for StructuredVault {
         let assets_to_redeem = calculate_assets_to_redeem(
             &deps.as_ref(),
             &config,
+            &state,
             env.contract.address.as_str(),
             withdraw_percentage,
         )?;

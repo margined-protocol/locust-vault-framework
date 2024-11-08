@@ -170,7 +170,7 @@ fn test_partial_repay_multiple_denom() {
 
     let expected_share_post_withdraw = vec![
         coin(109_219_858u128, BASE_DENOM),
-        coin(51_113_475u128, QUOTE_DENOM), // we have a small loss because initial liquidity was provided single sided
+        coin(54_113_475u128, QUOTE_DENOM), // we have a small loss because initial liquidity was provided single sided
     ];
     let share_post_withdraw = env
         .query_estimate_vault_assets_fund(&wasm, &vault_addr, strategy_token_balance)
