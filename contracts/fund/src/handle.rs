@@ -45,7 +45,6 @@ impl Handle<Config, State> for StructuredVault {
         State::init_state(&mut deps, &env)?;
 
         let mut config = Config::get_from_storage(deps.as_ref())?;
-        let state = State::get_from_storage(deps.as_ref())?;
 
         set_contract_version(
             deps.storage,
@@ -64,7 +63,6 @@ impl Handle<Config, State> for StructuredVault {
         config.update_strategy_denom(get_strategy_denom(&env, CONTRACT_NAME));
 
         config.save_to_storage(&mut deps)?;
-        state.save_to_storage(&mut deps)?;
 
         OWNER.set(deps, Some(info.sender.clone()))?;
 
