@@ -1,13 +1,15 @@
 use crate::{
     config::Config,
     contract::{CONTRACT_NAME, CONTRACT_VERSION},
-    events::{event_fees, event_redeem},
+    events::{event_burn, event_fees, event_mint, event_redeem},
     helpers::{get_assets, get_management_fees, get_token_deposits, get_vault_coins},
-    messages::{create_bank_message, create_burn_message},
+    messages::{create_bank_message, create_burn_message, create_mint_message},
     state::State,
 };
 
-use cosmwasm_std::{coin, Coin, DepsMut, Env, MessageInfo, Response, StdResult, Uint128};
+use cosmwasm_std::{
+    coin, Addr, Coin, DepsMut, Env, MessageInfo, Response, StdError, StdResult, Uint128,
+};
 use vaultenator::{config::Configure, errors::ContractError, state::ManageState};
 
 pub fn process_management_fees_and_modify_response(
@@ -65,6 +67,37 @@ pub fn process_management_fees_and_modify_response(
     Ok((response, deps))
 }
 
+// Helper to mint tokens and add the mint message to the response if necessary
+pub fn process_deposit(
+    response: Response,
+    amount_to_mint: Uint128,
+    sender: &Addr,
+    contract_address: &Addr,
+    config: &Config,
+) -> Result<Response, ContractError> {
+    if amount_to_mint.is_zero() {
+        return Err(ContractError::Std(StdError::generic_err(
+            "No tokens to mint - increase deposit amount",
+        )));
+    }
+
+    let mint_msg = create_mint_message(
+        contract_address,
+        sender.to_string(),
+        amount_to_mint,
+        config.strategy_denom.to_string(),
+    );
+
+    Ok(response
+        .add_event(event_mint(
+            CONTRACT_VERSION,
+            CONTRACT_NAME,
+            sender.as_ref(),
+            &amount_to_mint.to_string(),
+        ))
+        .add_message(mint_msg))
+}
+
 // Helper to build response messages
 pub fn process_redeem(
     mut response: Response,
@@ -90,13 +123,22 @@ pub fn process_redeem(
         config.strategy_denom.clone(),
     );
 
-    Ok(response.add_message(burn_msg).add_event(event_redeem(
-        CONTRACT_VERSION,
-        CONTRACT_NAME,
-        info.sender.as_ref(),
-        token0,
-        token1,
-        coin(0u128, config.token0.clone()),
-        None,
-    )))
+    Ok(response.add_message(burn_msg).add_events([
+        event_burn(
+            CONTRACT_VERSION,
+            CONTRACT_NAME,
+            info.sender.as_ref(),
+            &strategy_denom_sent.to_string(),
+            None,
+        ),
+        event_redeem(
+            CONTRACT_VERSION,
+            CONTRACT_NAME,
+            info.sender.as_ref(),
+            token0,
+            token1,
+            coin(0u128, config.token0.clone()),
+            None,
+        ),
+    ]))
 }
