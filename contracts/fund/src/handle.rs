@@ -313,6 +313,7 @@ pub fn handle_withdraw(
             token.amount
         };
 
+        // Create withdrawal message
         if !amount_to_withdraw.is_zero() {
             // Update total staked assets
             state.add_to_total_withdrawn_tokens(amount_to_withdraw, &token.denom)?;
