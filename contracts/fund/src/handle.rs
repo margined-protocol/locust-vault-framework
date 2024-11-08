@@ -313,7 +313,6 @@ pub fn handle_withdraw(
             token.amount
         };
 
-        // Create withdrawal message
         if !amount_to_withdraw.is_zero() {
             // Update total staked assets
             state.add_to_total_withdrawn_tokens(amount_to_withdraw, &token.denom)?;
@@ -324,7 +323,6 @@ pub fn handle_withdraw(
                 amount: amount_to_withdraw,
             };
 
-            // Set mint_to_address to recipient if set, sender if not
             let msg = create_bank_message(config.controller.clone(), vec![withdraw_amount.clone()]);
 
             response = response

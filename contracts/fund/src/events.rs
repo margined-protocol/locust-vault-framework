@@ -7,7 +7,7 @@ use cosmwasm_std::{Coin, Event};
 use cw2::ContractVersion;
 
 pub fn event_withdraw(user: String, amount_withdrawn: Coin) -> Event {
-    Event::new("withdraw_and_swap").add_attributes([
+    Event::new("withdraw").add_attributes([
         ("version", CONTRACT_VERSION),
         ("contract", CONTRACT_NAME),
         ("user", &user),
