@@ -2,8 +2,12 @@ use crate::{
     errors::ContractError,
     events::event_migrate,
     handle::{handle_repay, handle_set_grants, handle_set_vault, handle_withdraw},
-    query::{query_config, query_grants, query_spot_price, query_twap_price},
-    state::{Config, CONFIG},
+    ownership::{
+        get_ownership_proposal, handle_claim_ownership, handle_ownership_proposal,
+        handle_ownership_proposal_rejection,
+    },
+    query::{query_config, query_grants, query_owner, query_spot_price, query_twap_price},
+    state::{Config, CONFIG, OWNER, OWNERSHIP_PROPOSAL},
     utils::create_authz_grant_messages,
 };
 
@@ -23,7 +27,7 @@ pub const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 pub fn instantiate(
     deps: DepsMut,
     env: Env,
-    _info: MessageInfo,
+    info: MessageInfo,
     msg: InstantiateMsg,
 ) -> Result<Response, ContractError> {
     set_contract_version(
@@ -51,6 +55,8 @@ pub fn instantiate(
 
     let authz_msgs = create_authz_grant_messages(env.contract.address.as_str(), &grantee, &grants);
 
+    OWNER.set(deps, Some(info.sender.clone()))?;
+
     Ok(Response::new()
         .add_attribute("action", "instantiate")
         .add_messages(authz_msgs))
@@ -74,6 +80,24 @@ pub fn execute(
         } => handle_repay(deps, env, info, tokens_to_repay, cycle_profit),
         ExecuteMsg::SetVault { vault } => handle_set_vault(deps, env, info, vault),
         ExecuteMsg::SetGrants { grants } => handle_set_grants(deps, env, info, grants),
+        ExecuteMsg::ProposeNewOwner {
+            new_owner,
+            duration,
+        } => handle_ownership_proposal(
+            deps,
+            info,
+            env,
+            new_owner,
+            duration,
+            OWNER,
+            OWNERSHIP_PROPOSAL,
+        ),
+        ExecuteMsg::RejectOwner {} => {
+            handle_ownership_proposal_rejection(deps, info, OWNER, OWNERSHIP_PROPOSAL)
+        }
+        ExecuteMsg::ClaimOwnership {} => {
+            handle_claim_ownership(deps, info, env, OWNER, OWNERSHIP_PROPOSAL)
+        }
     }
 }
 
@@ -86,6 +110,12 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::SpotPrice {} => to_json_binary(&query_spot_price(&deps)?),
         QueryMsg::TwapPrice { duration } => {
             to_json_binary(&query_twap_price(&deps, env, duration)?)
+        }
+        QueryMsg::Owner {} => to_json_binary(
+            &query_owner(deps).map_err(|err| StdError::generic_err(err.to_string()))?,
+        ),
+        QueryMsg::GetOwnershipProposal {} => {
+            to_json_binary(&get_ownership_proposal(deps, OWNERSHIP_PROPOSAL)?)
         }
     }
 }
