@@ -478,7 +478,7 @@ fn test_redeem_end_to_end_with_repayment_multiple_denom() {
         let expected_state = StateResponse {
             is_open: true,
             is_paused: false,
-            total_staked_tokens: Uint128::new(362_500_000),
+            total_staked_tokens: Uint128::new(425_000_000),
             total_withdrawn_tokens: vec![withdraw_amount_quote, withdraw_amount_base],
             last_pause: block_time,
             last_claim: latest_block_time,
@@ -521,7 +521,7 @@ fn test_redeem_end_to_end_with_repayment_multiple_denom() {
         let expected_state = StateResponse {
             is_open: true,
             is_paused: false,
-            total_staked_tokens: Uint128::new(200_000_000),
+            total_staked_tokens: Uint128::new(250_000_000),
             total_withdrawn_tokens: vec![coin(0u128, QUOTE_DENOM), coin(0u128, BASE_DENOM)],
             last_pause: block_time,
             last_claim: latest_block_time,

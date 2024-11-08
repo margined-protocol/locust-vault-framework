@@ -27,10 +27,11 @@ pub fn calculate_assets_value(
 pub fn calculate_assets_to_redeem(
     deps: &Deps,
     config: &Config,
+    state: &State,
     contract_addr: &str,
     withdraw_percentage: Decimal,
 ) -> Result<Vec<Coin>, ContractError> {
-    let mut assets = get_vault_coins(deps, config, contract_addr)?;
+    let mut assets = get_assets(deps, config, state, contract_addr)?;
     for asset in &mut assets {
         asset.amount = asset.amount * withdraw_percentage;
     }
@@ -174,7 +175,7 @@ pub fn get_assets(
 
 pub fn get_deposit_value(deps: &Deps, config: &Config, tokens: Vec<Coin>) -> StdResult<Uint128> {
     let deposit_value = match &config.token1 {
-        Some(_) => {
+        Some(token1) => {
             let base_tokens: Vec<Coin> = tokens
                 .iter()
                 .map(|t| Coin {
@@ -188,7 +189,7 @@ pub fn get_deposit_value(deps: &Deps, config: &Config, tokens: Vec<Coin>) -> Std
             calculate_total_value(
                 deps,
                 config.controller.as_str(),
-                &config.token0,
+                token1,
                 base_tokens.as_slice(),
             )?
         }
