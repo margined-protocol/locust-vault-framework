@@ -63,9 +63,11 @@ pub fn execute(
     msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
     match msg {
-        ExecuteMsg::Deposit { amount, recipient } => {
+        #[allow(deprecated)]
+        ExecuteMsg::Deposit { recipient, amount } => {
             StructuredVault.handle_deposit(deps, env, info, amount, recipient)
         }
+        #[allow(deprecated)]
         ExecuteMsg::Redeem { recipient, amount } => {
             StructuredVault.handle_redeem(deps, env, info, amount, recipient)
         }

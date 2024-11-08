@@ -249,6 +249,7 @@ impl TestEnv {
         contract_addr: &str,
         amount: Uint128,
     ) -> RunnerResult<Uint128> {
+        #[allow(deprecated)]
         let query_msg = QueryMsg::PreviewDeposit { amount };
 
         wasm.query(contract_addr, &query_msg)
@@ -260,6 +261,7 @@ impl TestEnv {
         contract_addr: &str,
         amount: Uint128,
     ) -> RunnerResult<Uint128> {
+        #[allow(deprecated)]
         let query_msg = QueryMsg::PreviewRedeem { amount };
 
         wasm.query(contract_addr, &query_msg)
