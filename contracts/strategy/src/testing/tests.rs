@@ -229,3 +229,96 @@ fn test_set_grants() {
         }
     )
 }
+
+#[test]
+fn test_update_config() {
+    let env = TestEnv::new();
+
+    let wasm = Wasm::new(&env.app);
+
+    let code_id = store_code(&wasm, &env.signer, "strategy").unwrap();
+
+    let strategy_addr = wasm
+        .instantiate(
+            code_id,
+            &InstantiateMsg {
+                admin: env.signer.address(),
+                controller: env.controller.address(),
+                token0: BASE_DENOM.to_string(),
+                token1: None,
+                grants: vec![MsgCreatePosition::TYPE_URL.to_string()],
+                pool_info: PoolInfo::Osmosis {
+                    id: 1,
+                    token0: BASE_DENOM.to_string(),
+                    token1: QUOTE_DENOM.to_string(),
+                },
+            },
+            None,
+            Some("strategy-contract"),
+            &[],
+            &env.signer,
+        )
+        .unwrap()
+        .data
+        .address;
+
+    env.update_config_strategy(
+        &wasm,
+        &strategy_addr,
+        Some(vec![MsgAddToPosition::TYPE_URL.to_string()]),
+        None,
+        &env.signer,
+    )
+    .unwrap();
+
+    let config = env.query_config_strategy(&wasm, &strategy_addr).unwrap();
+
+    assert_eq!(
+        config,
+        ConfigResponse {
+            admin: env.signer.address(),
+            controller: env.controller.address(),
+            vault: None,
+            token0: BASE_DENOM.to_string(),
+            token1: None,
+            pool_info: PoolInfo::Osmosis {
+                id: 1,
+                token0: BASE_DENOM.to_string(),
+                token1: QUOTE_DENOM.to_string(),
+            },
+            grants: vec![MsgAddToPosition::TYPE_URL.to_string()],
+            name: format!("crates.io:{}", CONTRACT_NAME),
+            version: CONTRACT_VERSION.to_string(),
+        }
+    );
+
+    env.update_config_strategy(
+        &wasm,
+        &strategy_addr,
+        None,
+        Some(env.traders[5].address()),
+        &env.signer,
+    )
+    .unwrap();
+
+    let config = env.query_config_strategy(&wasm, &strategy_addr).unwrap();
+
+    assert_eq!(
+        config,
+        ConfigResponse {
+            admin: env.signer.address(),
+            controller: env.traders[5].address(),
+            vault: None,
+            token0: BASE_DENOM.to_string(),
+            token1: None,
+            pool_info: PoolInfo::Osmosis {
+                id: 1,
+                token0: BASE_DENOM.to_string(),
+                token1: QUOTE_DENOM.to_string(),
+            },
+            grants: vec![MsgAddToPosition::TYPE_URL.to_string()],
+            name: format!("crates.io:{}", CONTRACT_NAME),
+            version: CONTRACT_VERSION.to_string(),
+        }
+    )
+}

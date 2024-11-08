@@ -29,6 +29,10 @@ pub enum ExecuteMsg {
     SetGrants {
         grants: Vec<String>,
     },
+    UpdateConfig {
+        grants: Option<Vec<String>>,
+        controller: Option<String>,
+    },
     ProposeNewOwner {
         new_owner: String,
         duration: u64,

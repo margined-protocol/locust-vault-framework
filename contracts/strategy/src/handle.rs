@@ -1,6 +1,6 @@
 use crate::{
     errors::ContractError,
-    events::{event_repay, event_set_grants, event_set_vault, event_withdraw},
+    events::{event_repay, event_set_grants, event_set_vault, event_update_config, event_withdraw},
     state::CONFIG,
     utils::{
         create_authz_grant_messages, map_to_contract_error, revoke_authz_grant_messages,
@@ -157,7 +157,8 @@ pub fn handle_update_config(
     deps: DepsMut,
     env: Env,
     info: MessageInfo,
-    grants: Vec<String>,
+    grants: Option<Vec<String>>,
+    controller: Option<String>,
 ) -> Result<Response, ContractError> {
     let mut config = CONFIG.load(deps.storage)?;
 
@@ -171,7 +172,15 @@ pub fn handle_update_config(
 
     let response = Response::new().add_messages(revoke_msgs);
 
-    config.grants.clone_from(&grants);
+    if let Some(controller) = controller.clone() {
+        deps.api.addr_validate(&controller)?;
+        config.controller = controller;
+    }
+
+    if let Some(grants) = grants.clone() {
+        config.grants.clone_from(&grants);
+    }
+
     config.validate(&deps.as_ref())?;
 
     let grantee = config.controller.clone();
@@ -183,6 +192,6 @@ pub fn handle_update_config(
     CONFIG.save(deps.storage, &config)?;
 
     Ok(response
-        .add_event(event_set_grants(grants))
+        .add_event(event_update_config(grants, controller))
         .add_messages(authz_msgs))
 }
