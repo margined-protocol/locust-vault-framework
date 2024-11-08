@@ -10,7 +10,7 @@ use cosmwasm_std::{
 };
 use cw_margined::utils::may_pay_two_denoms;
 use cw_utils::must_pay;
-use std::{fmt::Display, str::FromStr};
+use std::{collections::HashSet, fmt::Display, str::FromStr};
 use vaultenator::errors::ContractError;
 
 pub fn calculate_assets_value(
@@ -117,6 +117,19 @@ pub fn coins_to_string(coins: Vec<Coin>) -> String {
         .map(|coin| coin.to_string())
         .collect::<Vec<_>>()
         .join(", ")
+}
+
+pub fn ensure_no_duplicate_denoms(tokens: &Vec<Coin>) -> StdResult<()> {
+    let mut seen_denoms = HashSet::new();
+    for token in tokens {
+        if !seen_denoms.insert(&token.denom) {
+            return Err(StdError::generic_err(format!(
+                "Duplicate denom found: {}",
+                token.denom
+            )));
+        }
+    }
+    Ok(())
 }
 
 pub fn get_amount_to_mint(

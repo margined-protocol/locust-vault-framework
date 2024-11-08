@@ -69,7 +69,7 @@ pub fn process_management_fees_and_modify_response(
 pub fn process_redeem(
     mut response: Response,
     info: &MessageInfo,
-    assets_to_redeem: &Vec<Coin>,
+    assets_to_redeem: Vec<Coin>,
     config: &Config,
     env: &Env,
     strategy_denom_sent: Uint128,
