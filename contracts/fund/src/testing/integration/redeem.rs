@@ -544,3 +544,119 @@ fn test_redeem_end_to_end_with_repayment_multiple_denom() {
 
     assert_approx_eq!(trader_quote_before, trader_quote_after, "2");
 }
+
+#[test]
+fn test_redeem_from_second_user() {
+    let env = TestEnv::new();
+    let wasm = Wasm::new(&env.app);
+
+    let strategy_addr = env.deploy_strategy_contract(&wasm, None);
+
+    let mut msg = env.default_fund_instantiation_msg();
+    msg.controller = strategy_addr.to_string();
+    msg.token1 = None;
+
+    let vault_addr = env.deploy_fund_contract(&wasm, msg);
+
+    env.set_vault_strategy(&wasm, &strategy_addr, &vault_addr, &env.signer)
+        .unwrap();
+
+    env.set_open_fund(&wasm, &vault_addr, &env.signer).unwrap();
+
+    let config = env.query_config_fund(&wasm, &vault_addr).unwrap();
+
+    let contract_base_before = env.get_balance(&vault_addr, BASE_DENOM);
+
+    let deposit = coin(100_000_000, BASE_DENOM);
+    env.deposit_fund(&wasm, &vault_addr, &[deposit.clone()], &env.traders[0])
+        .unwrap();
+
+    let state = env.query_state_fund(&wasm, &vault_addr).unwrap();
+    assert_eq!(state.total_staked_tokens, deposit.amount);
+
+    let trader_strategy_before = env.get_balance(&env.traders[0].address(), &config.strategy_denom);
+
+    // send funds to the trader 1
+    let redeem = coin(trader_strategy_before.u128(), config.strategy_denom.clone());
+    env.send(
+        &env.traders[1].address(),
+        redeem.clone().into(),
+        &env.traders[0],
+    );
+
+    let trader_strategy_before = env.get_balance(&env.traders[1].address(), &config.strategy_denom);
+    assert!(!trader_strategy_before.is_zero());
+
+    env.redeem_fund(&wasm, &vault_addr, redeem.clone(), &env.traders[1])
+        .unwrap();
+
+    let trader_strategy_after = env.get_balance(&env.traders[1].address(), &config.strategy_denom);
+    assert!(trader_strategy_after.is_zero());
+
+    let contract_base_after = env.get_balance(&vault_addr, BASE_DENOM);
+    assert_approx_eq!(contract_base_before, contract_base_after, "1");
+}
+
+#[test]
+fn test_redeem_from_second_user_multiple_times() {
+    let env = TestEnv::new();
+    let wasm = Wasm::new(&env.app);
+
+    let strategy_addr = env.deploy_strategy_contract(&wasm, None);
+
+    let mut msg = env.default_fund_instantiation_msg();
+    msg.controller = strategy_addr.to_string();
+    msg.token1 = None;
+
+    let vault_addr = env.deploy_fund_contract(&wasm, msg);
+
+    env.set_vault_strategy(&wasm, &strategy_addr, &vault_addr, &env.signer)
+        .unwrap();
+
+    env.set_open_fund(&wasm, &vault_addr, &env.signer).unwrap();
+
+    let config = env.query_config_fund(&wasm, &vault_addr).unwrap();
+
+    let contract_base_before = env.get_balance(&vault_addr, BASE_DENOM);
+
+    let deposit = coin(100_000_000, BASE_DENOM);
+    env.deposit_fund(&wasm, &vault_addr, &[deposit.clone()], &env.traders[0])
+        .unwrap();
+
+    let state = env.query_state_fund(&wasm, &vault_addr).unwrap();
+    assert_eq!(state.total_staked_tokens, deposit.amount);
+
+    let trader_strategy_before = env.get_balance(&env.traders[0].address(), &config.strategy_denom);
+
+    // send funds to the trader 1
+    let send = coin(
+        trader_strategy_before.u128().checked_div(2).unwrap(),
+        config.strategy_denom.clone(),
+    );
+    env.send(
+        &env.traders[1].address(),
+        send.clone().into(),
+        &env.traders[0],
+    );
+
+    let trader_strategy_before = env.get_balance(&env.traders[0].address(), &config.strategy_denom);
+    let redeem = coin(trader_strategy_before.u128(), config.strategy_denom.clone());
+
+    env.redeem_fund(&wasm, &vault_addr, redeem.clone(), &env.traders[0])
+        .unwrap();
+
+    let trader_strategy_after = env.get_balance(&env.traders[0].address(), &config.strategy_denom);
+    assert!(trader_strategy_after.is_zero());
+
+    let trader_strategy_before = env.get_balance(&env.traders[1].address(), &config.strategy_denom);
+    let redeem = coin(trader_strategy_before.u128(), config.strategy_denom.clone());
+
+    env.redeem_fund(&wasm, &vault_addr, redeem.clone(), &env.traders[1])
+        .unwrap();
+
+    let trader_strategy_after = env.get_balance(&env.traders[1].address(), &config.strategy_denom);
+    assert!(trader_strategy_after.is_zero());
+
+    let contract_base_after = env.get_balance(&vault_addr, BASE_DENOM);
+    assert_approx_eq!(contract_base_before, contract_base_after, "1");
+}

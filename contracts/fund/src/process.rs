@@ -1,13 +1,13 @@
 use crate::{
     config::Config,
     contract::{CONTRACT_NAME, CONTRACT_VERSION},
-    events::event_fees,
-    helpers::{get_assets, get_management_fees, get_vault_coins},
-    messages::create_bank_message,
+    events::{event_fees, event_redeem},
+    helpers::{get_assets, get_management_fees, get_token_deposits, get_vault_coins},
+    messages::{create_bank_message, create_burn_message},
     state::State,
 };
 
-use cosmwasm_std::{Coin, DepsMut, Env, Response};
+use cosmwasm_std::{coin, Coin, DepsMut, Env, MessageInfo, Response, StdResult, Uint128};
 use vaultenator::{config::Configure, errors::ContractError, state::ManageState};
 
 pub fn process_management_fees_and_modify_response(
@@ -63,4 +63,40 @@ pub fn process_management_fees_and_modify_response(
         ));
 
     Ok((response, deps))
+}
+
+// Helper to build response messages
+pub fn process_redeem(
+    mut response: Response,
+    info: &MessageInfo,
+    assets_to_redeem: &Vec<Coin>,
+    config: &Config,
+    env: &Env,
+    strategy_denom_sent: Uint128,
+) -> StdResult<Response> {
+    for asset in assets_to_redeem.iter().filter(|a| !a.amount.is_zero()) {
+        response = response.add_message(create_bank_message(
+            info.sender.to_string(),
+            vec![asset.clone()],
+        ));
+    }
+
+    let (token0, token1) = get_token_deposits(config, assets_to_redeem.clone())?;
+
+    let burn_msg = create_burn_message(
+        &env.contract.address,
+        env.contract.address.to_string(),
+        strategy_denom_sent,
+        config.strategy_denom.clone(),
+    );
+
+    Ok(response.add_message(burn_msg).add_event(event_redeem(
+        CONTRACT_VERSION,
+        CONTRACT_NAME,
+        info.sender.as_ref(),
+        token0,
+        token1,
+        coin(0u128, config.token0.clone()),
+        None,
+    )))
 }

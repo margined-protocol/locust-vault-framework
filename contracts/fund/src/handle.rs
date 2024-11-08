@@ -6,15 +6,16 @@ use crate::{
         event_withdraw,
     },
     helpers::{
-        calculate_assets_value, calculate_performance_fees, check_is_valid_token,
-        check_strategy_cap, get_amount_to_mint, get_deposit_value, get_sent_tokens,
-        get_strategy_denom, get_token_deposits, get_vault_coins, map_to_contract_error,
+        calculate_assets_to_redeem, calculate_assets_value, calculate_performance_fees,
+        check_is_valid_token, check_strategy_cap, get_amount_to_mint, get_deposit_value,
+        get_sent_tokens, get_strategy_denom, get_token_deposits, get_vault_coins,
+        map_to_contract_error,
     },
     messages::{create_bank_message, create_burn_message, create_mint_message},
-    process::process_management_fees_and_modify_response,
+    process::{process_management_fees_and_modify_response, process_redeem},
     queries::{get_balance, get_total_supply},
     reply::ReplyIDs,
-    state::{State, UserDeposit, USER_DEPOSITS},
+    state::{update_user_deposit, State, UserDeposit, USER_DEPOSITS},
 };
 
 use cosmwasm_std::{
@@ -188,80 +189,43 @@ impl Handle<Config, State> for StructuredVault {
 
         State::is_open_and_unpaused(deps.as_ref())?;
 
-        // Load config and state
         let config = Config::get_from_storage(deps.as_ref())?;
         let mut state = State::get_from_storage(deps.as_ref())?;
 
-        // Check that funds sent are in strategy_denom
         let strategy_denom_sent =
             must_pay(&info, &config.strategy_denom).map_err(|_| ContractError::InvalidFunds {})?;
 
-        // Compute how much of the users total vault tokens they are burning
         let user_vault_token_balance =
             get_balance(&deps.as_ref(), info.sender.as_ref(), &config.strategy_denom)?;
-
-        // Get the total balance since some has been sent to the contract
         let total_user_vault_token_balance = user_vault_token_balance
             .checked_add(strategy_denom_sent)
             .map_err(ContractError::Overflow)?;
 
         let total_supply = get_total_supply(&deps.as_ref(), &config.strategy_denom)?;
+
         let withdraw_percentage = Decimal::from_ratio(strategy_denom_sent, total_supply);
 
-        let mut assets_to_redeem =
-            get_vault_coins(&deps.as_ref(), &config, env.contract.address.as_str())?;
-        for coin in &mut assets_to_redeem {
-            let amount_to_redeem = coin.amount * withdraw_percentage;
+        let assets_to_redeem = calculate_assets_to_redeem(
+            &deps.as_ref(),
+            &config,
+            env.contract.address.as_str(),
+            withdraw_percentage,
+        )?;
 
-            coin.amount = amount_to_redeem
-        }
-
-        // Compute the ratio of the total amount being burned
         let burn_ratio = Decimal::from_ratio(strategy_denom_sent, total_user_vault_token_balance);
 
-        let mut user_deposit = USER_DEPOSITS.load(deps.storage, info.sender.clone())?;
-
-        // Reduce total deposits by the ratio being burned
-        let user_deposit_redeemed = user_deposit.total_deposits * burn_ratio;
-
-        // Compute the net deduction so we can decrement the global counter
-        user_deposit.remove_from_user_deposits(user_deposit_redeemed)?;
-
-        // Update total staked assets
-        state.remove_from_total_staked_tokens(user_deposit_redeemed)?;
+        update_user_deposit(deps.storage, info.sender.clone(), burn_ratio, &mut state)?;
 
         state.save_to_storage(&mut deps)?;
 
-        USER_DEPOSITS.save(deps.storage, info.sender.clone(), &user_deposit)?;
-
-        for asset in assets_to_redeem.iter() {
-            if !asset.amount.is_zero() {
-                response = response.add_message(create_bank_message(
-                    info.sender.to_string(),
-                    vec![asset.clone()],
-                ))
-            }
-        }
-
-        let (token0, token1) = get_token_deposits(&config, assets_to_redeem)?;
-
-        // Build burn message
-        let burn_msg = create_burn_message(
-            &env.contract.address,
-            env.contract.address.to_string(),
+        response = process_redeem(
+            response,
+            &info,
+            &assets_to_redeem,
+            &config,
+            &env,
             strategy_denom_sent,
-            config.strategy_denom.to_string(),
-        );
-
-        response = response.add_message(burn_msg).add_event(event_redeem(
-            CONTRACT_VERSION,
-            CONTRACT_NAME,
-            info.sender.as_ref(),
-            token0,
-            token1,
-            coin(0u128, config.token0.clone()),
-            None,
-        ));
+        )?;
 
         Ok(response)
     }

@@ -24,6 +24,19 @@ pub fn calculate_assets_value(
     get_deposit_value(deps, config, tokens)
 }
 
+pub fn calculate_assets_to_redeem(
+    deps: &Deps,
+    config: &Config,
+    contract_addr: &str,
+    withdraw_percentage: Decimal,
+) -> Result<Vec<Coin>, ContractError> {
+    let mut assets = get_vault_coins(deps, config, contract_addr)?;
+    for asset in &mut assets {
+        asset.amount = asset.amount * withdraw_percentage;
+    }
+    Ok(assets)
+}
+
 pub fn calculate_amount_to_mint(
     current_assets: &Uint128,
     previous_assets: &Uint128,
@@ -34,10 +47,6 @@ pub fn calculate_amount_to_mint(
     let normalized_delta = Decimal::from_ratio(delta_liquidity, *previous_assets);
 
     normalized_delta * total_supply
-}
-
-pub fn get_strategy_denom(env: &Env, contract_name: &str) -> String {
-    format!("factory/{}/{}", env.contract.address, contract_name).to_string()
 }
 
 pub fn calculate_total_value(
@@ -277,6 +286,10 @@ pub fn get_sent_tokens(info: &MessageInfo, config: &Config) -> StdResult<Vec<Coi
     };
 
     Ok(tokens)
+}
+
+pub fn get_strategy_denom(env: &Env, contract_name: &str) -> String {
+    format!("factory/{}/{}", env.contract.address, contract_name).to_string()
 }
 
 pub fn get_token_deposits(config: &Config, tokens: Vec<Coin>) -> StdResult<(Coin, Option<Coin>)> {

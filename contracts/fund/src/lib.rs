@@ -11,6 +11,7 @@ pub mod queries;
 pub mod query;
 pub mod reply;
 pub mod state;
+pub mod sudo;
 
 #[cfg(test)]
 mod testing;

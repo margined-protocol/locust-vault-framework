@@ -3,6 +3,7 @@ use crate::{
     handle::{handle_repay, handle_withdraw},
     query::{query_estimate_vault_assets, query_state_wrapper, query_version},
     state::State,
+    sudo::sudo_block_before_send,
 };
 
 use cosmwasm_std::{
@@ -12,7 +13,7 @@ use cosmwasm_std::{
 use cw_vault_standard::VaultStandardInfoResponse;
 use interface::fund::{
     ExecuteMsg, ExtensionExecuteMsg, ExtensionQueryMsg, InstantiateMsg, MigrateMsg, QueryMsg,
-    VaultenatorExtensionExecuteMsg, VaultenatorExtensionQueryMsg,
+    SudoMsg, VaultenatorExtensionExecuteMsg, VaultenatorExtensionQueryMsg,
 };
 use vaultenator::{
     admin::Administer,
@@ -172,4 +173,13 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response, ContractEr
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn migrate(deps: DepsMut, env: Env, msg: MigrateMsg) -> Result<Response, ContractError> {
     StructuredVault.handle_migrate(deps, env, msg)
+}
+
+#[cfg_attr(not(feature = "library"), entry_point)]
+pub fn sudo(deps: DepsMut, env: Env, msg: SudoMsg) -> Result<Response, ContractError> {
+    match msg {
+        SudoMsg::BlockBeforeSend { from, to, amount } => {
+            sudo_block_before_send(deps, env, from, to, amount)
+        }
+    }
 }
