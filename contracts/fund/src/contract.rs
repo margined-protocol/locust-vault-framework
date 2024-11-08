@@ -117,18 +117,23 @@ pub fn execute(
 pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
         QueryMsg::VaultStandardInfo {} => to_json_binary(&VaultStandardInfoResponse {
-            version: StructuredVault::VAULT_STANDARD_VERSION,
+            version: StructuredVault::VAULT_STANDARD_VERSION.to_string(),
             extensions: StructuredVault::VAULT_STANDARD_EXTENSIONS
                 .iter()
                 .map(|&s| s.into())
                 .collect(),
         }),
         QueryMsg::Info {} => to_json_binary(&StructuredVault::query_info(deps, env)?),
-        QueryMsg::PreviewDeposit { amount } => {
-            to_json_binary(&StructuredVault::query_preview_deposit(amount, deps, env)?)
+        #[allow(deprecated)]
+        QueryMsg::PreviewDeposit { .. } => {
+            unimplemented!("PreviewDeposit is deprecated")
         }
-        QueryMsg::PreviewRedeem { amount } => {
-            to_json_binary(&StructuredVault::query_preview_redeem(amount, deps, env)?)
+        #[allow(deprecated)]
+        QueryMsg::PreviewRedeem { .. } => {
+            unimplemented!("PreviewRedeem is deprecated")
+        }
+        QueryMsg::VaultTokenExchangeRate { .. } => {
+            unimplemented!("VaultTokenExchangeRate is not implemented")
         }
         QueryMsg::TotalAssets {} => {
             to_json_binary(&StructuredVault::query_total_assets(deps, env)?)

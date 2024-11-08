@@ -470,9 +470,9 @@ dependencies = [
 
 [[package]]
 name = "cw-vault-standard"
-version = "0.3.3"
+version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "908934004eb811c72acd4d2d4f6d936695a7e9236815c01c4b6ce3f47c29d272"
+checksum = "43fbbb3afa851140ffe148a8f31fca921d9ba4542709a1b8b7271de940e0b688"
 dependencies = [
  "cosmwasm-schema",
  "cosmwasm-std",
@@ -2479,9 +2479,9 @@ checksum = "81dfa00651efa65069b0b6b651f4aaa31ba9e3c3ce0137aaad053604ee7e0314"
 
 [[package]]
 name = "vaultenator"
-version = "0.5.0"
+version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3d863980c34b3a924e1ae556dd7c65d17344b8c1a64e5bfa5d60e21ed6518258"
+checksum = "fa641468b2cbb7e48931cc4d4643c87041397bedfe48d6f3fa9e5f0a7c0d974a"
 dependencies = [
  "cosmwasm-schema",
  "cosmwasm-std",

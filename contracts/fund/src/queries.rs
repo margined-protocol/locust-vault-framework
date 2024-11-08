@@ -39,18 +39,6 @@ pub fn get_total_supply(deps: &Deps, denom: &str) -> StdResult<Uint128> {
     Ok(amount)
 }
 
-pub fn query_spot_price(
-    querier: &QuerierWrapper,
-    contract_addr: &str,
-) -> Result<Decimal, ContractError> {
-    let res: Decimal = querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
-        contract_addr: contract_addr.to_string(),
-        msg: to_json_binary(&StrategyQueryMsg::SpotPrice {})?,
-    }))?;
-
-    Ok(res)
-}
-
 pub fn query_twap_price(
     querier: &QuerierWrapper,
     contract_addr: &str,

@@ -24,7 +24,7 @@ fn query_vault_standard_info() {
             &VaultStandardQueryMsg::VaultStandardInfo {},
         )
         .unwrap();
-    assert_eq!(vault_info.version, 1);
+    assert_eq!(vault_info.version, "1".to_string());
     assert_eq!(vault_info.extensions.len(), 2);
     let expected_extensions = vec!["lockup".to_string(), "force-unlock".to_string()];
     assert_eq!(vault_info.extensions, expected_extensions);
@@ -49,7 +49,7 @@ fn query_preview_deposit() {
     let amount = Uint128::from(100_000u128);
 
     env.query_preview_deposit_fund(&wasm, &vault_addr, amount)
-        .unwrap();
+        .unwrap_err();
 }
 
 #[test]

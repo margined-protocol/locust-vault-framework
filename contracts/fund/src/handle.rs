@@ -45,7 +45,6 @@ impl Handle<Config, State> for StructuredVault {
         State::init_state(&mut deps, &env)?;
 
         let mut config = Config::get_from_storage(deps.as_ref())?;
-        let state = State::get_from_storage(deps.as_ref())?;
 
         set_contract_version(
             deps.storage,
@@ -64,7 +63,6 @@ impl Handle<Config, State> for StructuredVault {
         config.update_strategy_denom(get_strategy_denom(&env, CONTRACT_NAME));
 
         config.save_to_storage(&mut deps)?;
-        state.save_to_storage(&mut deps)?;
 
         OWNER.set(deps, Some(info.sender.clone()))?;
 
@@ -315,7 +313,6 @@ pub fn handle_withdraw(
             token.amount
         };
 
-        // Create withdrawal message
         if !amount_to_withdraw.is_zero() {
             // Update total staked assets
             state.add_to_total_withdrawn_tokens(amount_to_withdraw, &token.denom)?;
@@ -326,7 +323,6 @@ pub fn handle_withdraw(
                 amount: amount_to_withdraw,
             };
 
-            // Set mint_to_address to recipient if set, sender if not
             let msg = create_bank_message(config.controller.clone(), vec![withdraw_amount.clone()]);
 
             response = response
@@ -400,7 +396,7 @@ pub fn handle_repay(
                 event_repay(
                     config.controller.clone(),
                     Coin {
-                        denom: config.token0.clone(),
+                        denom: repayment.denom.clone(),
                         amount: repayment.amount,
                     },
                 ),

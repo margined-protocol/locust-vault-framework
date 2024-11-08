@@ -6,14 +6,8 @@ pub enum ContractError {
     #[error("{0}")]
     Std(#[from] StdError),
 
-    #[error("Invalid funds")]
-    InvalidFunds {},
-
     #[error("Unable to perform migration")]
     MigrationError {},
-
-    #[error("Non-payable entry point")]
-    NonPayable {},
 
     #[error("Unauthorized")]
     Unauthorized {},
