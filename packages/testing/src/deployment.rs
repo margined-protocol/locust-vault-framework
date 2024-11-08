@@ -148,6 +148,7 @@ impl TestEnv {
             float: Decimal::zero(),
             token0: BASE_DENOM.to_string(),
             token1: Some(QUOTE_DENOM.to_string()),
+            management_fee_rate: Decimal::zero(),
             performance_fee_rate: Decimal::zero(),
             vault_type: "fund".to_string(),
         }
@@ -159,6 +160,7 @@ impl TestEnv {
             float: None,
             controller: None,
             treasury: None,
+            management_fee_rate: None,
             performance_fee_rate: None,
             instant_withdraw_penalty: None,
             penalty_duration: None,

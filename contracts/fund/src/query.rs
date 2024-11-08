@@ -1,7 +1,7 @@
 use crate::{
     config::Config,
     contract::StructuredVault,
-    helpers::calculate_vault_assets,
+    helpers::calculate_assets_value,
     math::get_amount_to_mint,
     queries::{get_balance, get_total_supply},
     state::State,
@@ -82,7 +82,7 @@ impl Query<Config, State> for StructuredVault {
         }
 
         let current_assets =
-            calculate_vault_assets(&deps, &config, &state, env.contract.address.as_ref())?;
+            calculate_assets_value(&deps, &config, &state, env.contract.address.as_ref())?;
 
         let share = Decimal::from_ratio(amount, total_supply);
 
@@ -108,6 +108,7 @@ pub fn query_state_wrapper(deps: Deps) -> StdResult<StateResponse> {
         last_pause: state.last_pause,
         last_claim: state.last_claim,
         total_staked_tokens: state.total_staked_tokens,
+        pending_management_fees: state.pending_management_fees,
         total_withdrawn_tokens,
     })
 }
@@ -120,14 +121,10 @@ pub fn query_estimate_vault_assets(amount: Uint128, deps: Deps, env: Env) -> Std
     let total_supply = get_total_supply(&deps, &config.strategy_denom)?;
     let share = Decimal::from_ratio(amount, total_supply);
 
-    let tokens = if let Some(token1) = config.token1 {
-        vec![config.token0, token1]
-    } else {
-        vec![config.token0]
-    };
+    let denoms = config.get_denoms();
 
     let mut assets = Vec::new();
-    for token in tokens {
+    for token in denoms {
         let token_balance = get_balance(&deps, env.contract.address.as_str(), &token)?;
 
         let total_withdrawn = state

@@ -7,7 +7,7 @@ use cosmwasm_std::{Coin, Event};
 use cw2::ContractVersion;
 
 pub fn event_withdraw(user: String, amount_withdrawn: Coin) -> Event {
-    Event::new("withdraw_and_swap").add_attributes([
+    Event::new("withdraw").add_attributes([
         ("version", CONTRACT_VERSION),
         ("contract", CONTRACT_NAME),
         ("user", &user),
@@ -21,6 +21,16 @@ pub fn event_repay(user: String, token_in: Coin) -> Event {
         ("contract", CONTRACT_NAME),
         ("user", &user),
         ("amount_repayed", &token_in.to_string()),
+    ])
+}
+
+pub fn event_sudo(to: &str, from: &str, amount: &Coin) -> Event {
+    Event::new("sudo").add_attributes([
+        ("version", CONTRACT_VERSION),
+        ("contract", CONTRACT_NAME),
+        ("to", to),
+        ("from", from),
+        ("amount", &amount.to_string()),
     ])
 }
 

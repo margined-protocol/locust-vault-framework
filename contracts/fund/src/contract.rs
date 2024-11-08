@@ -3,6 +3,7 @@ use crate::{
     handle::{handle_repay, handle_withdraw},
     query::{query_estimate_vault_assets, query_state_wrapper, query_version},
     state::State,
+    sudo::sudo_block_before_send,
 };
 
 use cosmwasm_std::{
@@ -12,7 +13,7 @@ use cosmwasm_std::{
 use cw_vault_standard::VaultStandardInfoResponse;
 use interface::fund::{
     ExecuteMsg, ExtensionExecuteMsg, ExtensionQueryMsg, InstantiateMsg, MigrateMsg, QueryMsg,
-    VaultenatorExtensionExecuteMsg, VaultenatorExtensionQueryMsg,
+    SudoMsg, VaultenatorExtensionExecuteMsg, VaultenatorExtensionQueryMsg,
 };
 use vaultenator::{
     admin::Administer,
@@ -62,9 +63,11 @@ pub fn execute(
     msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
     match msg {
-        ExecuteMsg::Deposit { amount, recipient } => {
+        #[allow(deprecated)]
+        ExecuteMsg::Deposit { recipient, amount } => {
             StructuredVault.handle_deposit(deps, env, info, amount, recipient)
         }
+        #[allow(deprecated)]
         ExecuteMsg::Redeem { recipient, amount } => {
             StructuredVault.handle_redeem(deps, env, info, amount, recipient)
         }
@@ -73,7 +76,7 @@ pub fn execute(
                 VaultenatorExtensionExecuteMsg::ClaimOwnership {} => StructuredVault
                     .handle_claim_ownership(deps, info, env, OWNER, OWNERSHIP_PROPOSAL),
                 VaultenatorExtensionExecuteMsg::Crank {} => {
-                    unimplemented!("Crank is not implemented")
+                    StructuredVault.handle_crank(deps, env, info)
                 }
                 VaultenatorExtensionExecuteMsg::Pause {} => {
                     StructuredVault.handle_pause_contract(deps, info)
@@ -116,18 +119,23 @@ pub fn execute(
 pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
         QueryMsg::VaultStandardInfo {} => to_json_binary(&VaultStandardInfoResponse {
-            version: StructuredVault::VAULT_STANDARD_VERSION,
+            version: StructuredVault::VAULT_STANDARD_VERSION.to_string(),
             extensions: StructuredVault::VAULT_STANDARD_EXTENSIONS
                 .iter()
                 .map(|&s| s.into())
                 .collect(),
         }),
         QueryMsg::Info {} => to_json_binary(&StructuredVault::query_info(deps, env)?),
-        QueryMsg::PreviewDeposit { amount } => {
-            to_json_binary(&StructuredVault::query_preview_deposit(amount, deps, env)?)
+        #[allow(deprecated)]
+        QueryMsg::PreviewDeposit { .. } => {
+            unimplemented!("PreviewDeposit is deprecated")
         }
-        QueryMsg::PreviewRedeem { amount } => {
-            to_json_binary(&StructuredVault::query_preview_redeem(amount, deps, env)?)
+        #[allow(deprecated)]
+        QueryMsg::PreviewRedeem { .. } => {
+            unimplemented!("PreviewRedeem is deprecated")
+        }
+        QueryMsg::VaultTokenExchangeRate { .. } => {
+            unimplemented!("VaultTokenExchangeRate is not implemented")
         }
         QueryMsg::TotalAssets {} => {
             to_json_binary(&StructuredVault::query_total_assets(deps, env)?)
@@ -172,4 +180,13 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response, ContractEr
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn migrate(deps: DepsMut, env: Env, msg: MigrateMsg) -> Result<Response, ContractError> {
     StructuredVault.handle_migrate(deps, env, msg)
+}
+
+#[cfg_attr(not(feature = "library"), entry_point)]
+pub fn sudo(deps: DepsMut, env: Env, msg: SudoMsg) -> Result<Response, ContractError> {
+    match msg {
+        SudoMsg::BlockBeforeSend { from, to, amount } => {
+            sudo_block_before_send(deps, env, from, to, amount)
+        }
+    }
 }

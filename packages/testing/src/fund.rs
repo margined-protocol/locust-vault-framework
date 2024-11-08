@@ -30,6 +30,18 @@ impl TestEnv {
         wasm.execute(contract_addr, &propose_new_owner_msg, &[], signer)
     }
 
+    pub fn crank_fund(
+        &self,
+        wasm: &Wasm<OsmosisTestApp>,
+        contract_addr: &str,
+        signer: &SigningAccount,
+    ) -> RunnerExecuteResult<MsgExecuteContractResponse> {
+        let msg = ExecuteMsg::VaultExtension(ExtensionExecuteMsg::Vaultenator(
+            VaultenatorExtensionExecuteMsg::Crank {},
+        ));
+        wasm.execute(contract_addr, &msg, &[], signer)
+    }
+
     pub fn deposit_fund(
         &self,
         wasm: &Wasm<OsmosisTestApp>,
@@ -237,6 +249,7 @@ impl TestEnv {
         contract_addr: &str,
         amount: Uint128,
     ) -> RunnerResult<Uint128> {
+        #[allow(deprecated)]
         let query_msg = QueryMsg::PreviewDeposit { amount };
 
         wasm.query(contract_addr, &query_msg)
@@ -248,6 +261,7 @@ impl TestEnv {
         contract_addr: &str,
         amount: Uint128,
     ) -> RunnerResult<Uint128> {
+        #[allow(deprecated)]
         let query_msg = QueryMsg::PreviewRedeem { amount };
 
         wasm.query(contract_addr, &query_msg)

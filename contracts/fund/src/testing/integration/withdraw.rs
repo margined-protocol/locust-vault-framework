@@ -1,4 +1,4 @@
-use cosmwasm_std::{coin, coins, Decimal, Uint128};
+use cosmwasm_std::{coin, coins, Decimal, StdError, Uint128};
 use interface::fund::StateResponse;
 use osmosis_test_tube::{Module, Wasm};
 use std::str::FromStr;
@@ -39,6 +39,7 @@ fn test_withdraw() {
         &env.controller,
     )
     .unwrap();
+    let latest_block_time = env.app.get_block_timestamp();
 
     let strategy_base_after = env.get_balance(&strategy_addr, BASE_DENOM);
     assert_eq!(strategy_base_after, withdraw_amount);
@@ -49,7 +50,8 @@ fn test_withdraw() {
         total_staked_tokens: deposit.amount,
         total_withdrawn_tokens: coins(withdraw_amount.into(), BASE_DENOM),
         last_pause: block_time,
-        last_claim: block_time,
+        last_claim: latest_block_time,
+        pending_management_fees: vec![],
     };
 
     let state = env.query_state_fund(&wasm, &vault_addr).unwrap();
@@ -98,6 +100,7 @@ fn test_withdraw_twice() {
         &env.controller,
     )
     .unwrap();
+    let latest_block_time = env.app.get_block_timestamp();
 
     let strategy_base_after = env.get_balance(&strategy_addr, BASE_DENOM);
     assert_eq!(
@@ -117,7 +120,8 @@ fn test_withdraw_twice() {
             BASE_DENOM,
         ),
         last_pause: block_time,
-        last_claim: block_time,
+        last_claim: latest_block_time,
+        pending_management_fees: vec![],
     };
 
     let state = env.query_state_fund(&wasm, &vault_addr).unwrap();
@@ -229,4 +233,45 @@ fn test_fail_withdraw_not_controller() {
         .unwrap_err();
 
     assert_err(err, ContractError::Unauthorized {});
+}
+
+#[test]
+fn test_fail_withdraw_duplicate_denom() {
+    let env = TestEnv::new();
+    let wasm = Wasm::new(&env.app);
+
+    let strategy_addr = env.deploy_strategy_contract(&wasm, None);
+
+    let mut msg = env.default_fund_instantiation_msg();
+    msg.controller = strategy_addr.to_string();
+    msg.token1 = None;
+
+    let vault_addr = env.deploy_fund_contract(&wasm, msg);
+
+    env.set_vault_strategy(&wasm, &strategy_addr, &vault_addr, &env.signer)
+        .unwrap();
+
+    env.set_open_fund(&wasm, &vault_addr, &env.signer).unwrap();
+
+    let deposit = coin(10_000_000, BASE_DENOM);
+    env.deposit_fund(&wasm, &vault_addr, &[deposit.clone()], &env.traders[0])
+        .unwrap();
+
+    let withdraw_amount = deposit.amount.checked_div(2u128.into()).unwrap();
+
+    let err = env
+        .withdraw_strategy(
+            &wasm,
+            &strategy_addr,
+            vec![
+                coin(withdraw_amount.into(), BASE_DENOM),
+                coin(withdraw_amount.into(), BASE_DENOM),
+            ],
+            &env.controller,
+        )
+        .unwrap_err();
+    assert_err(
+        err,
+        ContractError::Std(StdError::generic_err("Duplicate denom found: ubase")),
+    );
 }

@@ -1,5 +1,5 @@
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{Coin, Decimal};
+use cosmwasm_std::{Addr, Coin, Decimal};
 
 #[cw_serde]
 pub struct InstantiateMsg {
@@ -29,6 +29,16 @@ pub enum ExecuteMsg {
     SetGrants {
         grants: Vec<String>,
     },
+    UpdateConfig {
+        grants: Option<Vec<String>>,
+        controller: Option<String>,
+    },
+    ProposeNewOwner {
+        new_owner: String,
+        duration: u64,
+    },
+    RejectOwner {},
+    ClaimOwnership {},
 }
 
 #[cw_serde]
@@ -37,6 +47,8 @@ pub enum QueryMsg {
     Grants {},
     SpotPrice {},
     TwapPrice { duration: u64 },
+    Owner {},
+    GetOwnershipProposal {},
 }
 
 #[cw_serde]
@@ -65,4 +77,10 @@ pub enum PoolInfo {
         token0: String,
         token1: String,
     },
+}
+
+#[cw_serde]
+pub struct OwnerProposal {
+    pub owner: Addr,
+    pub expiry: u64,
 }
