@@ -16,7 +16,6 @@ exclude = [
 crate-type = [ "cdylib", "rlib" ]
 
 [features]
-# default = [ "osmosis" ]
 default = [ "slinky" ]
 library = [  ]
 
@@ -41,6 +40,7 @@ default-build = true
 [dependencies]
 cosmwasm-schema   = { workspace = true }
 cosmwasm-std      = { workspace = true }
+cw-controllers    = { workspace = true }
 cw-storage-plus   = { workspace = true }
 cw-utils          = { workspace = true }
 cw-vault-standard = { workspace = true }
@@ -55,6 +55,5 @@ thiserror         = { workspace = true }
 
 [dev-dependencies]
 neutron-test-tube = { workspace = true }
-# osmosis-test-tube = { workspace = true }
-test-tube = { workspace = true }
-testing   = { workspace = true }
+test-tube         = { workspace = true }
+testing           = { workspace = true }

@@ -18,6 +18,7 @@ fn update_config() {
         strategy_cap: Some(100u128.into()),
         float: None,
         controller: None,
+        management_fee_rate: None,
         performance_fee_rate: None,
         estimate_cycle_profit: None,
         treasury: None,

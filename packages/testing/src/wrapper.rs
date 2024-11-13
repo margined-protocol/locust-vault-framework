@@ -71,6 +71,19 @@ impl TestEnv {
         wasm.execute(contract_addr, &msg, &[], signer)
     }
 
+    pub fn update_config_strategy(
+        &self,
+        wasm: &Wasm<OsmosisTestApp>,
+        contract_addr: &str,
+        grants: Option<Vec<String>>,
+        controller: Option<String>,
+        signer: &SigningAccount,
+    ) -> RunnerExecuteResult<MsgExecuteContractResponse> {
+        let msg = ExecuteMsg::UpdateConfig { grants, controller };
+
+        wasm.execute(contract_addr, &msg, &[], signer)
+    }
+
     pub fn set_astro_price_strategy(
         &self,
         wasm: &Wasm<OsmosisTestApp>,

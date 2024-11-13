@@ -1,6 +1,6 @@
 use crate::{
     errors::ContractError,
-    events::{event_repay, event_set_grants, event_set_vault, event_withdraw},
+    events::{event_repay, event_set_grants, event_set_vault, event_update_config, event_withdraw},
     state::CONFIG,
     utils::{
         create_authz_grant_messages, map_to_contract_error, revoke_authz_grant_messages,
@@ -156,5 +156,51 @@ pub fn handle_set_grants(
 
     Ok(response
         .add_event(event_set_grants(grants))
+        .add_messages(authz_msgs))
+}
+
+pub fn handle_update_config(
+    deps: DepsMut,
+    env: Env,
+    info: MessageInfo,
+    grants: Option<Vec<String>>,
+    controller: Option<String>,
+) -> Result<Response, ContractError> {
+    let mut config = CONFIG.load(deps.storage)?;
+
+    ensure!(
+        config.admin == info.sender.as_str(),
+        ContractError::Unauthorized {}
+    );
+
+    let revoke_msgs = revoke_authz_grant_messages(
+        env.contract.address.as_str(),
+        &config.controller,
+        config.grants.clone(),
+    );
+
+    let response = Response::new().add_messages(revoke_msgs);
+
+    if let Some(controller) = controller.clone() {
+        deps.api.addr_validate(&controller)?;
+        config.controller = controller;
+    }
+
+    if let Some(grants) = grants.clone() {
+        config.grants.clone_from(&grants);
+    }
+
+    config.validate(&deps.as_ref())?;
+
+    let grantee = config.controller.clone();
+    let grants_str: Vec<&str> = config.grants.iter().map(|s| s.as_str()).collect();
+
+    let authz_msgs =
+        create_authz_grant_messages(env.contract.address.as_str(), &grantee, &grants_str);
+
+    CONFIG.save(deps.storage, &config)?;
+
+    Ok(response
+        .add_event(event_update_config(grants, controller))
         .add_messages(authz_msgs))
 }

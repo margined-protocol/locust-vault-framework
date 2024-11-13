@@ -1,4 +1,7 @@
-use crate::state::{Config, CONFIG};
+use crate::{
+    errors::ContractError,
+    state::{Config, CONFIG, OWNER},
+};
 
 #[cfg(feature = "astroport")]
 use cosmwasm_schema::cw_serde;
@@ -211,7 +214,6 @@ pub fn query_twap_price(deps: &Deps, env: Env, _duration: u64) -> StdResult<Deci
 
 #[cfg(feature = "slinky")]
 fn get_slinky_price(deps: &Deps, env: Env) -> StdResult<Decimal> {
-    deps.api.debug("get_slinky_price");
     let config: Config = CONFIG.load(deps.storage)?;
 
     let (base, quote, timeout) = match config.pool_info {
@@ -235,8 +237,6 @@ fn get_slinky_price(deps: &Deps, env: Env) -> StdResult<Decimal> {
         Some(p) => {
             let timestamp = p.block_timestamp.unwrap();
 
-            deps.api.debug(&format!("Price: {:?}", p));
-
             if timestamp.seconds < (env.block.time.seconds() - timeout) as i64 {
                 return Err(StdError::generic_err("Price is stale"));
             }
@@ -250,4 +250,12 @@ fn get_slinky_price(deps: &Deps, env: Env) -> StdResult<Decimal> {
     let price = Decimal::from_atomics(uint_price, res.decimals as u32).unwrap();
 
     Ok(price)
+}
+
+pub fn query_owner(deps: Deps) -> Result<String, ContractError> {
+    if let Some(owner) = OWNER.get(deps)? {
+        Ok(owner.to_string())
+    } else {
+        Err(ContractError::Std(StdError::generic_err("Owner not set")))
+    }
 }

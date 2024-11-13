@@ -5,6 +5,7 @@ use crate::{
         query_estimate_vault_assets, query_state_wrapper, query_version, query_withdrawable_amount,
     },
     state::State,
+    sudo::{handle_register_sudo, sudo_block_before_send},
 };
 
 use cosmwasm_std::{
@@ -14,7 +15,7 @@ use cosmwasm_std::{
 use cw_vault_standard::VaultStandardInfoResponse;
 use interface::fund::{
     ExecuteMsg, ExtensionExecuteMsg, ExtensionQueryMsg, InstantiateMsg, MigrateMsg, QueryMsg,
-    VaultenatorExtensionExecuteMsg, VaultenatorExtensionQueryMsg,
+    SudoMsg, VaultenatorExtensionExecuteMsg, VaultenatorExtensionQueryMsg,
 };
 use vaultenator::{
     admin::Administer,
@@ -76,8 +77,11 @@ pub fn execute(
             ExtensionExecuteMsg::Vaultenator(msg) => match msg {
                 VaultenatorExtensionExecuteMsg::ClaimOwnership {} => StructuredVault
                     .handle_claim_ownership(deps, info, env, OWNER, OWNERSHIP_PROPOSAL),
+                VaultenatorExtensionExecuteMsg::RegisterSudo {} => {
+                    handle_register_sudo(deps, env, info)
+                }
                 VaultenatorExtensionExecuteMsg::Crank {} => {
-                    unimplemented!("Crank is not implemented")
+                    StructuredVault.handle_crank(deps, env, info)
                 }
                 VaultenatorExtensionExecuteMsg::Pause {} => {
                     StructuredVault.handle_pause_contract(deps, info)
@@ -129,11 +133,11 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::Info {} => to_json_binary(&StructuredVault::query_info(deps, env)?),
         #[allow(deprecated)]
         QueryMsg::PreviewDeposit { .. } => {
-            unimplemented!("PreviewDeposit is not implemented")
+            unimplemented!("PreviewDeposit is deprecated")
         }
         #[allow(deprecated)]
         QueryMsg::PreviewRedeem { .. } => {
-            unimplemented!("PreviewRedeem is not implemented")
+            unimplemented!("PreviewRedeem is deprecated")
         }
         QueryMsg::VaultTokenExchangeRate { .. } => {
             unimplemented!("VaultTokenExchangeRate is not implemented")
@@ -184,4 +188,13 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response, ContractEr
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn migrate(deps: DepsMut, env: Env, msg: MigrateMsg) -> Result<Response, ContractError> {
     StructuredVault.handle_migrate(deps, env, msg)
+}
+
+#[cfg_attr(not(feature = "library"), entry_point)]
+pub fn sudo(deps: DepsMut, env: Env, msg: SudoMsg) -> Result<Response, ContractError> {
+    match msg {
+        SudoMsg::BlockBeforeSend { from, to, amount } => {
+            sudo_block_before_send(deps, env, from, to, amount)
+        }
+    }
 }

@@ -6,10 +6,7 @@ use interface::fund::{
     ConfigResponse, ExecuteMsg, ExtensionExecuteMsg, ExtensionQueryMsg, QueryMsg, StateResponse,
     UpdateConfig, VaultenatorExtensionExecuteMsg, VaultenatorExtensionQueryMsg, VersionResponse,
 };
-use neutron_std::types::{
-    // cosmos::base::v1beta1::Coin,
-    cosmwasm::wasm::v1::MsgExecuteContractResponse,
-};
+use neutron_std::types::cosmwasm::wasm::v1::MsgExecuteContractResponse;
 use neutron_test_tube::{
     NeutronTestApp as OsmosisTestApp, RunnerExecuteResult, RunnerResult, SigningAccount, Wasm,
 };
@@ -35,6 +32,18 @@ impl TestEnv {
         ));
 
         wasm.execute(contract_addr, &propose_new_owner_msg, &[], signer)
+    }
+
+    pub fn crank_fund(
+        &self,
+        wasm: &Wasm<OsmosisTestApp>,
+        contract_addr: &str,
+        signer: &SigningAccount,
+    ) -> RunnerExecuteResult<MsgExecuteContractResponse> {
+        let msg = ExecuteMsg::VaultExtension(ExtensionExecuteMsg::Vaultenator(
+            VaultenatorExtensionExecuteMsg::Crank {},
+        ));
+        wasm.execute(contract_addr, &msg, &[], signer)
     }
 
     pub fn deposit_fund(
@@ -63,6 +72,18 @@ impl TestEnv {
             recipient: None,
         };
         wasm.execute(contract_addr, &msg, &[amount], signer)
+    }
+
+    pub fn register_sudo_fund(
+        &self,
+        wasm: &Wasm<OsmosisTestApp>,
+        contract_addr: &str,
+        signer: &SigningAccount,
+    ) -> RunnerExecuteResult<MsgExecuteContractResponse> {
+        let msg = ExecuteMsg::VaultExtension(ExtensionExecuteMsg::Vaultenator(
+            VaultenatorExtensionExecuteMsg::RegisterSudo {},
+        ));
+        wasm.execute(contract_addr, &msg, &[], signer)
     }
 
     pub fn withdraw_fund(
@@ -244,6 +265,7 @@ impl TestEnv {
         contract_addr: &str,
         amount: Uint128,
     ) -> RunnerResult<Uint128> {
+        #[allow(deprecated)]
         let query_msg = QueryMsg::PreviewDeposit { amount };
 
         wasm.query(contract_addr, &query_msg)
@@ -255,6 +277,7 @@ impl TestEnv {
         contract_addr: &str,
         amount: Uint128,
     ) -> RunnerResult<Uint128> {
+        #[allow(deprecated)]
         let query_msg = QueryMsg::PreviewRedeem { amount };
 
         wasm.query(contract_addr, &query_msg)

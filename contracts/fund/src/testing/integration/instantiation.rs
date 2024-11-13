@@ -21,6 +21,7 @@ fn test_instantiation() {
         token0: BASE_DENOM.to_string(),
         token1: None,
         strategy_cap: STRATEGY_CAP,
+        management_fee_rate: Decimal::zero(),
         performance_fee_rate: Decimal::zero(),
         float: Decimal::zero(),
         vault_type: "fund".to_string(),
@@ -50,6 +51,7 @@ fn test_instantiation() {
         token0: BASE_DENOM.to_string(),
         token1: None,
         treasury: env.treasury.address(),
+        management_fee_rate: Decimal::zero(),
         performance_fee_rate: Decimal::zero(),
         estimate_cycle_profit: None,
         vault_type: "fund".to_string(),
@@ -65,6 +67,7 @@ fn test_instantiation() {
         total_withdrawn_tokens: Default::default(),
         last_pause: block_time,
         last_claim: block_time,
+        pending_management_fees: vec![],
     };
 
     let state = env.query_state_fund(&wasm, &vault_addr).unwrap();
@@ -98,6 +101,7 @@ fn test_fail_instantiation_strategy_cap_zero() {
         token1: None,
         controller: env.signer.address().to_string(),
         strategy_cap: Uint128::zero(),
+        management_fee_rate: Decimal::zero(),
         performance_fee_rate: Decimal::zero(),
         float: Decimal::zero(),
         treasury: env.treasury.address().to_string(),
@@ -126,6 +130,7 @@ fn test_fail_instantiation_performance_fee_rate_invalid() {
         token1: None,
         controller: env.signer.address().to_string(),
         strategy_cap: STRATEGY_CAP,
+        management_fee_rate: Decimal::zero(),
         performance_fee_rate: Decimal::percent(21),
         float: Decimal::zero(),
         treasury: env.treasury.address().to_string(),
@@ -154,6 +159,7 @@ fn test_fail_instantiation_float_invalid() {
         token1: None,
         controller: env.signer.address().to_string(),
         strategy_cap: STRATEGY_CAP,
+        management_fee_rate: Decimal::zero(),
         performance_fee_rate: Decimal::percent(10),
         float: Decimal::percent(11),
         treasury: env.treasury.address().to_string(),
@@ -167,6 +173,35 @@ fn test_fail_instantiation_float_invalid() {
         err,
         ContractError::Std(StdError::generic_err(
             "Float must be less or equal to ten percent",
+        )),
+    );
+}
+
+#[test]
+fn test_fail_instantiation_management_fee_invalid() {
+    let env = TestEnv::new();
+    let wasm = Wasm::new(&env.app);
+
+    let msg = InstantiateMsg {
+        admin: env.signer.address().to_string(),
+        token0: BASE_DENOM.to_string(),
+        token1: None,
+        controller: env.signer.address().to_string(),
+        strategy_cap: STRATEGY_CAP,
+        management_fee_rate: Decimal::percent(21),
+        performance_fee_rate: Decimal::zero(),
+        float: Decimal::zero(),
+        treasury: env.treasury.address().to_string(),
+        vault_type: "fund".to_string(),
+    };
+
+    let err = env
+        .instantiate_contract(&wasm, &msg, vec![], &env.signer, "fund")
+        .unwrap_err();
+    assert_err(
+        err,
+        ContractError::Std(StdError::generic_err(
+            "Management fee must be less or equal to five percent",
         )),
     );
 }

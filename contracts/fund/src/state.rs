@@ -1,5 +1,5 @@
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{Addr, Deps, DepsMut, Env, Timestamp, Uint128};
+use cosmwasm_std::{Addr, Coin, Decimal, Deps, DepsMut, Env, Storage, Timestamp, Uint128};
 use cw_storage_plus::Map;
 use std::collections::HashMap;
 use vaultenator::{errors::ContractError, state::ManageState};
@@ -20,6 +20,7 @@ pub struct State {
     pub is_paused: bool,
     pub last_pause: Timestamp,
     pub last_claim: Timestamp,
+    pub pending_management_fees: Vec<Coin>,
     pub total_staked_tokens: Uint128,
     pub total_withdrawn_tokens: HashMap<String, Uint128>,
 }
@@ -51,6 +52,7 @@ impl ManageState for State {
             is_paused: false,
             last_pause: env.block.time,
             last_claim: env.block.time,
+            pending_management_fees: vec![],
             total_staked_tokens: Uint128::zero(),
             total_withdrawn_tokens: HashMap::new(),
         };
@@ -119,6 +121,18 @@ impl State {
 
         Ok(())
     }
+
+    pub fn update_last_claim(&mut self, latest_timestamp: Timestamp) -> Result<(), ContractError> {
+        self.last_claim = latest_timestamp;
+
+        Ok(())
+    }
+
+    pub fn update_pending_management_fees(&mut self, fees: Vec<Coin>) -> Result<(), ContractError> {
+        self.pending_management_fees = fees;
+
+        Ok(())
+    }
 }
 
 impl UserDeposit {
@@ -128,6 +142,17 @@ impl UserDeposit {
             timestamp,
         }
     }
+
+    pub fn load_or_initialize_user_deposit(
+        storage: &dyn Storage,
+        sender: &Addr,
+        current_time: u64,
+    ) -> Result<UserDeposit, ContractError> {
+        Ok(USER_DEPOSITS
+            .may_load(storage, sender.clone())?
+            .unwrap_or(UserDeposit::empty_deposit(current_time)))
+    }
+
     pub fn add_to_user_deposits(&mut self, amount: Uint128) -> Result<(), ContractError> {
         self.total_deposits = self
             .total_deposits
@@ -143,4 +168,21 @@ impl UserDeposit {
             .map_err(ContractError::Overflow)?;
         Ok(())
     }
+}
+
+pub fn update_user_deposit(
+    storage: &mut dyn Storage,
+    sender: Addr,
+    burn_ratio: Decimal,
+    state: &mut State,
+) -> Result<(), ContractError> {
+    let mut user_deposit = USER_DEPOSITS.load(storage, sender.clone())?;
+    let user_deposit_redeemed = user_deposit.total_deposits.mul_floor(burn_ratio);
+
+    user_deposit.remove_from_user_deposits(user_deposit_redeemed)?;
+    state.remove_from_total_staked_tokens(user_deposit_redeemed)?;
+
+    USER_DEPOSITS.save(storage, sender, &user_deposit)?;
+
+    Ok(())
 }
