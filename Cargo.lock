@@ -40,9 +40,9 @@ dependencies = [
 
 [[package]]
 name = "allocator-api2"
-version = "0.2.18"
+version = "0.2.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5c6cb57a04249c6480766f7f7cef5467412af1490f8d1e243141daddada3264f"
+checksum = "45862d1c77f2228b9e10bc609d5bc203d86ebc9b87ad8d5d5167a6c9abf739d9"
 
 [[package]]
 name = "anyhow"
@@ -351,9 +351,9 @@ dependencies = [
 
 [[package]]
 name = "cc"
-version = "1.1.36"
+version = "1.1.37"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "baee610e9452a8f6f0a1b6194ec09ff9e2d85dea54432acdae41aa0761c95d70"
+checksum = "40545c26d092346d8a8dab71ee48e7685a7a9cba76e634790c215b41a4a7b4cf"
 dependencies = [
  "shlex",
 ]
@@ -996,6 +996,7 @@ dependencies = [
  "cw2",
  "cw_margined",
  "interface",
+ "margined-neutron-std 5.0.1",
  "neutron-test-tube",
  "num_enum",
  "osmosis-std",
@@ -1499,6 +1500,15 @@ dependencies = [
 
 [[package]]
 name = "itertools"
+version = "0.12.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ba291022dbbd398a455acf126c1e341954079855bc60dfdda641363bd6922569"
+dependencies = [
+ "either",
+]
+
+[[package]]
+name = "itertools"
 version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "413ee7dfc52ee1a4949ceeb7dbc8a33f2d6c088194d9f922fb8318faf1f01186"
@@ -1547,9 +1557,9 @@ checksum = "830d08ce1d1d941e6b30645f1a0eb5643013d835ce3779a5fc208261dbe10f55"
 
 [[package]]
 name = "libc"
-version = "0.2.161"
+version = "0.2.162"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8e9489c2807c139ffd9c1794f4af0ebe86a828db53ecdc7fea2111d0fed085d1"
+checksum = "18d287de67fe55fd7e1581fe933d965a5a9477b38e949cfa9f8574ef01506398"
 
 [[package]]
 name = "libloading"
@@ -1597,13 +1607,13 @@ dependencies = [
 
 [[package]]
 name = "margined-neutron-std"
-version = "5.0.0"
+version = "5.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7e8989a0fb4d28e0364cb65fa0666f37d6d97f6ae77808f29e4c7d39f0687252"
+checksum = "d1418c5cc6050085ca87d044442b4b01a79815df2186849ce8d81b2adbc4162d"
 dependencies = [
  "chrono",
  "cosmwasm-std",
- "injective-std-derive",
+ "osmosis-std-derive",
  "prost 0.13.3",
  "prost-types 0.13.3",
  "schemars",
@@ -1675,16 +1685,16 @@ dependencies = [
 
 [[package]]
 name = "neutron-test-tube"
-version = "5.0.0-patch1"
+version = "5.0.1-debug"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e26d60faa34034c42d6ff31dae62621c64782dbee4c26f559aff0630d75fdb33"
+checksum = "8d475da30040263cd9a4c108c7c32cb7a0c6a0636955c866fad67ecc0300451c"
 dependencies = [
  "base64 0.21.7",
  "bindgen",
  "cosmrs",
  "cosmwasm-std",
  "hex",
- "margined-neutron-std 5.0.0",
+ "margined-neutron-std 5.0.1",
  "prost 0.13.3",
  "serde",
  "serde_json",
@@ -2010,7 +2020,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "81bddcdb20abf9501610992b6759a4c888aef7d1a7247ef75e2404275ac24af1"
 dependencies = [
  "anyhow",
- "itertools 0.10.5",
+ "itertools 0.12.1",
  "proc-macro2",
  "quote",
  "syn 2.0.87",
@@ -2242,9 +2252,9 @@ dependencies = [
 
 [[package]]
 name = "rustix"
-version = "0.38.39"
+version = "0.38.40"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "375116bee2be9ed569afe2154ea6a99dfdffd257f533f187498c2a8f5feaf4ee"
+checksum = "99e4ea3e1cdc4b559b8e5650f9c8e5998e3e5c1343b4eaf034565f32318d63c0"
 dependencies = [
  "bitflags 2.6.0",
  "errno",
@@ -2389,9 +2399,9 @@ dependencies = [
 
 [[package]]
 name = "security-framework-sys"
-version = "2.12.0"
+version = "2.12.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ea4a292869320c0272d7bc55a5a6aafaff59b4f63404a003887b679a2e05b4b6"
+checksum = "fa39c7303dc58b5543c94d22c1766b0d31f2ee58306363ea622b10bbc075eaa2"
 dependencies = [
  "core-foundation-sys",
  "libc",
@@ -2604,12 +2614,13 @@ version = "0.0.3"
 dependencies = [
  "cosmwasm-schema",
  "cosmwasm-std",
+ "cw-controllers",
  "cw-storage-plus",
  "cw-utils",
  "cw-vault-standard-margined",
  "cw2",
  "interface",
- "margined-neutron-std 5.0.0",
+ "margined-neutron-std 5.0.1",
  "neutron-test-tube",
  "osmosis-std",
  "prost 0.13.3",
@@ -2855,7 +2866,7 @@ dependencies = [
  "cw-vault-standard-margined",
  "cw_margined",
  "interface",
- "margined-neutron-std 5.0.0",
+ "margined-neutron-std 5.0.1",
  "neutron-test-tube",
  "osmosis-std",
  "prost 0.13.3",
@@ -2873,18 +2884,18 @@ checksum = "23d434d3f8967a09480fb04132ebe0a3e088c173e6d0ee7897abbdf4eab0f8b9"
 
 [[package]]
 name = "thiserror"
-version = "1.0.68"
+version = "1.0.69"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "02dd99dc800bbb97186339685293e1cc5d9df1f8fae2d0aecd9ff1c77efea892"
+checksum = "b6aaf5339b578ea85b50e080feb250a3e8ae8cfcdff9a461c9ec2904bc923f52"
 dependencies = [
  "thiserror-impl",
 ]
 
 [[package]]
 name = "thiserror-impl"
-version = "1.0.68"
+version = "1.0.69"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a7c61ec9a6f64d2793d8a45faba21efbe3ced62a886d44c36a009b2b519b4c7e"
+checksum = "4fee6c4efc90059e10f81e6d42c60a18f76588c3d74cb83a0b242a2b6c7504c1"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2933,9 +2944,9 @@ dependencies = [
 
 [[package]]
 name = "tokio"
-version = "1.41.0"
+version = "1.41.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "145f3413504347a2be84393cc8a7d2fb4d863b375909ea59f2158261aa258bbb"
+checksum = "22cfb5bee7a6a52939ca9224d6ac897bb669134078daa8735560897f69de4d33"
 dependencies = [
  "backtrace",
  "bytes",

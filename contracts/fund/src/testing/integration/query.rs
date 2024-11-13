@@ -106,7 +106,7 @@ fn query_convert_to_assets() {
         .query_total_vault_token_supply_fund(&wasm, &vault_addr)
         .unwrap();
 
-    let expected_amount = Uint128::from(1_000_000u128);
+    let expected_amount = Uint128::from(1_250_000u128);
 
     let convert_to_assets = env
         .query_convert_to_assets_fund(&wasm, &vault_addr, total_supply)

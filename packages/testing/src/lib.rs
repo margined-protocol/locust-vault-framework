@@ -3,7 +3,6 @@ pub mod helpers;
 
 pub mod deployment;
 pub mod fund;
-// pub mod neutron;
 pub mod setup;
 pub mod utils;
 pub mod wrapper;

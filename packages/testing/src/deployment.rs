@@ -56,11 +56,6 @@ pub fn get_default_instantiation_msg(env: &TestEnv) -> Strategy::InstantiateMsg 
         token0: BASE_DENOM.to_string(),
         token1: None,
         grants: vec![DefaultMsg::TYPE_URL.to_string()],
-        // pool_info: Strategy::PoolInfo::Osmosis {
-        //     id: 1,
-        //     token0: BASE_DENOM.to_string(),
-        //     token1: QUOTE_DENOM.to_string(),
-        // },
         pool_info: Strategy::PoolInfo::Slinky {
             base: BASE_DENOM.to_uppercase(),
             quote: QUOTE_DENOM.to_uppercase(),
@@ -97,7 +92,7 @@ impl TestEnv {
         wasm: &Wasm<OsmosisTestApp>,
         msg: Fund::InstantiateMsg,
     ) -> String {
-        let funds = vec![coin(DEFAULT_LIQUIDITY, BASE_DENOM).into()];
+        let funds = vec![coin(DEFAULT_LIQUIDITY, BASE_DENOM)];
 
         self.instantiate_contract(wasm, &msg, funds, &self.signer, "fund")
             .unwrap()
@@ -153,6 +148,7 @@ impl TestEnv {
             float: Decimal::zero(),
             token0: BASE_DENOM.to_string(),
             token1: Some(QUOTE_DENOM.to_string()),
+            management_fee_rate: Decimal::zero(),
             performance_fee_rate: Decimal::zero(),
             vault_type: "fund".to_string(),
         }
@@ -164,6 +160,7 @@ impl TestEnv {
             float: None,
             controller: None,
             treasury: None,
+            management_fee_rate: None,
             performance_fee_rate: None,
             instant_withdraw_penalty: None,
             penalty_duration: None,
