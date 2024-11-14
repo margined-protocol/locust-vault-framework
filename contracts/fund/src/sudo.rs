@@ -5,7 +5,7 @@ use crate::{
     state::{UserDeposit, USER_DEPOSITS},
 };
 
-use cosmwasm_std::{Coin, Decimal, Deps, DepsMut, Env, Response, Uint128};
+use cosmwasm_std::{ensure, Coin, Decimal, Deps, DepsMut, Env, Response, StdError, Uint128};
 use vaultenator::{config::Configure, errors::ContractError};
 
 pub const NEUTRON_TOKEN_FACTORY_ADDRESS: &str = "neutron19ejy8n9qsectrf4semdp9cpknflld0j6el50hx";
@@ -29,6 +29,14 @@ pub fn sudo_block_before_send(
     let config = Config::get_from_storage(deps.as_ref())?;
     let sender = deps.api.addr_validate(&from)?;
     let receiver = deps.api.addr_validate(&to)?;
+
+    // check that the sent denom is correct
+    ensure!(
+        sent.denom == config.strategy_denom,
+        ContractError::Std(StdError::generic_err(
+            "Invalid sent denom, must be strategy denom"
+        ))
+    );
 
     // Load deposits for sender and receiver
     let mut sender_deposit = USER_DEPOSITS.load(deps.storage, sender.clone())?;
@@ -62,11 +70,8 @@ fn calculate_and_adjust_deposits(
     receiver_deposit: &mut UserDeposit,
 ) -> Result<(), ContractError> {
     let user_vault_token_balance = get_balance(deps, from, &config.strategy_denom)?;
-    let total_user_vault_token_balance = user_vault_token_balance
-        .checked_add(sent_amount)
-        .map_err(ContractError::Overflow)?;
 
-    let burn_ratio = Decimal::from_ratio(sent_amount, total_user_vault_token_balance);
+    let burn_ratio = Decimal::from_ratio(sent_amount, user_vault_token_balance);
     let sender_deposit_sent = sender_deposit.total_deposits * burn_ratio;
 
     sender_deposit.remove_from_user_deposits(sender_deposit_sent)?;
