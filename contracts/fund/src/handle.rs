@@ -181,7 +181,6 @@ impl Handle<Config, State> for StructuredVault {
 
         let user_vault_token_balance =
             get_balance(&deps.as_ref(), info.sender.as_ref(), &config.strategy_denom)?;
-
         let total_user_vault_token_balance = user_vault_token_balance
             .checked_add(strategy_denom_sent)
             .map_err(ContractError::Overflow)?;

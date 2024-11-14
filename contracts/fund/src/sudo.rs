@@ -5,7 +5,9 @@ use crate::{
     queries::get_balance,
     state::{UserDeposit, USER_DEPOSITS},
 };
-use cosmwasm_std::{Coin, Decimal, Deps, DepsMut, Env, MessageInfo, Response, Uint128};
+use cosmwasm_std::{
+    ensure, Coin, Decimal, Deps, DepsMut, Env, MessageInfo, Response, StdError, Uint128,
+};
 use cw_utils::nonpayable;
 use osmosis_std::types::osmosis::tokenfactory::v1beta1::MsgSetBeforeSendHook;
 use vaultenator::{config::Configure, errors::ContractError, state::OWNER};
@@ -31,6 +33,14 @@ pub fn sudo_block_before_send(
     let config = Config::get_from_storage(deps.as_ref())?;
     let sender = deps.api.addr_validate(&from)?;
     let receiver = deps.api.addr_validate(&to)?;
+
+    // check that the sent denom is correct
+    ensure!(
+        sent.denom == config.strategy_denom,
+        ContractError::Std(StdError::generic_err(
+            "Invalid sent denom, must be strategy denom"
+        ))
+    );
 
     // Load deposits for sender and receiver
     let mut sender_deposit = USER_DEPOSITS.load(deps.storage, sender.clone())?;
