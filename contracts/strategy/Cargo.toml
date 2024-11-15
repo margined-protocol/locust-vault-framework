@@ -20,6 +20,7 @@ default = [ "slinky" ]
 library = [  ]
 
 astroport = [  ]
+drop      = [  ]
 osmosis   = [  ]
 slinky    = [  ]
 
@@ -27,6 +28,9 @@ slinky    = [  ]
 builds = [
  { name = "astroport", features = [
   "astroport",
+ ], default-features = false },
+ { name = "drop", features = [
+  "drop",
  ], default-features = false },
  { name = "osmosis", features = [
   "osmosis",

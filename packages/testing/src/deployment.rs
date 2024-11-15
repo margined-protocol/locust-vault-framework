@@ -7,18 +7,12 @@ use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{coin, Coin, Decimal};
 use interface::{fund as Fund, strategy as Strategy};
 use neutron_std::types::{
-    // cosmos::base::v1beta1::Coin,
     cosmwasm::wasm::v1::MsgInstantiateContractResponse,
     neutron::dex::MsgPlaceLimitOrder as DefaultMsg,
 };
 use neutron_test_tube::{
     Account, NeutronTestApp as OsmosisTestApp, RunnerExecuteResult, SigningAccount, Wasm,
 };
-// use osmosis_std::types::{
-//     cosmwasm::wasm::v1::MsgInstantiateContractResponse,
-//     osmosis::concentratedliquidity::v1beta1::MsgCreatePosition as DefaultMsg,
-// };
-// use osmosis_test_tube::{Account, OsmosisTestApp, RunnerExecuteResult, SigningAccount, Wasm};
 use serde::Serialize;
 
 #[cw_serde]

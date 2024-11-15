@@ -25,6 +25,7 @@ pub enum QueryMsg {
     Observe {
         seconds_ago: u64,
     },
+    ExchangeRate {},
 }
 
 #[cw_serde]
@@ -97,6 +98,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
         QueryMsg::Simulation { .. } => to_json_binary(&return_simulation(deps)?),
         QueryMsg::Observe { .. } => to_json_binary(&return_observation(deps, env)?),
+        QueryMsg::ExchangeRate {} => to_json_binary(&return_exchange_rate(deps, env)?),
     }
 }
 
@@ -124,4 +126,12 @@ pub fn return_observation(deps: Deps, env: Env) -> StdResult<OracleObservation> 
         timestamp,
         price: KEY_PRICES.load(deps.storage)?,
     })
+}
+
+/// this is a mock query that returns a dummy observation response
+#[cfg(not(tarpaulin_include))]
+pub fn return_exchange_rate(deps: Deps, _env: Env) -> StdResult<Decimal> {
+    let price = KEY_PRICES.load(deps.storage)?;
+
+    Ok(price)
 }

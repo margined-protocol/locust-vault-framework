@@ -7,9 +7,9 @@
 ```
 NODE=https://neutron-rpc.publicnode.com:443
 CHAIN_ID="neutron-1"
-CONTRACT_NAME=fund_vault.wasm
+CONTRACT_NAME=fund.wasm
+CONTRACT_NAME=strategy-slinky.wasm
 CONTRACT_ADDRESS=neutron1puedrclm6rn33x3zv66xg6m23qcdagayqua6jj2wqzvfznlqef8qe53wr2
-USER_ADDRESS=
 ```
 
 ### Testnet
@@ -18,7 +18,6 @@ USER_ADDRESS=
 NODE=https://neutron-testnet-rpc.polkachu.com:443
 CHAIN_ID="pion-1"
 CONTRACT_NAME=fund-aarch64.wasm
-CODE_ID=7951
 CONTRACT_ADDRESS=neutron148hshtgsu503zgnegc2zh2x5f8cmcax59fcj3fe2wu7yrlh6yx4scck99m
 ```
 
@@ -30,10 +29,16 @@ CONTRACT_ADDRESS=neutron148hshtgsu503zgnegc2zh2x5f8cmcax59fcj3fe2wu7yrlh6yx4scck
 neutrond tx wasm store ./artifacts/$CONTRACT_NAME --from=deployer --gas=auto --gas-prices 0.0053untrn --gas-adjustment 1.3 --output=json --node=$NODE --chain-id=$CHAIN_ID
 ```
 
-### Instantiate
+### Instantiate - Fund
 
 ```bash
-neutrond tx wasm instantiate $CODE_ID "{\"admin\": \"neutron1ha2hjlce7sqp59g8xhxz2jds97x8fdw9k9wngp\", \"controller\": \"neutron1ha2hjlce7sqp59g8xhxz2jds97x8fdw9k9wngp\",  \"treasury\": \"neutron1d9uwvv4w4n8yfnng8enl643vml4xwke63m63gl\", \"strategy_cap\": \"1000000000\", \"float\": \"1000000001\", \"token0\": \"ibc/C4CFF46FD6DE35CA4CF4CE031E643C8FDC9BA4B99AE598E9B0ED98FE3A2319F9\", \"performance_fee_rate\": \"0.15\", \"vault_type\": \"fund\"}" --label="margined-locust-fund-vault" --admin deployer --from=deployer --gas=auto --gas-prices 0.008untrn --gas-adjustment 1.3 --output=json --node=$NODE --chain-id=$CHAIN_ID
+neutrond tx wasm instantiate $CODE_ID "{\"admin\": \"neutron1ha2hjlce7sqp59g8xhxz2jds97x8fdw9k9wngp\", \"controller\": \"\",  \"treasury\": \"neutron1d9uwvv4w4n8yfnng8enl643vml4xwke63m63gl\", \"strategy_cap\": \"1000000000\", \"float\": \"0.02\", \"token0\": \"ibc/C4CFF46FD6DE35CA4CF4CE031E643C8FDC9BA4B99AE598E9B0ED98FE3A2319F9\", \"token1\": \"ibc/C4CFF46FD6DE35CA4CF4CE031E643C8FDC9BA4B99AE598E9B0ED98FE3A2319F9\", \"performance_fee_rate\": \"0.15\",, \"management_fee_rate\": \"0.02\", \"vault_type\": \"fund\"}" --label="margined-locust-fund-vault-{$DENOMSs}" --admin deployer --from=deployer --gas=auto --gas-prices 0.008untrn --gas-adjustment 1.3 --output=json --node=$NODE --chain-id=$CHAIN_ID
+```
+
+### Instantiate - Strategy
+
+```bash
+neutrond tx wasm instantiate $CODE_ID "{\"admin\": \"neutron1ha2hjlce7sqp59g8xhxz2jds97x8fdw9k9wngp\", \"controller\": \"neutron1nz852flh6np9xlg9ju3ka6w5txezsxt0j4lypn\", \"token0\": \"neutron1d9uwvv4w4n8yfnng8enl643vml4xwke63m63gl\", \"token1\": \"neutron1d9uwvv4w4n8yfnng8enl643vml4xwke63m63gl\", \"grants\": [],  \"pool_info\": {\"timeout\": ,\"base\": \"\",\"quote\": \"\"}}" --label="margined-locust-strategy-{$DENOMS}" --admin deployer --from=deployer --gas=auto --gas-prices 0.008untrn --gas-adjustment 1.3 --output=json --node=$NODE --chain-id=$CHAIN_ID
 ```
 
 ### Execute
@@ -113,9 +118,11 @@ neutrond query wasm contract-state smart $CONTRACT_ADDRESS "{\"vault_extension\"
 neutrond query wasm contract-state smart $CONTRACT_ADDRESS "{\"vault_extension\": {\"vaultenator\": {\"withdrawable_amount\": {}}}}" --node=$NODE --output=json | jq .
 ```
 
+### Other
+
+```bash
+neutrond q marketmap market-map --node=$NODE --output json | jq .
+neutrond q oracle currency-pairs  --node=$NODE --output json | jq .
 ```
 
-### Controller
-
-- `osmo1x83dj67d25gjfwhfrp6qa893yjc2nr3dfcyt02`
-```
+4.911132252

@@ -66,6 +66,15 @@ pub struct ConfigResponse {
 
 #[cw_serde]
 pub enum PoolInfo {
+    Astroport {
+        pool_address: String,
+        token0: String,
+        token1: String,
+    },
+    Drop {
+        address: String,
+        inverted: bool,
+    },
     Osmosis {
         id: u64,
         token0: String,
@@ -75,11 +84,6 @@ pub enum PoolInfo {
         base: String,
         quote: String,
         timeout: u64, // time in seconds before we consider the price stale
-    },
-    Astroport {
-        pool_address: String,
-        token0: String,
-        token1: String,
     },
 }
 
