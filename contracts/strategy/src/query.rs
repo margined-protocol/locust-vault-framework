@@ -1,24 +1,33 @@
+use cosmwasm_std::{Decimal, Deps, Env, StdError, StdResult};
+use cw2::get_contract_version;
+use interface::strategy::{ConfigResponse, PoolInfo};
+
 use crate::{
     errors::ContractError,
     state::{Config, CONFIG, OWNER},
 };
 
-#[cfg(feature = "astroport")]
+#[cfg(any(feature = "astroport", feature = "drop"))]
 use cosmwasm_schema::cw_serde;
+
+#[cfg(any(feature = "astroport", feature = "drop"))]
+use cosmwasm_std::{to_json_binary, QueryRequest, WasmQuery};
+
 #[cfg(feature = "astroport")]
-use cosmwasm_std::{to_json_binary, Addr, QueryRequest, Uint128, WasmQuery};
-use cosmwasm_std::{Decimal, Deps, Env, StdResult};
+use cosmwasm_std::{Addr, Uint128};
+
 #[cfg(feature = "slinky")]
-use cosmwasm_std::{StdError, Uint128};
-use cw2::get_contract_version;
-use interface::strategy::{ConfigResponse, PoolInfo};
+use cosmwasm_std::Uint128;
+
 #[cfg(feature = "slinky")]
 use neutron_std::types::slinky::{oracle::v1::OracleQuerier, types::v1::CurrencyPair};
+
 #[cfg(feature = "osmosis")]
 use osmosis_std::{
     shim::Timestamp as OsmosisTimestamp,
     types::osmosis::{poolmanager::v1beta1::PoolmanagerQuerier, twap::v1beta1::TwapQuerier},
 };
+
 #[cfg(any(feature = "osmosis", feature = "slinky"))]
 use std::str::FromStr;
 
@@ -76,7 +85,7 @@ pub fn query_grants(deps: &Deps) -> StdResult<Vec<String>> {
 }
 
 #[cfg(feature = "astroport")]
-pub fn query_spot_price(deps: &Deps, env: Env) -> StdResult<Decimal> {
+pub fn query_spot_price(deps: &Deps, _env: Env) -> StdResult<Decimal> {
     let config: Config = CONFIG.load(deps.storage)?;
 
     #[cw_serde]
@@ -91,13 +100,12 @@ pub fn query_spot_price(deps: &Deps, env: Env) -> StdResult<Decimal> {
     }
 
     let (pool_address, token0, token1) = match config.pool_info {
-        PoolInfo::Osmosis { .. } => unimplemented!(),
-        PoolInfo::Slinky { .. } => unimplemented!(),
         PoolInfo::Astroport {
             pool_address,
             token0,
             token1,
         } => (pool_address, token0, token1),
+        _ => unimplemented!(),
     };
 
     let amount_in = Uint128::from(1_000_000u128);
@@ -138,13 +146,12 @@ pub fn query_twap_price(deps: &Deps, _: Env, duration: u64) -> StdResult<Decimal
     }
 
     let (pool_address, _, _) = match config.pool_info {
-        PoolInfo::Osmosis { .. } => unimplemented!(),
-        PoolInfo::Slinky { .. } => unimplemented!(),
         PoolInfo::Astroport {
             pool_address,
             token0,
             token1,
         } => (pool_address, token0, token1),
+        _ => unimplemented!(),
     };
 
     let res: OracleObservation = deps.querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
@@ -157,14 +164,47 @@ pub fn query_twap_price(deps: &Deps, _: Env, duration: u64) -> StdResult<Decimal
     Ok(res.price)
 }
 
+#[cfg(feature = "drop")]
+pub fn get_drop_price(deps: &Deps, _env: Env) -> StdResult<Decimal> {
+    let config: Config = CONFIG.load(deps.storage)?;
+
+    #[cw_serde]
+    pub enum QueryMsg {
+        ExchangeRate {},
+    }
+
+    let (address, inverted) = match config.pool_info {
+        PoolInfo::Drop { address, inverted } => (address, inverted),
+        _ => unimplemented!(),
+    };
+
+    let res: Decimal = deps.querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
+        contract_addr: address,
+        msg: to_json_binary(&QueryMsg::ExchangeRate {})?,
+    }))?;
+
+    let price = if inverted { Decimal::one() / res } else { res };
+
+    Ok(price)
+}
+
+#[cfg(feature = "drop")]
+pub fn query_spot_price(deps: &Deps, _env: Env) -> StdResult<Decimal> {
+    get_drop_price(deps, _env)
+}
+
+#[cfg(feature = "drop")]
+pub fn query_twap_price(deps: &Deps, _env: Env, _duration: u64) -> StdResult<Decimal> {
+    get_drop_price(deps, _env)
+}
+
 #[cfg(feature = "osmosis")]
-pub fn query_spot_price(deps: &Deps, env: Env) -> StdResult<Decimal> {
+pub fn query_spot_price(deps: &Deps, _env: Env) -> StdResult<Decimal> {
     let config: Config = CONFIG.load(deps.storage)?;
 
     let (id, token0, token1) = match config.pool_info {
         PoolInfo::Osmosis { id, token0, token1 } => (id, token0, token1),
-        PoolInfo::Slinky { .. } => unimplemented!(),
-        PoolInfo::Astroport { .. } => unimplemented!(),
+        _ => unimplemented!(),
     };
 
     let querier = PoolmanagerQuerier::new(&deps.querier);
@@ -182,8 +222,7 @@ pub fn query_twap_price(deps: &Deps, env: Env, duration: u64) -> StdResult<Decim
 
     let (id, token0, token1) = match config.pool_info {
         PoolInfo::Osmosis { id, token0, token1 } => (id, token0, token1),
-        PoolInfo::Slinky { .. } => unimplemented!(),
-        PoolInfo::Astroport { .. } => unimplemented!(),
+        _ => unimplemented!(),
     };
 
     let querier = TwapQuerier::new(&deps.querier);
@@ -217,13 +256,12 @@ fn get_slinky_price(deps: &Deps, env: Env) -> StdResult<Decimal> {
     let config: Config = CONFIG.load(deps.storage)?;
 
     let (base, quote, timeout) = match config.pool_info {
-        PoolInfo::Osmosis { .. } => unimplemented!(),
         PoolInfo::Slinky {
             base,
             quote,
             timeout,
         } => (base, quote, timeout),
-        PoolInfo::Astroport { .. } => unimplemented!(),
+        _ => unimplemented!(),
     };
 
     let querier = OracleQuerier::new(&deps.querier);
