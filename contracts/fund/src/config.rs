@@ -2,9 +2,25 @@ use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{
     ensure, Decimal, DepsMut, Env, Event, MessageInfo, Response, StdError, Uint128,
 };
+use cw_storage_plus::Item;
 use interface::fund::{InstantiateMsg, UpdateConfig};
 use serde::{de::DeserializeOwned, Serialize};
 use vaultenator::{config::Configure, errors::ContractError, state::OWNER};
+
+#[cw_serde]
+pub struct V003Config {
+    pub controller: String,
+    pub admin: String,
+    pub treasury: String,
+    pub strategy_cap: Uint128,
+    pub float: Decimal,
+    pub strategy_denom: String,
+    pub token0: String,
+    pub token1: Option<String>,
+    pub performance_fee_rate: Decimal,
+    pub estimate_cycle_profit: Option<Decimal>,
+    pub vault_type: String,
+}
 
 #[cw_serde]
 pub struct Config {
@@ -174,4 +190,33 @@ impl Config {
             vec![self.token0.clone()]
         }
     }
+}
+
+pub fn migrate_config(mut deps: DepsMut) -> Result<(DepsMut, Response), ContractError> {
+    let old_config: Item<V003Config> = Item::new("config");
+
+    let cfg = old_config.load(deps.storage)?;
+
+    let new_config = Config {
+        admin: cfg.admin,
+        controller: cfg.controller,
+        treasury: cfg.treasury,
+        strategy_cap: cfg.strategy_cap,
+        float: cfg.float,
+        strategy_denom: cfg.strategy_denom,
+        token0: cfg.token0,
+        token1: cfg.token1,
+        management_fee_rate: Decimal::zero(),
+        performance_fee_rate: cfg.performance_fee_rate,
+        estimate_cycle_profit: cfg.estimate_cycle_profit,
+        vault_type: cfg.vault_type,
+    };
+
+    new_config.validate(&mut deps)?;
+    new_config.save_to_storage(&mut deps)?;
+
+    Ok((
+        deps,
+        Response::new().add_event(Event::new("migrate_config")),
+    ))
 }

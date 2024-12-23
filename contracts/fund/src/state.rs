@@ -1,5 +1,8 @@
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{Addr, Coin, Decimal, Deps, DepsMut, Env, Storage, Timestamp, Uint128};
+use cosmwasm_std::{
+    Addr, Coin, Decimal, Deps, DepsMut, Env, Event, Response, Storage, Timestamp, Uint128,
+};
+use cw_storage_plus::Item;
 use cw_storage_plus::Map;
 use std::collections::HashMap;
 use vaultenator::{errors::ContractError, state::ManageState};
@@ -12,6 +15,16 @@ pub const USER_DEPOSITS: Map<Addr, UserDeposit> = Map::new("user_deposits");
 pub struct UserDeposit {
     pub total_deposits: Uint128,
     pub timestamp: u64,
+}
+
+#[cw_serde]
+pub struct V003State {
+    pub is_open: bool,
+    pub is_paused: bool,
+    pub last_pause: Timestamp,
+    pub last_claim: Timestamp,
+    pub total_staked_tokens: Uint128,
+    pub total_withdrawn_tokens: HashMap<String, Uint128>,
 }
 
 #[cw_serde]
@@ -133,6 +146,26 @@ impl State {
 
         Ok(())
     }
+}
+
+pub fn migrate_state(mut deps: DepsMut) -> Result<Response, ContractError> {
+    let state: Item<V003State> = Item::new("state");
+
+    let stt = state.load(deps.storage)?;
+
+    let new_state = State {
+        is_open: stt.is_open,
+        is_paused: stt.is_paused,
+        last_pause: stt.last_pause,
+        last_claim: stt.last_claim,
+        pending_management_fees: vec![],
+        total_staked_tokens: stt.total_staked_tokens,
+        total_withdrawn_tokens: stt.total_withdrawn_tokens,
+    };
+
+    new_state.save_to_storage(&mut deps)?;
+
+    Ok(Response::new().add_event(Event::new("migrate_state")))
 }
 
 impl UserDeposit {
