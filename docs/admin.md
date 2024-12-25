@@ -133,5 +133,3 @@ neutrond query wasm contract-state smart $CONTRACT_ADDRESS "{\"vault_extension\"
 neutrond q marketmap market-map --node=$NODE --output json | jq .
 neutrond q oracle currency-pairs  --node=$NODE --output json | jq .
 ```
-
-4.911132252
