@@ -1,10 +1,9 @@
 use crate::{
-    config::Config,
     contract::StructuredVault,
     helpers::{calculate_amount_withdrawable, calculate_assets_value},
     math::get_amount_to_mint,
     queries::{get_balance, get_total_supply},
-    state::State,
+    storage::{config::Config, state::State},
 };
 
 use cosmwasm_std::{Coin, Decimal, Deps, Env, StdError, StdResult, Uint128};

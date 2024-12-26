@@ -15,12 +15,40 @@ pub fn event_withdraw(user: &str, amount_withdrawn: Coin) -> Event {
     ])
 }
 
+pub fn event_cancel_redemption(user: &str, token_in: Coin) -> Event {
+    Event::new("cancel_redemption").add_attributes([
+        ("version", CONTRACT_VERSION),
+        ("contract", CONTRACT_NAME),
+        ("user", user),
+        ("amount", &token_in.to_string()),
+    ])
+}
+
+pub fn event_create_redemption(user: &str, token_in: Coin) -> Event {
+    Event::new("create_redemption").add_attributes([
+        ("version", CONTRACT_VERSION),
+        ("contract", CONTRACT_NAME),
+        ("user", user),
+        ("amount", &token_in.to_string()),
+    ])
+}
+
 pub fn event_repay(user: &str, token_in: Coin) -> Event {
     Event::new("repay").add_attributes([
         ("version", CONTRACT_VERSION),
         ("contract", CONTRACT_NAME),
         ("user", user),
         ("amount_repayed", &token_in.to_string()),
+    ])
+}
+
+pub fn event_repay_and_process(user: &str, token_in: Coin, redemption_out: Coin) -> Event {
+    Event::new("repay_and_process").add_attributes([
+        ("version", CONTRACT_VERSION),
+        ("contract", CONTRACT_NAME),
+        ("user", user),
+        ("amount_repayed", &token_in.to_string()),
+        ("amount_processed", &redemption_out.to_string()),
     ])
 }
 

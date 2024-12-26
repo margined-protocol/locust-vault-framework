@@ -1,4 +1,4 @@
-use crate::{config::Config, contract::StructuredVault, messages::create_mint_message};
+use crate::{contract::StructuredVault, messages::create_mint_message, storage::config::Config};
 
 use cosmwasm_std::{DepsMut, Env, Reply, Response, SubMsgResult, Uint128};
 use num_enum::TryFromPrimitive;

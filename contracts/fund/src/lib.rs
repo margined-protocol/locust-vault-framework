@@ -1,8 +1,7 @@
-pub mod config;
 pub mod contract;
 pub mod describe;
 pub mod events;
-pub mod handle;
+pub mod handlers;
 pub mod helpers;
 pub mod math;
 pub mod messages;
@@ -10,7 +9,7 @@ pub mod process;
 pub mod queries;
 pub mod query;
 pub mod reply;
-pub mod state;
+pub mod storage;
 pub mod sudo;
 
 #[cfg(test)]

@@ -36,24 +36,47 @@ pub enum VaultenatorExtensionQueryMsg {
     OwnershipProposal {},
     State {},
     Version {},
-    EstimateVaultAssets { amount: Uint128 },
+    EstimateVaultAssets {
+        amount: Uint128,
+    },
+    PendingRedemptions {
+        start: Option<Uint128>,
+        limit: Option<u32>,
+    },
     WithdrawableAmount {},
 }
 
 #[cw_serde]
 #[allow(clippy::large_enum_variant)]
 pub enum VaultenatorExtensionExecuteMsg {
+    CancelRedemption {},
+    CreateRedemption {
+        amount: Uint128,
+    },
     ClaimOwnership {},
     Crank {},
     Pause {},
-    ProposeNewOwner { new_owner: String, duration: u64 },
+    ProposeNewOwner {
+        new_owner: String,
+        duration: u64,
+    },
     RejectOwner {},
     SetOpen {},
     RegisterSudo {},
-    UpdateConfig { new_config: UpdateConfig },
+    UpdateConfig {
+        new_config: UpdateConfig,
+    },
     Unpause {},
-    Withdraw { tokens_to_withdraw: Vec<Coin> },
-    Repay { cycle_profit: Option<Decimal> },
+    Withdraw {
+        tokens_to_withdraw: Vec<Coin>,
+    },
+    Repay {
+        cycle_profit: Option<Decimal>,
+    },
+    RepayQueue {
+        cycle_profit: Option<Decimal>,
+        max_queue_amount: Option<Uint128>,
+    },
 }
 
 #[cw_serde]

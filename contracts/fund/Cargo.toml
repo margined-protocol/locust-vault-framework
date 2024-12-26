@@ -18,7 +18,10 @@ version      = "0.1.0"
 crate-type = [ "cdylib", "rlib" ]
 
 [features]
-library = [  ]
+integration = [  ]
+library     = [  ]
+migration   = [  ]
+unit        = [  ]
 
 [dependencies]
 cosmwasm-schema   = { workspace = true }

@@ -2,8 +2,7 @@ use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{
     Addr, Coin, Decimal, Deps, DepsMut, Env, Event, Response, Storage, Timestamp, Uint128,
 };
-use cw_storage_plus::Item;
-use cw_storage_plus::Map;
+use cw_storage_plus::{Item, Map};
 use std::collections::HashMap;
 use vaultenator::{errors::ContractError, state::ManageState};
 

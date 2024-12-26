@@ -1,10 +1,11 @@
 use crate::{
-    config::Config,
-    handle::{handle_repay, handle_withdraw},
+    handlers::extensions::{
+        handle_cancel_redemption, handle_create_redemption, handle_repay, handle_withdraw,
+    },
     query::{
         query_estimate_vault_assets, query_state_wrapper, query_version, query_withdrawable_amount,
     },
-    state::State,
+    storage::{config::Config, state::State},
     sudo::{handle_register_sudo, sudo_block_before_send},
 };
 
@@ -75,6 +76,12 @@ pub fn execute(
         }
         ExecuteMsg::VaultExtension(msg) => match msg {
             ExtensionExecuteMsg::Vaultenator(msg) => match msg {
+                VaultenatorExtensionExecuteMsg::CancelRedemption {} => {
+                    handle_cancel_redemption(deps, env, info)
+                }
+                VaultenatorExtensionExecuteMsg::CreateRedemption { amount } => {
+                    handle_create_redemption(deps, env, info, amount)
+                }
                 VaultenatorExtensionExecuteMsg::ClaimOwnership {} => StructuredVault
                     .handle_claim_ownership(deps, info, env, OWNER, OWNERSHIP_PROPOSAL),
                 VaultenatorExtensionExecuteMsg::RegisterSudo {} => {
@@ -106,9 +113,14 @@ pub fn execute(
                 VaultenatorExtensionExecuteMsg::Withdraw { tokens_to_withdraw } => {
                     handle_withdraw(deps, env, info, tokens_to_withdraw)
                 }
+
                 VaultenatorExtensionExecuteMsg::Repay { cycle_profit } => {
                     handle_repay(deps, env, info, cycle_profit)
                 }
+                VaultenatorExtensionExecuteMsg::RepayQueue {
+                    cycle_profit,
+                    max_queue_amount,
+                } => unimplemented!("RepayQueue is not implemented"),
                 VaultenatorExtensionExecuteMsg::Unpause {} => {
                     StructuredVault.handle_unpause_contract(deps, info)
                 }
@@ -162,19 +174,22 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
                 VaultenatorExtensionQueryMsg::EstimateVaultAssets { amount } => {
                     to_json_binary(&query_estimate_vault_assets(amount, deps, env)?)
                 }
-                VaultenatorExtensionQueryMsg::State {} => {
-                    to_json_binary(&query_state_wrapper(deps)?)
-                }
                 VaultenatorExtensionQueryMsg::Owner {} => {
                     to_json_binary(&StructuredVault::query_owner(deps)?)
                 }
                 VaultenatorExtensionQueryMsg::OwnershipProposal {} => to_json_binary(
                     &StructuredVault::query_ownership_proposal(deps, OWNERSHIP_PROPOSAL)?,
                 ),
-                VaultenatorExtensionQueryMsg::Version {} => to_json_binary(&query_version(deps)?),
+                VaultenatorExtensionQueryMsg::PendingRedemptions { start, limit } => {
+                    unimplemented!("PendingRedemptions is not implemented")
+                }
+                VaultenatorExtensionQueryMsg::State {} => {
+                    to_json_binary(&query_state_wrapper(deps)?)
+                }
                 VaultenatorExtensionQueryMsg::WithdrawableAmount {} => {
                     to_json_binary(&query_withdrawable_amount(deps, env)?)
                 }
+                VaultenatorExtensionQueryMsg::Version {} => to_json_binary(&query_version(deps)?),
             },
         },
     }

@@ -1,23 +1,22 @@
 use crate::{
-    config::{migrate_config, Config},
     contract::{StructuredVault, CONTRACT_NAME, CONTRACT_VERSION},
-    events::{event_deposit, event_fees, event_migrate, event_repay, event_withdraw},
+    events::{event_deposit, event_migrate},
+    handlers::extensions::get_assets_to_burn,
     helpers::{
-        calculate_amount_withdrawable, calculate_assets_to_redeem, calculate_assets_value,
-        calculate_performance_fees, check_is_valid_token, check_strategy_cap,
-        ensure_no_duplicate_denoms, get_amount_to_mint, get_deposit_value, get_sent_tokens,
-        get_strategy_denom, get_token_deposits, map_to_contract_error,
+        calculate_assets_to_redeem, calculate_assets_value, check_strategy_cap, get_amount_to_mint,
+        get_deposit_value, get_sent_tokens, get_strategy_denom, get_token_deposits,
+        map_to_contract_error,
     },
-    messages::create_bank_message,
     process::{process_deposit, process_management_fees_and_modify_response, process_redeem},
     queries::{get_balance, get_total_supply},
     reply::ReplyIDs,
-    state::{migrate_state, update_user_deposit, State, UserDeposit, USER_DEPOSITS},
+    storage::{
+        config::{migrate_config, Config},
+        state::{migrate_state, update_user_deposit, State, UserDeposit, USER_DEPOSITS},
+    },
 };
 
-use cosmwasm_std::{
-    coin, ensure, Coin, Decimal, DepsMut, Env, MessageInfo, Response, StdError, SubMsg, Uint128,
-};
+use cosmwasm_std::{coin, Decimal, DepsMut, Env, MessageInfo, Response, StdError, SubMsg, Uint128};
 use cw2::{get_contract_version, set_contract_version};
 use cw_utils::{must_pay, nonpayable};
 use serde::{de::DeserializeOwned, Serialize};
@@ -179,25 +178,14 @@ impl Handle<Config, State> for StructuredVault {
         let strategy_denom_sent =
             must_pay(&info, &config.strategy_denom).map_err(|_| ContractError::InvalidFunds {})?;
 
-        let user_vault_token_balance =
-            get_balance(&deps.as_ref(), info.sender.as_ref(), &config.strategy_denom)?;
-        let total_user_vault_token_balance = user_vault_token_balance
-            .checked_add(strategy_denom_sent)
-            .map_err(ContractError::Overflow)?;
-
-        let total_supply = get_total_supply(&deps.as_ref(), &config.strategy_denom)?;
-
-        let withdraw_percentage = Decimal::from_ratio(strategy_denom_sent, total_supply);
-
-        let assets_to_redeem = calculate_assets_to_redeem(
-            &deps.as_ref(),
+        let (burn_ratio, assets_to_redeem) = get_assets_to_burn(
+            deps.as_ref(),
             &config,
             &state,
+            info.sender.as_str(),
             env.contract.address.as_str(),
-            withdraw_percentage,
+            strategy_denom_sent,
         )?;
-
-        let burn_ratio = Decimal::from_ratio(strategy_denom_sent, total_user_vault_token_balance);
 
         update_user_deposit(deps.storage, info.sender.clone(), burn_ratio, &mut state)?;
 
@@ -278,138 +266,4 @@ impl Handle<Config, State> for StructuredVault {
 
         Ok(response)
     }
-}
-
-pub fn handle_withdraw(
-    deps: DepsMut,
-    env: Env,
-    info: MessageInfo,
-    tokens_to_withdraw: Vec<Coin>,
-) -> Result<Response, ContractError> {
-    nonpayable(&info).map_err(map_to_contract_error)?;
-    let (mut response, mut deps) =
-        process_management_fees_and_modify_response(deps, Response::default(), env.clone(), None)?;
-
-    State::is_open_and_unpaused(deps.as_ref())?;
-
-    let config = Config::get_from_storage(deps.as_ref())?;
-    let mut state = State::get_from_storage(deps.as_ref())?;
-
-    ensure!(
-        config.controller == info.sender.to_string(),
-        ContractError::Unauthorized {}
-    );
-
-    ensure_no_duplicate_denoms(&tokens_to_withdraw)?;
-
-    for token in tokens_to_withdraw.iter() {
-        check_is_valid_token(&config, &token.denom)?;
-
-        let max_withdrawable = calculate_amount_withdrawable(
-            &deps.as_ref(),
-            &config,
-            &state,
-            env.contract.address.as_str(),
-            &token.denom,
-        )?;
-
-        let amount_to_withdraw = max_withdrawable.min(token.amount);
-
-        // Create withdrawal message
-        if !amount_to_withdraw.is_zero() {
-            // Update total staked assets
-            state.add_to_total_withdrawn_tokens(amount_to_withdraw, &token.denom)?;
-            state.save_to_storage(&mut deps)?;
-
-            let withdraw_amount = Coin {
-                denom: token.denom.to_string(),
-                amount: amount_to_withdraw,
-            };
-
-            let msg = create_bank_message(config.controller.clone(), vec![withdraw_amount.clone()]);
-
-            response = response
-                .add_event(event_withdraw(info.sender.as_str(), withdraw_amount))
-                .add_message(msg);
-        }
-    }
-
-    Ok(response)
-}
-
-pub fn handle_repay(
-    deps: DepsMut,
-    env: Env,
-    info: MessageInfo,
-    cycle_profit: Option<Decimal>,
-) -> Result<Response, ContractError> {
-    let (mut response, mut deps) =
-        process_management_fees_and_modify_response(deps, Response::default(), env.clone(), None)?;
-
-    State::is_open_and_unpaused(deps.as_ref())?;
-
-    let config = Config::get_from_storage(deps.as_ref())?;
-    let mut state = State::get_from_storage(deps.as_ref())?;
-
-    ensure!(
-        config.controller == info.sender.to_string(),
-        ContractError::Unauthorized {}
-    );
-
-    let repayment_tokens = get_sent_tokens(&info, &config)?;
-
-    let profit_percentage = if let Some(cycle_profit) = cycle_profit {
-        cycle_profit
-    } else {
-        config.estimate_cycle_profit.unwrap_or(Decimal::zero())
-    };
-
-    for repayment in repayment_tokens.iter() {
-        let total_withdrawn = state.get_total_withdrawn_tokens(&repayment.denom);
-
-        let profit = if repayment.amount < total_withdrawn {
-            repayment.amount.mul_floor(profit_percentage)
-        } else {
-            repayment.amount.saturating_sub(total_withdrawn)
-        };
-
-        let amount_repaid = repayment.amount.saturating_sub(profit);
-
-        // Remove repayment amount from total withdrawn tokens
-        state.remove_from_total_withdrawn_tokens(amount_repaid, &repayment.denom)?;
-        state.save_to_storage(&mut deps)?;
-
-        let performance_fee = calculate_performance_fees(
-            vec![Coin {
-                denom: repayment.denom.clone(),
-                amount: profit,
-            }],
-            config.performance_fee_rate,
-        )?;
-
-        let performance_fee_event = event_fees(
-            CONTRACT_VERSION,
-            CONTRACT_NAME,
-            "performance",
-            performance_fee.clone(),
-        );
-
-        response = response
-            .add_events([
-                event_repay(
-                    config.controller.as_str(),
-                    Coin {
-                        denom: repayment.denom.clone(),
-                        amount: repayment.amount,
-                    },
-                ),
-                performance_fee_event,
-            ])
-            .add_message(create_bank_message(
-                config.treasury.clone(),
-                performance_fee.clone(),
-            ))
-    }
-
-    Ok(response)
 }

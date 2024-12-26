@@ -1,9 +1,11 @@
 use crate::{
-    config::Config,
     events::{event_register_sudo, event_sudo},
     helpers::map_to_contract_error,
     queries::get_balance,
-    state::{UserDeposit, USER_DEPOSITS},
+    storage::{
+        config::Config,
+        state::{UserDeposit, USER_DEPOSITS},
+    },
 };
 use cosmwasm_std::{
     ensure, Coin, Decimal, Deps, DepsMut, Env, MessageInfo, Response, StdError, Uint128,
