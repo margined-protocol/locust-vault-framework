@@ -1,6 +1,6 @@
 use crate::{
     math::{calculate_management_fee, YEAR_IN_SECONDS},
-    queries::{get_balance, get_total_supply, query_twap_price},
+    queries::external::{get_balance, get_total_supply, query_twap_price},
     storage::{
         config::Config,
         state::{State, TWAP_PERIOD},

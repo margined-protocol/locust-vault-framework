@@ -1,6 +1,13 @@
-use cosmwasm_std::{Coin, StdError};
+use crate::{
+    helpers::calculate_assets_to_redeem,
+    queries::external::{get_balance, get_total_supply},
+    storage::{config::Config, state::State},
+};
 
-pub fn process_assets_to_redeem(
+use cosmwasm_std::{Coin, Decimal, Deps, StdError, Uint128};
+use vaultenator::errors::ContractError;
+
+pub fn calculate_total_assets_redeemable(
     assets_to_redeem: &[Coin],
     remaining_balance: &mut [Coin],
 ) -> Result<(), StdError> {
@@ -29,4 +36,30 @@ pub fn process_assets_to_redeem(
     }
 
     Ok(())
+}
+
+pub fn calculate_share_to_burn(
+    deps: Deps,
+    config: &Config,
+    state: &State,
+    sender: &str,
+    contract: &str,
+    amount_sent: Uint128,
+) -> Result<(Decimal, Vec<Coin>), ContractError> {
+    let user_vault_token_balance = get_balance(&deps, sender, &config.strategy_denom)?;
+
+    let total_user_vault_token_balance = user_vault_token_balance
+        .checked_add(amount_sent)
+        .map_err(ContractError::Overflow)?;
+
+    let total_supply = get_total_supply(&deps, &config.strategy_denom)?;
+
+    let withdraw_percentage = Decimal::from_ratio(amount_sent, total_supply);
+
+    let assets_to_redeem =
+        calculate_assets_to_redeem(&deps, config, state, contract, withdraw_percentage)?;
+
+    let burn_ratio = Decimal::from_ratio(amount_sent, total_user_vault_token_balance);
+
+    Ok((burn_ratio, assets_to_redeem))
 }

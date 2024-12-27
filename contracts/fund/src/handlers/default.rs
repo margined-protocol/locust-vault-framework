@@ -1,14 +1,12 @@
 use crate::{
     contract::{StructuredVault, CONTRACT_NAME, CONTRACT_VERSION},
     events::{event_deposit, event_migrate},
-    handlers::extensions::get_assets_to_burn,
+    handlers::helpers::calculate_share_to_burn,
     helpers::{
-        calculate_assets_to_redeem, calculate_assets_value, check_strategy_cap, get_amount_to_mint,
-        get_deposit_value, get_sent_tokens, get_strategy_denom, get_token_deposits,
-        map_to_contract_error,
+        calculate_assets_value, check_strategy_cap, get_amount_to_mint, get_deposit_value,
+        get_sent_tokens, get_strategy_denom, get_token_deposits, map_to_contract_error,
     },
     process::{process_deposit, process_management_fees_and_modify_response, process_redeem},
-    queries::{get_balance, get_total_supply},
     reply::ReplyIDs,
     storage::{
         config::{migrate_config, Config},
@@ -16,7 +14,7 @@ use crate::{
     },
 };
 
-use cosmwasm_std::{coin, Decimal, DepsMut, Env, MessageInfo, Response, StdError, SubMsg, Uint128};
+use cosmwasm_std::{coin, DepsMut, Env, MessageInfo, Response, StdError, SubMsg, Uint128};
 use cw2::{get_contract_version, set_contract_version};
 use cw_utils::{must_pay, nonpayable};
 use serde::{de::DeserializeOwned, Serialize};
@@ -178,7 +176,7 @@ impl Handle<Config, State> for StructuredVault {
         let strategy_denom_sent =
             must_pay(&info, &config.strategy_denom).map_err(|_| ContractError::InvalidFunds {})?;
 
-        let (burn_ratio, assets_to_redeem) = get_assets_to_burn(
+        let (burn_ratio, assets_to_redeem) = calculate_share_to_burn(
             deps.as_ref(),
             &config,
             &state,

@@ -10,35 +10,41 @@ pub struct Redemption {
 }
 
 pub struct Queue<'a> {
-    pub owner: MultiIndex<'a, Addr, Redemption, String>,
+    pub user: MultiIndex<'a, Addr, Redemption, String>,
+    pub timestamp: MultiIndex<'a, u64, Redemption, String>,
 }
 
 impl<'a> IndexList<Redemption> for Queue<'a> {
     fn get_indexes(&'_ self) -> Box<dyn Iterator<Item = &'_ dyn Index<Redemption>> + '_> {
-        let v: Vec<&dyn Index<Redemption>> = vec![&self.owner];
+        let v: Vec<&dyn Index<Redemption>> = vec![&self.user];
         Box::new(v.into_iter())
     }
 }
 pub fn redemptions<'a>() -> IndexedMap<&'a str, Redemption, Queue<'a>> {
     let indexes = Queue {
-        owner: MultiIndex::new(
+        user: MultiIndex::new(
             |_, value| value.user.clone(),
             "redemption",
-            "redemption__owner",
+            "redemption__user",
+        ),
+        timestamp: MultiIndex::new(
+            |_, value| value.timestamp,
+            "redemption",
+            "redemption__timestamp",
         ),
     };
     IndexedMap::new("redemption", indexes)
 }
 
-pub fn redemptions_by_owner<'a>() -> MultiIndex<'a, Addr, Redemption, String> {
-    redemptions().idx.owner
+pub fn redemptions_by_user<'a>() -> MultiIndex<'a, Addr, Redemption, String> {
+    redemptions().idx.user
 }
 
 pub fn filter_queue_by_user<'a>(
     storage: &'a dyn Storage,
     user: Addr,
 ) -> Box<dyn Iterator<Item = StdResult<(String, Redemption)>> + 'a> {
-    redemptions_by_owner()
+    redemptions_by_user()
         .prefix(user)
         .range(storage, None, None, Order::Ascending)
 }

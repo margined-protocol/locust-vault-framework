@@ -1,15 +1,12 @@
 use crate::{
-    contract::{CONTRACT_NAME, CONTRACT_VERSION},
-    events::{
-        event_cancel_redemption, event_create_redemption, event_fees, event_repay, event_withdraw,
-    },
+    events::{event_cancel_redemption, event_create_redemption, event_withdraw},
+    handlers::helpers::{calculate_share_to_burn, calculate_total_assets_redeemable},
     helpers::{
-        calculate_amount_withdrawable, calculate_assets_to_redeem, check_is_valid_token,
-        ensure_no_duplicate_denoms, get_sent_tokens, get_vault_balance, map_to_contract_error,
+        calculate_amount_withdrawable, check_is_valid_token, ensure_no_duplicate_denoms,
+        get_vault_balance, map_to_contract_error,
     },
     messages::create_bank_message,
     process::{process_management_fees_and_modify_response, process_redeem, process_repayments},
-    queries::{get_balance, get_total_supply},
     storage::{
         config::Config,
         queue::{add_to_queue, redemptions, remove_from_queue},
@@ -18,7 +15,7 @@ use crate::{
 };
 
 use cosmwasm_std::{
-    coin, ensure, Coin, Decimal, Deps, DepsMut, Env, MessageInfo, Order, Response, Uint128,
+    coin, ensure, Coin, Decimal, DepsMut, Env, MessageInfo, Order, Response, Uint128,
 };
 use cw_utils::{must_pay, nonpayable};
 use vaultenator::{config::Configure, errors::ContractError, state::ManageState};
@@ -174,7 +171,7 @@ pub fn handle_repay_queue(
     env: Env,
     info: MessageInfo,
     cycle_profit: Option<Decimal>,
-    max_queue_amount: Option<Uint128>,
+    max_queue_amount: Option<u64>,
 ) -> Result<Response, ContractError> {
     // 1. Process management fees and ensure the state is open and unpaused
     let (mut response, mut deps) =
@@ -210,14 +207,19 @@ pub fn handle_repay_queue(
     let mut redemptions_to_process = vec![];
 
     // 7. Process redemptions
-    for result in redemptions().range(deps.storage, None, None, Order::Ascending) {
+    let limit = max_queue_amount.unwrap_or(50);
+
+    for result in redemptions()
+        .range(deps.storage, None, None, Order::Ascending)
+        .take(limit as usize)
+    {
         let (_, redemption) = result?;
 
         // Immutable operations
         let strategy_denom_sent = redemption.total_deposits;
 
         // Immutable operations done here
-        let (burn_ratio, assets_to_redeem) = get_assets_to_burn(
+        let (burn_ratio, assets_to_redeem) = calculate_share_to_burn(
             deps.as_ref(),
             &config,
             &state,
@@ -226,93 +228,44 @@ pub fn handle_repay_queue(
             strategy_denom_sent,
         )?;
 
-        let mut insufficient_balance = false;
-
-        // Iterate through the assets to redeem and ensure we have sufficient balance to fulfill the redemption
-        for asset in assets_to_redeem.iter() {
-            if let Some(balance) = remaining_balance
-                .iter_mut()
-                .find(|c| c.denom == asset.denom)
-            {
-                // Check that this redemption isn't larger than the available balance
-                if asset.amount > balance.amount {
-                    insufficient_balance = true;
-                    break;
-                }
-
-                // Subtract the amounts (update the balance in-place)
-                balance.amount = balance.amount.saturating_sub(asset.amount);
-            } else {
-                // If the asset doesn't exist in remaining_balance, handle this as an error case
-                insufficient_balance = true;
+        match calculate_total_assets_redeemable(&assets_to_redeem, &mut remaining_balance) {
+            Result::Ok(_) => {}
+            Result::Err(_) => {
                 break;
             }
-        }
-
-        if insufficient_balance {
-            break;
         }
 
         // Add the redemption to the list of redemptions to process
         redemptions_to_process.push((redemption, burn_ratio, assets_to_redeem));
     }
-    // // Mutable operations: Scoped separately to avoid conflicts
-    // {
-    //     // Update user deposit (mutable borrow starts)
-    //     update_user_deposit(
-    //         deps.storage,
-    //         redemption.sender.clone(),
-    //         burn_ratio,
-    //         &mut state,
-    //     )?;
-    // }
 
-    // //    // Mutable operations: Scoped separately to avoid conflicts
-    // //    {
-    // //     // Update user deposit (mutable borrow starts)
-    // //     update_user_deposit(deps.storage, info.sender.clone(), burn_ratio, &mut state)?;
-    // // }
+    for redemption in redemptions_to_process.iter() {
+        let (redemption, burn_ratio, assets_to_redeem) = redemption;
 
-    // // // Save updated state to storage: Scoped separately
-    // // {
-    // //     state.save_to_storage(&mut deps)?;
-    // // }
+        // Update user deposit
+        update_user_deposit(
+            deps.storage,
+            redemption.user.clone(),
+            *burn_ratio,
+            &mut state,
+        )?;
 
-    // // // Redeem the assets (no mutable borrow here)
-    // // response = process_redeem(
-    // //     response,
-    // //     &info,
-    // //     assets_to_redeem,
-    // //     &config,
-    // //     &env,
-    // //     strategy_denom_sent,
-    // // )?;
+        // Save state
+        state.save_to_storage(&mut deps)?;
+
+        // Process redeem
+        response = process_redeem(
+            response,
+            &info,
+            assets_to_redeem.to_vec(),
+            &config,
+            &env,
+            redemption.total_deposits,
+        )?;
+
+        // Remove the redemption from the queue
+        remove_from_queue(deps.storage, redemption.user.clone())?;
+    }
 
     Ok(response)
-}
-
-pub fn get_assets_to_burn(
-    deps: Deps,
-    config: &Config,
-    state: &State,
-    sender: &str,
-    contract: &str,
-    amount_sent: Uint128,
-) -> Result<(Decimal, Vec<Coin>), ContractError> {
-    let user_vault_token_balance = get_balance(&deps, sender, &config.strategy_denom)?;
-
-    let total_user_vault_token_balance = user_vault_token_balance
-        .checked_add(amount_sent)
-        .map_err(ContractError::Overflow)?;
-
-    let total_supply = get_total_supply(&deps, &config.strategy_denom)?;
-
-    let withdraw_percentage = Decimal::from_ratio(amount_sent, total_supply);
-
-    let assets_to_redeem =
-        calculate_assets_to_redeem(&deps, config, state, contract, withdraw_percentage)?;
-
-    let burn_ratio = Decimal::from_ratio(amount_sent, total_user_vault_token_balance);
-
-    Ok((burn_ratio, assets_to_redeem))
 }

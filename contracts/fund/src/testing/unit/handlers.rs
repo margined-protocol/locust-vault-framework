@@ -1,9 +1,9 @@
-use crate::handlers::helpers::process_assets_to_redeem;
+use crate::handlers::helpers::calculate_total_assets_redeemable;
 
 use cosmwasm_std::{Coin, Uint128};
 
 #[test]
-fn test_process_assets_to_redeem_success() {
+fn test_calculate_total_assets_redeemable_success() {
     let mut remaining_balance = vec![
         Coin {
             denom: "atom".to_string(),
@@ -27,7 +27,7 @@ fn test_process_assets_to_redeem_success() {
     ];
 
     // Process assets to redeem
-    let result = process_assets_to_redeem(&assets_to_redeem, &mut remaining_balance);
+    let result = calculate_total_assets_redeemable(&assets_to_redeem, &mut remaining_balance);
 
     // Assert success
     assert!(result.is_ok());
@@ -49,7 +49,7 @@ fn test_process_assets_to_redeem_success() {
 }
 
 #[test]
-fn test_process_assets_to_redeem_insufficient_balance() {
+fn test_calculate_total_assets_redeemable_insufficient_balance() {
     let mut remaining_balance = vec![
         Coin {
             denom: "atom".to_string(),
@@ -73,7 +73,7 @@ fn test_process_assets_to_redeem_insufficient_balance() {
     ];
 
     // Process assets to redeem
-    let result = process_assets_to_redeem(&assets_to_redeem, &mut remaining_balance);
+    let result = calculate_total_assets_redeemable(&assets_to_redeem, &mut remaining_balance);
 
     // Assert failure
     assert!(result.is_err());
@@ -100,7 +100,7 @@ fn test_process_assets_to_redeem_insufficient_balance() {
 }
 
 #[test]
-fn test_process_assets_to_redeem_missing_denomination() {
+fn test_calculate_total_assets_redeemable_missing_denomination() {
     let mut remaining_balance = vec![
         Coin {
             denom: "atom".to_string(),
@@ -118,7 +118,7 @@ fn test_process_assets_to_redeem_missing_denomination() {
     }];
 
     // Process assets to redeem
-    let result = process_assets_to_redeem(&assets_to_redeem, &mut remaining_balance);
+    let result = calculate_total_assets_redeemable(&assets_to_redeem, &mut remaining_balance);
 
     // Assert failure
     assert!(result.is_err());
@@ -145,7 +145,7 @@ fn test_process_assets_to_redeem_missing_denomination() {
 }
 
 #[test]
-fn test_process_assets_to_redeem_no_assets_to_redeem() {
+fn test_calculate_total_assets_redeemable_no_assets_to_redeem() {
     let mut remaining_balance = vec![
         Coin {
             denom: "atom".to_string(),
@@ -160,7 +160,7 @@ fn test_process_assets_to_redeem_no_assets_to_redeem() {
     let assets_to_redeem = vec![]; // Nothing to redeem
 
     // Process assets to redeem
-    let result = process_assets_to_redeem(&assets_to_redeem, &mut remaining_balance);
+    let result = calculate_total_assets_redeemable(&assets_to_redeem, &mut remaining_balance);
 
     // Assert success
     assert!(result.is_ok());
@@ -182,7 +182,7 @@ fn test_process_assets_to_redeem_no_assets_to_redeem() {
 }
 
 #[test]
-fn test_process_assets_to_redeem_exact_balance() {
+fn test_calculate_total_assets_redeemable_exact_balance() {
     let mut remaining_balance = vec![Coin {
         denom: "atom".to_string(),
         amount: Uint128::new(100),
@@ -194,7 +194,7 @@ fn test_process_assets_to_redeem_exact_balance() {
     }];
 
     // Process assets to redeem
-    let result = process_assets_to_redeem(&assets_to_redeem, &mut remaining_balance);
+    let result = calculate_total_assets_redeemable(&assets_to_redeem, &mut remaining_balance);
 
     // Assert success
     assert!(result.is_ok());

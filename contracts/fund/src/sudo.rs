@@ -1,7 +1,7 @@
 use crate::{
     events::{event_register_sudo, event_sudo},
     helpers::map_to_contract_error,
-    queries::get_balance,
+    queries::external::get_balance,
     storage::{
         config::Config,
         state::{UserDeposit, USER_DEPOSITS},

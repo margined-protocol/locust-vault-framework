@@ -6,12 +6,11 @@ use crate::{
         get_total_vault_assets, get_vault_coins,
     },
     messages::{create_bank_message, create_burn_message, create_mint_message},
-    storage::{config::Config, queue::redemptions, state::State},
+    storage::{config::Config, state::State},
 };
 
 use cosmwasm_std::{
-    coin, Addr, Coin, Decimal, DepsMut, Env, MessageInfo, Order, Response, StdError, StdResult,
-    Storage, Uint128,
+    coin, Addr, Coin, Decimal, DepsMut, Env, MessageInfo, Response, StdError, StdResult, Uint128,
 };
 use vaultenator::{config::Configure, errors::ContractError, state::ManageState};
 
@@ -145,7 +144,7 @@ pub fn process_redeem(
     ]))
 }
 
-pub fn process_repayments<'a>(
+pub fn process_repayments(
     info: &MessageInfo,
     config: &Config,
     state: &mut State,
@@ -210,56 +209,3 @@ pub fn process_repayments<'a>(
 
     Ok(response)
 }
-
-// pub fn process_redemptions(
-//     storage: &mut dyn Storage,
-//     total_repayment: Uint128,
-//     timestamp: u64,
-// ) -> StdResult<()> {
-//     let redemptions_map = redemptions();
-
-//     // Get all redemptions in ascending order of insertion
-//     let mut remaining_repayment = total_repayment;
-
-//     for result in redemptions().range(storage, None, None, Order::Ascending) {
-//         let (key, mut redemption) = result?;
-
-//         // Calculate the repayment for the current user
-//         let repayment_amount = if remaining_repayment >= redemption.total_deposits {
-//             // Fully repay this user's deposits
-//             let amount = redemption.total_deposits;
-//             remaining_repayment -= amount;
-//             amount
-//         } else {
-//             // Partially repay this user's deposits
-//             let amount = remaining_repayment;
-//             remaining_repayment = Uint128::zero();
-//             amount
-//         };
-
-//         // Update or remove the redemption based on the repayment
-//         if repayment_amount == redemption.total_deposits {
-//             // Fully repaid, remove the user from the queue
-//             redemptions_map.remove(storage, &key)?;
-//         } else {
-//             // Partially repaid, update the user's total deposits
-//             redemption.total_deposits -= repayment_amount;
-//             redemption.timestamp = timestamp;
-//             redemptions_map.save(storage, &key, &redemption)?;
-//         }
-
-//         // Stop processing if we've fully distributed the repayment
-//         if remaining_repayment.is_zero() {
-//             break;
-//         }
-//     }
-
-//     // If there's any leftover repayment, it can be handled as needed (e.g., log or return it)
-//     if !remaining_repayment.is_zero() {
-//         return Err(StdError::generic_err(
-//             "Repayment amount exceeds total deposits in the queue",
-//         ));
-//     }
-
-//     Ok(())
-// }

@@ -1,9 +1,11 @@
 use crate::{
     handlers::extensions::{
-        handle_cancel_redemption, handle_create_redemption, handle_repay, handle_withdraw,
+        handle_cancel_redemption, handle_create_redemption, handle_repay, handle_repay_queue,
+        handle_withdraw,
     },
-    query::{
-        query_estimate_vault_assets, query_state_wrapper, query_version, query_withdrawable_amount,
+    queries::extensions::{
+        query_estimate_vault_assets, query_pending_redemptions, query_state_wrapper,
+        query_user_redemption, query_version, query_withdrawable_amount,
     },
     storage::{config::Config, state::State},
     sudo::{handle_register_sudo, sudo_block_before_send},
@@ -120,7 +122,7 @@ pub fn execute(
                 VaultenatorExtensionExecuteMsg::RepayQueue {
                     cycle_profit,
                     max_queue_amount,
-                } => unimplemented!("RepayQueue is not implemented"),
+                } => handle_repay_queue(deps, env, info, cycle_profit, max_queue_amount),
                 VaultenatorExtensionExecuteMsg::Unpause {} => {
                     StructuredVault.handle_unpause_contract(deps, info)
                 }
@@ -181,13 +183,16 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
                     &StructuredVault::query_ownership_proposal(deps, OWNERSHIP_PROPOSAL)?,
                 ),
                 VaultenatorExtensionQueryMsg::PendingRedemptions { start, limit } => {
-                    unimplemented!("PendingRedemptions is not implemented")
+                    to_json_binary(&query_pending_redemptions(deps, start, limit)?)
                 }
                 VaultenatorExtensionQueryMsg::State {} => {
                     to_json_binary(&query_state_wrapper(deps)?)
                 }
                 VaultenatorExtensionQueryMsg::WithdrawableAmount {} => {
                     to_json_binary(&query_withdrawable_amount(deps, env)?)
+                }
+                VaultenatorExtensionQueryMsg::UserRedemption { user } => {
+                    to_json_binary(&query_user_redemption(deps, user)?)
                 }
                 VaultenatorExtensionQueryMsg::Version {} => to_json_binary(&query_version(deps)?),
             },

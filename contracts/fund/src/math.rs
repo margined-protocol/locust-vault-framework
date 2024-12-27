@@ -1,4 +1,4 @@
-use crate::queries::get_total_supply;
+use crate::queries::external::get_total_supply;
 
 use cosmwasm_std::{Decimal, Deps, StdResult, Uint128};
 

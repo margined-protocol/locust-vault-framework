@@ -40,8 +40,11 @@ pub enum VaultenatorExtensionQueryMsg {
         amount: Uint128,
     },
     PendingRedemptions {
-        start: Option<Uint128>,
+        start: Option<String>,
         limit: Option<u32>,
+    },
+    UserRedemption {
+        user: String,
     },
     WithdrawableAmount {},
 }
@@ -75,7 +78,7 @@ pub enum VaultenatorExtensionExecuteMsg {
     },
     RepayQueue {
         cycle_profit: Option<Decimal>,
-        max_queue_amount: Option<Uint128>,
+        max_queue_amount: Option<u64>,
     },
 }
 
