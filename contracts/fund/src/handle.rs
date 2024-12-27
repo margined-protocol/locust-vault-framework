@@ -227,7 +227,7 @@ impl Handle<Config, State> for StructuredVault {
         let contract_version = get_contract_version(deps.storage)?;
 
         match contract_version.contract.as_ref() {
-            "crates.io:fund" => match contract_version.version.as_ref() {
+            "crates.io:fund" | "crates.io:fund-vault" => match contract_version.version.as_ref() {
                 "0.0.4" => {
                     set_contract_version(
                         deps.storage,
