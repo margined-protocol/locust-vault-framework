@@ -3,8 +3,9 @@ use crate::setup::TestEnv;
 use cosmwasm_std::{Addr, Coin, Decimal, Uint128};
 use cw_vault_standard::VaultInfoResponse;
 use interface::fund::{
-    ConfigResponse, ExecuteMsg, ExtensionExecuteMsg, ExtensionQueryMsg, QueryMsg, StateResponse,
-    UpdateConfig, VaultenatorExtensionExecuteMsg, VaultenatorExtensionQueryMsg, VersionResponse,
+    ConfigResponse, ExecuteMsg, ExtensionExecuteMsg, ExtensionQueryMsg, QueryMsg, Redemption,
+    StateResponse, UpdateConfig, VaultenatorExtensionExecuteMsg, VaultenatorExtensionQueryMsg,
+    VersionResponse,
 };
 use neutron_std::types::cosmwasm::wasm::v1::MsgExecuteContractResponse;
 use neutron_test_tube::{
@@ -152,6 +153,24 @@ impl TestEnv {
         wasm.execute(contract_addr, &set_open_msg, funds, signer)
     }
 
+    pub fn repay_queue_fund(
+        &self,
+        wasm: &Wasm<OsmosisTestApp>,
+        contract_addr: &str,
+        cycle_profit: Option<Decimal>,
+        max_queue_amount: Option<u64>,
+        funds: &[Coin],
+        signer: &SigningAccount,
+    ) -> RunnerExecuteResult<MsgExecuteContractResponse> {
+        let set_open_msg = ExecuteMsg::VaultExtension(ExtensionExecuteMsg::Vaultenator(
+            VaultenatorExtensionExecuteMsg::RepayQueue {
+                cycle_profit,
+                max_queue_amount,
+            },
+        ));
+        wasm.execute(contract_addr, &set_open_msg, funds, signer)
+    }
+
     pub fn set_open_fund(
         &self,
         wasm: &Wasm<OsmosisTestApp>,
@@ -268,11 +287,10 @@ impl TestEnv {
         &self,
         wasm: &Wasm<OsmosisTestApp>,
         contract_addr: &str,
-        start: Option<String>,
         limit: Option<u32>,
-    ) -> RunnerResult<OwnerProposal> {
+    ) -> RunnerResult<Vec<Redemption>> {
         let query_msg = QueryMsg::VaultExtension(ExtensionQueryMsg::Vaultenator(
-            VaultenatorExtensionQueryMsg::PendingRedemptions { start, limit },
+            VaultenatorExtensionQueryMsg::PendingRedemptions { limit },
         ));
 
         wasm.query(contract_addr, &query_msg)
@@ -307,7 +325,7 @@ impl TestEnv {
         wasm: &Wasm<OsmosisTestApp>,
         contract_addr: &str,
         user: &str,
-    ) -> RunnerResult<StateResponse> {
+    ) -> RunnerResult<Vec<Redemption>> {
         let query_msg = QueryMsg::VaultExtension(ExtensionQueryMsg::Vaultenator(
             VaultenatorExtensionQueryMsg::UserRedemption {
                 user: user.to_string(),

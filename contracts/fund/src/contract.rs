@@ -182,8 +182,8 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
                 VaultenatorExtensionQueryMsg::OwnershipProposal {} => to_json_binary(
                     &StructuredVault::query_ownership_proposal(deps, OWNERSHIP_PROPOSAL)?,
                 ),
-                VaultenatorExtensionQueryMsg::PendingRedemptions { start, limit } => {
-                    to_json_binary(&query_pending_redemptions(deps, start, limit)?)
+                VaultenatorExtensionQueryMsg::PendingRedemptions { limit } => {
+                    to_json_binary(&query_pending_redemptions(deps, limit)?)
                 }
                 VaultenatorExtensionQueryMsg::State {} => {
                     to_json_binary(&query_state_wrapper(deps)?)

@@ -77,37 +77,6 @@ pub fn handle_withdraw(
     Ok(response)
 }
 
-pub fn handle_repay(
-    deps: DepsMut,
-    env: Env,
-    info: MessageInfo,
-    cycle_profit: Option<Decimal>,
-) -> Result<Response, ContractError> {
-    let (response, mut deps) =
-        process_management_fees_and_modify_response(deps, Response::default(), env.clone(), None)?;
-
-    State::is_open_and_unpaused(deps.as_ref())?;
-
-    let config = Config::get_from_storage(deps.as_ref())?;
-    let mut state = State::get_from_storage(deps.as_ref())?;
-
-    ensure!(
-        config.controller == info.sender.to_string(),
-        ContractError::Unauthorized {}
-    );
-
-    let response = process_repayments(
-        &info,
-        &config,
-        &mut state,
-        &mut deps,
-        cycle_profit,
-        response,
-    )?;
-
-    Ok(response)
-}
-
 pub fn handle_cancel_redemption(
     deps: DepsMut,
     env: Env,
@@ -122,7 +91,7 @@ pub fn handle_cancel_redemption(
 
     let config = Config::get_from_storage(deps.as_ref())?;
 
-    let amount_to_return = remove_from_queue(deps.storage, info.sender.clone())?;
+    let amount_to_return = remove_from_queue(deps.storage, info.sender.to_string())?;
 
     let token_to_return = coin(amount_to_return.u128(), config.strategy_denom);
 
@@ -155,7 +124,7 @@ pub fn handle_create_redemption(
 
     add_to_queue(
         deps.storage,
-        info.sender.clone(),
+        info.sender.to_string(),
         strategy_denom_sent,
         env.block.time.seconds(),
     )?;
@@ -164,6 +133,37 @@ pub fn handle_create_redemption(
         info.sender.as_str(),
         coin(strategy_denom_sent.u128(), config.strategy_denom),
     )))
+}
+
+pub fn handle_repay(
+    deps: DepsMut,
+    env: Env,
+    info: MessageInfo,
+    cycle_profit: Option<Decimal>,
+) -> Result<Response, ContractError> {
+    let (response, mut deps) =
+        process_management_fees_and_modify_response(deps, Response::default(), env.clone(), None)?;
+
+    State::is_open_and_unpaused(deps.as_ref())?;
+
+    let config = Config::get_from_storage(deps.as_ref())?;
+    let mut state = State::get_from_storage(deps.as_ref())?;
+
+    ensure!(
+        config.controller == info.sender.to_string(),
+        ContractError::Unauthorized {}
+    );
+
+    let response = process_repayments(
+        &info,
+        &config,
+        &mut state,
+        &mut deps,
+        cycle_profit,
+        response,
+    )?;
+
+    Ok(response)
 }
 
 pub fn handle_repay_queue(
@@ -243,12 +243,8 @@ pub fn handle_repay_queue(
         let (redemption, burn_ratio, assets_to_redeem) = redemption;
 
         // Update user deposit
-        update_user_deposit(
-            deps.storage,
-            redemption.user.clone(),
-            *burn_ratio,
-            &mut state,
-        )?;
+        let user = deps.api.addr_validate(&redemption.user)?;
+        update_user_deposit(deps.storage, user, *burn_ratio, &mut state)?;
 
         // Save state
         state.save_to_storage(&mut deps)?;

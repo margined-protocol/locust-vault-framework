@@ -3,15 +3,14 @@ use crate::{
     queries::external::{get_balance, get_total_supply},
     storage::{
         config::Config,
-        queue::{get_all_redemptions, get_all_user_redemptions, Redemption},
+        queue::{get_all_redemptions, get_all_user_redemptions, iterate_redemptions_by_timestamp},
         state::State,
     },
 };
 
-use cosmwasm_std::{Coin, Decimal, Deps, Env, StdError, StdResult, Uint128};
+use cosmwasm_std::{Coin, Decimal, Deps, Env, Order, StdError, StdResult, Uint128};
 use cw2::get_contract_version;
-use cw_storage_plus::Bound;
-use interface::fund::{StateResponse, VersionResponse};
+use interface::fund::{Redemption, StateResponse, VersionResponse};
 use vaultenator::{config::Configure, state::ManageState};
 
 pub const DEFAULT_LIMIT: u32 = 150u32;
@@ -46,18 +45,40 @@ pub fn query_estimate_vault_assets(amount: Uint128, deps: Deps, env: Env) -> Std
     Ok(assets)
 }
 
-pub fn query_pending_redemptions(
-    deps: Deps,
-    start_after: Option<String>,
-    limit: Option<u32>,
-) -> StdResult<Vec<Redemption>> {
+pub fn query_pending_redemptions(deps: Deps, limit: Option<u32>) -> StdResult<Vec<Redemption>> {
     let query_limit = limit.unwrap_or(DEFAULT_LIMIT) as usize;
 
-    let start_bound = start_after.as_ref().map(|s| Bound::exclusive(s.as_str()));
+    let res = get_all_redemptions(deps.storage, 100)?;
+    deps.api
+        .debug(&format!("query_pending_redemptions: {:?}", res));
 
-    get_all_redemptions(deps.storage, start_bound, query_limit)
+    // Iterate through redemptions by timestamp
+    let iterator = iterate_redemptions_by_timestamp(deps.storage, Some(query_limit));
+
+    // Collect results into a Vec<Redemption>
+    let res: Vec<Redemption> = iterator
+        .map(|result| {
+            match &result {
+                Ok((timestamp, redemption)) => {
+                    deps.api.debug(&format!(
+                        "Found redemption: Timestamp: {}, User: {}, Amount: {}",
+                        timestamp, redemption.user, redemption.total_deposits
+                    ));
+                }
+                Err(err) => {
+                    deps.api
+                        .debug(&format!("Error iterating redemptions: {:?}", err));
+                }
+            }
+            result.map(|(_, redemption)| redemption)
+        })
+        .collect::<StdResult<Vec<Redemption>>>()?; // Collect into Vec<Redemption> and propagate errors
+
+    deps.api
+        .debug(&format!("query_pending_redemptions: {:?}", res));
+
+    Ok(res)
 }
-
 pub fn query_state_wrapper(deps: Deps) -> StdResult<StateResponse> {
     let state = State::get_from_storage(deps).map_err(|e| StdError::generic_err(e.to_string()))?;
 
@@ -82,8 +103,6 @@ pub fn query_state_wrapper(deps: Deps) -> StdResult<StateResponse> {
 }
 
 pub fn query_user_redemption(deps: Deps, user: String) -> StdResult<Vec<Redemption>> {
-    let user = deps.api.addr_validate(&user)?;
-
     get_all_user_redemptions(deps.storage, user)
 }
 

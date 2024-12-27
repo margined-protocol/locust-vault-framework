@@ -36,16 +36,9 @@ pub enum VaultenatorExtensionQueryMsg {
     OwnershipProposal {},
     State {},
     Version {},
-    EstimateVaultAssets {
-        amount: Uint128,
-    },
-    PendingRedemptions {
-        start: Option<String>,
-        limit: Option<u32>,
-    },
-    UserRedemption {
-        user: String,
-    },
+    EstimateVaultAssets { amount: Uint128 },
+    PendingRedemptions { limit: Option<u32> },
+    UserRedemption { user: String },
     WithdrawableAmount {},
 }
 
@@ -111,16 +104,10 @@ pub struct ConfigResponse {
 }
 
 #[cw_serde]
-pub struct UpdateConfig {
-    pub strategy_cap: Option<Uint128>,
-    pub float: Option<Decimal>,
-    pub controller: Option<String>,
-    pub treasury: Option<String>,
-    pub management_fee_rate: Option<Decimal>,
-    pub performance_fee_rate: Option<Decimal>,
-    pub instant_withdraw_penalty: Option<Decimal>,
-    pub penalty_duration: Option<u64>,
-    pub estimate_cycle_profit: Option<Decimal>,
+pub struct Redemption {
+    pub user: String,
+    pub total_deposits: Uint128,
+    pub timestamp: u64,
 }
 
 #[cw_serde]
@@ -132,6 +119,19 @@ pub struct StateResponse {
     pub total_staked_tokens: Uint128,
     pub total_withdrawn_tokens: Vec<Coin>,
     pub pending_management_fees: Vec<Coin>,
+}
+
+#[cw_serde]
+pub struct UpdateConfig {
+    pub strategy_cap: Option<Uint128>,
+    pub float: Option<Decimal>,
+    pub controller: Option<String>,
+    pub treasury: Option<String>,
+    pub management_fee_rate: Option<Decimal>,
+    pub performance_fee_rate: Option<Decimal>,
+    pub instant_withdraw_penalty: Option<Decimal>,
+    pub penalty_duration: Option<u64>,
+    pub estimate_cycle_profit: Option<Decimal>,
 }
 
 #[cw_serde]

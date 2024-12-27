@@ -1,59 +1,56 @@
-use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{Addr, Order, StdError, StdResult, Storage, Uint128};
+use cosmwasm_std::{Order, StdError, StdResult, Storage, Uint128};
 use cw_storage_plus::{Bound, Index, IndexList, IndexedMap, MultiIndex};
-
-#[cw_serde]
-pub struct Redemption {
-    pub user: Addr,
-    pub total_deposits: Uint128,
-    pub timestamp: u64,
-}
+use interface::fund::Redemption;
 
 pub struct Queue<'a> {
-    pub user: MultiIndex<'a, Addr, Redemption, String>,
-    pub timestamp: MultiIndex<'a, u64, Redemption, String>,
+    pub timestamp: MultiIndex<'a, u64, Redemption, u64>,
+    pub user: MultiIndex<'a, String, Redemption, String>,
 }
 
 impl<'a> IndexList<Redemption> for Queue<'a> {
     fn get_indexes(&'_ self) -> Box<dyn Iterator<Item = &'_ dyn Index<Redemption>> + '_> {
-        let v: Vec<&dyn Index<Redemption>> = vec![&self.user];
+        let v: Vec<&dyn Index<Redemption>> = vec![&self.timestamp, &self.user];
         Box::new(v.into_iter())
     }
 }
 pub fn redemptions<'a>() -> IndexedMap<&'a str, Redemption, Queue<'a>> {
     let indexes = Queue {
-        user: MultiIndex::new(
-            |_, value| value.user.clone(),
-            "redemption",
-            "redemption__user",
-        ),
         timestamp: MultiIndex::new(
             |_, value| value.timestamp,
             "redemption",
             "redemption__timestamp",
         ),
+        user: MultiIndex::new(
+            |_, value| value.user.clone(),
+            "redemption",
+            "redemption__user",
+        ),
     };
     IndexedMap::new("redemption", indexes)
 }
 
-pub fn redemptions_by_user<'a>() -> MultiIndex<'a, Addr, Redemption, String> {
+pub fn redemptions_by_user<'a>() -> MultiIndex<'a, String, Redemption, String> {
     redemptions().idx.user
+}
+
+pub fn redemptions_by_timestamp<'a>() -> MultiIndex<'a, u64, Redemption, u64> {
+    redemptions().idx.timestamp
 }
 
 pub fn filter_queue_by_user<'a>(
     storage: &'a dyn Storage,
-    user: Addr,
+    user: String,
 ) -> Box<dyn Iterator<Item = StdResult<(String, Redemption)>> + 'a> {
     redemptions_by_user()
         .prefix(user)
         .range(storage, None, None, Order::Ascending)
 }
 
-pub fn get_total_size_of_queue(storage: &dyn Storage, user: Addr) -> usize {
+pub fn get_total_size_of_queue(storage: &dyn Storage, user: String) -> usize {
     filter_queue_by_user(storage, user).count()
 }
 
-pub fn get_all_user_redemptions(storage: &dyn Storage, user: Addr) -> StdResult<Vec<Redemption>> {
+pub fn get_all_user_redemptions(storage: &dyn Storage, user: String) -> StdResult<Vec<Redemption>> {
     Ok(
         filter_queue_by_user(storage, user)
             .collect::<StdResult<Vec<_>>>()? // Collect into StdResult and propagate errors with `?`
@@ -63,14 +60,10 @@ pub fn get_all_user_redemptions(storage: &dyn Storage, user: Addr) -> StdResult<
     )
 }
 
-pub fn get_all_redemptions<'a>(
-    storage: &dyn Storage,
-    start_bound: Option<Bound<'a, &'a str>>,
-    query_limit: usize,
-) -> StdResult<Vec<Redemption>> {
+pub fn get_all_redemptions<'a>(storage: &dyn Storage, limit: usize) -> StdResult<Vec<Redemption>> {
     redemptions()
-        .range(storage, start_bound, None, Order::Ascending)
-        .take(query_limit)
+        .range(storage, None, None, Order::Ascending)
+        .take(limit)
         .map(|item| {
             let (_, strategy) = item?;
             Ok(strategy)
@@ -78,9 +71,21 @@ pub fn get_all_redemptions<'a>(
         .collect()
 }
 
+pub fn iterate_redemptions_by_timestamp<'a>(
+    storage: &'a dyn Storage,
+    limit: Option<usize>,
+) -> Box<dyn Iterator<Item = StdResult<(u64, Redemption)>> + 'a> {
+    Box::new(
+        redemptions()
+            .idx
+            .timestamp
+            .range(storage, None, None, Order::Ascending)
+            .take(limit.unwrap_or(usize::MAX)), // Apply the limit, or use usize::MAX if None
+    )
+}
 pub fn add_to_queue(
     storage: &mut dyn Storage,
-    user: Addr,
+    user: String,
     amount: Uint128,
     timestamp: u64,
 ) -> StdResult<()> {
@@ -108,7 +113,7 @@ pub fn add_to_queue(
     Ok(())
 }
 
-pub fn remove_from_queue(storage: &mut dyn Storage, user: Addr) -> StdResult<Uint128> {
+pub fn remove_from_queue(storage: &mut dyn Storage, user: String) -> StdResult<Uint128> {
     let redemptions_map = redemptions();
 
     // Check if user exists in the queue

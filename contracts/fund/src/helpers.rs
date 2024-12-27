@@ -327,7 +327,7 @@ pub fn get_sent_tokens(info: &MessageInfo, config: &Config) -> StdResult<Vec<Coi
         }
         None => {
             let token_deposit = must_pay(info, &config.token0)
-                .map_err(|_| StdError::generic_err("Failed to retrieve token deposit"))?;
+                .map_err(|_| StdError::generic_err("No tokens sent"))?;
 
             let token_coin = coin(token_deposit.u128(), &config.token0);
 
