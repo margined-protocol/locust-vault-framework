@@ -1,5 +1,5 @@
 use crate::{
-    config::Config,
+    config::{migrate_config, Config},
     contract::{StructuredVault, CONTRACT_NAME, CONTRACT_VERSION},
     events::{event_deposit, event_fees, event_migrate, event_repay, event_withdraw},
     helpers::{
@@ -12,7 +12,7 @@ use crate::{
     process::{process_deposit, process_management_fees_and_modify_response, process_redeem},
     queries::{get_balance, get_total_supply},
     reply::ReplyIDs,
-    state::{update_user_deposit, State, UserDeposit, USER_DEPOSITS},
+    state::{migrate_state, update_user_deposit, State, UserDeposit, USER_DEPOSITS},
 };
 
 use cosmwasm_std::{
@@ -228,6 +228,16 @@ impl Handle<Config, State> for StructuredVault {
 
         match contract_version.contract.as_ref() {
             "crates.io:fund" => match contract_version.version.as_ref() {
+                "0.0.4" => {
+                    set_contract_version(
+                        deps.storage,
+                        format!("crates.io:{CONTRACT_NAME}"),
+                        CONTRACT_VERSION,
+                    )?;
+
+                    let (deps, _) = migrate_config(deps)?;
+                    migrate_state(deps)?;
+                }
                 "0.0.5" => {
                     set_contract_version(
                         deps.storage,
