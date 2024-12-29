@@ -3,12 +3,12 @@ use crate::{
     queries::external::{get_balance, get_total_supply},
     storage::{
         config::Config,
-        queue::{get_all_redemptions, get_all_user_redemptions, iterate_redemptions_by_timestamp},
+        queue::{get_all_user_redemptions, iterate_redemptions_by_timestamp},
         state::State,
     },
 };
 
-use cosmwasm_std::{Coin, Decimal, Deps, Env, Order, StdError, StdResult, Uint128};
+use cosmwasm_std::{Coin, Decimal, Deps, Env, StdError, StdResult, Uint128};
 use cw2::get_contract_version;
 use interface::fund::{Redemption, StateResponse, VersionResponse};
 use vaultenator::{config::Configure, state::ManageState};
@@ -48,10 +48,6 @@ pub fn query_estimate_vault_assets(amount: Uint128, deps: Deps, env: Env) -> Std
 pub fn query_pending_redemptions(deps: Deps, limit: Option<u32>) -> StdResult<Vec<Redemption>> {
     let query_limit = limit.unwrap_or(DEFAULT_LIMIT) as usize;
 
-    let res = get_all_redemptions(deps.storage, 100)?;
-    deps.api
-        .debug(&format!("query_pending_redemptions: {:?}", res));
-
     // Iterate through redemptions by timestamp
     let iterator = iterate_redemptions_by_timestamp(deps.storage, Some(query_limit));
 
@@ -73,9 +69,6 @@ pub fn query_pending_redemptions(deps: Deps, limit: Option<u32>) -> StdResult<Ve
             result.map(|(_, redemption)| redemption)
         })
         .collect::<StdResult<Vec<Redemption>>>()?; // Collect into Vec<Redemption> and propagate errors
-
-    deps.api
-        .debug(&format!("query_pending_redemptions: {:?}", res));
 
     Ok(res)
 }

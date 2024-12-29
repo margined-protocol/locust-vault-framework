@@ -191,7 +191,7 @@ impl Handle<Config, State> for StructuredVault {
 
         response = process_redeem(
             response,
-            &info,
+            &info.sender.to_owned(),
             assets_to_redeem,
             &config,
             &env,

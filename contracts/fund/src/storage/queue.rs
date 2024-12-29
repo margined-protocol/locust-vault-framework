@@ -1,9 +1,9 @@
 use cosmwasm_std::{Order, StdError, StdResult, Storage, Uint128};
-use cw_storage_plus::{Bound, Index, IndexList, IndexedMap, MultiIndex};
+use cw_storage_plus::{Index, IndexList, IndexedMap, MultiIndex};
 use interface::fund::Redemption;
 
 pub struct Queue<'a> {
-    pub timestamp: MultiIndex<'a, u64, Redemption, u64>,
+    pub timestamp: MultiIndex<'a, u64, Redemption, String>,
     pub user: MultiIndex<'a, String, Redemption, String>,
 }
 
@@ -33,7 +33,7 @@ pub fn redemptions_by_user<'a>() -> MultiIndex<'a, String, Redemption, String> {
     redemptions().idx.user
 }
 
-pub fn redemptions_by_timestamp<'a>() -> MultiIndex<'a, u64, Redemption, u64> {
+pub fn redemptions_by_timestamp<'a>() -> MultiIndex<'a, u64, Redemption, String> {
     redemptions().idx.timestamp
 }
 
@@ -60,7 +60,7 @@ pub fn get_all_user_redemptions(storage: &dyn Storage, user: String) -> StdResul
     )
 }
 
-pub fn get_all_redemptions<'a>(storage: &dyn Storage, limit: usize) -> StdResult<Vec<Redemption>> {
+pub fn get_all_redemptions(storage: &dyn Storage, limit: usize) -> StdResult<Vec<Redemption>> {
     redemptions()
         .range(storage, None, None, Order::Ascending)
         .take(limit)
@@ -74,7 +74,7 @@ pub fn get_all_redemptions<'a>(storage: &dyn Storage, limit: usize) -> StdResult
 pub fn iterate_redemptions_by_timestamp<'a>(
     storage: &'a dyn Storage,
     limit: Option<usize>,
-) -> Box<dyn Iterator<Item = StdResult<(u64, Redemption)>> + 'a> {
+) -> Box<dyn Iterator<Item = StdResult<(String, Redemption)>> + 'a> {
     Box::new(
         redemptions()
             .idx

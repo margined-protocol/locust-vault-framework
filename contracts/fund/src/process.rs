@@ -102,7 +102,7 @@ pub fn process_deposit(
 
 pub fn process_redeem(
     mut response: Response,
-    info: &MessageInfo,
+    recipient: &Addr,
     assets_to_redeem: Vec<Coin>,
     config: &Config,
     env: &Env,
@@ -110,7 +110,7 @@ pub fn process_redeem(
 ) -> StdResult<Response> {
     for asset in assets_to_redeem.iter().filter(|a| !a.amount.is_zero()) {
         response = response.add_message(create_bank_message(
-            info.sender.to_string(),
+            recipient.to_string(),
             vec![asset.clone()],
         ));
     }
@@ -128,14 +128,14 @@ pub fn process_redeem(
         event_burn(
             CONTRACT_VERSION,
             CONTRACT_NAME,
-            info.sender.as_ref(),
+            recipient.as_ref(),
             &strategy_denom_sent.to_string(),
             None,
         ),
         event_redeem(
             CONTRACT_VERSION,
             CONTRACT_NAME,
-            info.sender.as_ref(),
+            recipient.as_ref(),
             token0,
             token1,
             coin(0u128, config.token0.clone()),
