@@ -3,6 +3,7 @@ use cosmwasm_std::{ensure, Deps, StdError, StdResult};
 use cw_controllers::Admin;
 use cw_storage_plus::Item;
 use interface::strategy::{OwnerProposal, PoolInfo};
+use std::collections::HashSet;
 
 pub const OWNER: Admin = Admin::new("owner");
 pub const OWNERSHIP_PROPOSAL: Item<OwnerProposal> = Item::new("ownership_proposals");
@@ -33,6 +34,20 @@ impl Config {
             StdError::generic_err("Grants must be non-empty")
         );
 
+        ensure_no_duplicates(self.grants.clone())?;
+
         Ok(())
     }
+}
+
+pub fn ensure_no_duplicates(input: Vec<String>) -> StdResult<()> {
+    let mut seen = HashSet::new();
+
+    for item in &input {
+        if !seen.insert(item) {
+            return Err(StdError::generic_err("Duplicate grants are not allowed"));
+        }
+    }
+
+    Ok(())
 }

@@ -131,12 +131,19 @@ pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, C
 
     match contract_version.contract.as_ref() {
         "crates.io:strategy" => match contract_version.version.as_ref() {
-            "0.0.1" => {
+            "0.0.3" => {
                 set_contract_version(
                     deps.storage,
                     format!("crates.io:{CONTRACT_NAME}"),
                     CONTRACT_VERSION,
                 )?;
+
+                let mut config = CONFIG.load(deps.storage)?;
+
+                config.grants.sort(); // Sort to group duplicates together
+                config.grants.dedup(); // Remove consecutive duplicates
+
+                CONFIG.save(deps.storage, &config)?;
             }
             _ => {
                 return Err(ContractError::Std(StdError::generic_err(
