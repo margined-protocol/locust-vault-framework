@@ -10,7 +10,7 @@ use crate::{
     storage::{
         config::Config,
         queue::{add_to_queue, redemptions, remove_from_queue},
-        state::{update_user_deposit, State},
+        state::{update_user_deposit, State, DEFAULT_QUEUE_LIMIT},
     },
 };
 
@@ -171,7 +171,7 @@ pub fn handle_repay_queue(
     env: Env,
     info: MessageInfo,
     cycle_profit: Option<Decimal>,
-    max_queue_amount: Option<u64>,
+    limit: Option<u64>,
 ) -> Result<Response, ContractError> {
     // 1. Process management fees and ensure the state is open and unpaused
     let (mut response, mut deps) =
@@ -211,7 +211,7 @@ pub fn handle_repay_queue(
     let mut redemptions_to_process = vec![];
 
     // 7. Process redemptions
-    let limit = max_queue_amount.unwrap_or(50);
+    let limit = limit.unwrap_or(DEFAULT_QUEUE_LIMIT);
 
     for result in redemptions()
         .range(deps.storage, None, None, Order::Ascending)

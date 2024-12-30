@@ -7,6 +7,7 @@ use std::collections::HashMap;
 use vaultenator::{errors::ContractError, state::ManageState};
 
 pub const TWAP_PERIOD: u64 = 420; // 7 minutes
+pub const DEFAULT_QUEUE_LIMIT: u64 = 50;
 
 pub const USER_DEPOSITS: Map<Addr, UserDeposit> = Map::new("user_deposits");
 

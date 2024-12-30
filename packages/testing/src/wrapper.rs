@@ -33,6 +33,23 @@ impl TestEnv {
         wasm.execute(contract_addr, &msg, &[], signer)
     }
 
+    pub fn repay_queue_strategy(
+        &self,
+        wasm: &Wasm<OsmosisTestApp>,
+        contract_addr: &str,
+        tokens_to_repay: Vec<Coin>,
+        cycle_profit: Option<Decimal>,
+        signer: &SigningAccount,
+    ) -> RunnerExecuteResult<MsgExecuteContractResponse> {
+        let msg = ExecuteMsg::RepayQueue {
+            tokens_to_repay,
+            cycle_profit,
+            limit: None,
+        };
+
+        wasm.execute(contract_addr, &msg, &[], signer)
+    }
+
     pub fn withdraw_strategy(
         &self,
         wasm: &Wasm<OsmosisTestApp>,

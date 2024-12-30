@@ -91,7 +91,6 @@ pub fn handle_register_sudo(
     };
 
     Ok(Response::default()
-        // NOTE: this is commented out in Neutron because we need whitelisting
         .add_message(set_before_send_hook_msg)
         .add_event(event_register_sudo()))
 }

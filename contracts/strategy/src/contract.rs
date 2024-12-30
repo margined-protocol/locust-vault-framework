@@ -2,7 +2,8 @@ use crate::{
     errors::ContractError,
     events::event_migrate,
     handle::{
-        handle_repay, handle_set_grants, handle_set_vault, handle_update_config, handle_withdraw,
+        handle_repay, handle_repay_queue, handle_set_grants, handle_set_vault,
+        handle_update_config, handle_withdraw,
     },
     ownership::{
         get_ownership_proposal, handle_claim_ownership, handle_ownership_proposal,
@@ -80,6 +81,11 @@ pub fn execute(
             tokens_to_repay,
             cycle_profit,
         } => handle_repay(deps, env, info, tokens_to_repay, cycle_profit),
+        ExecuteMsg::RepayQueue {
+            tokens_to_repay,
+            cycle_profit,
+            limit,
+        } => handle_repay_queue(deps, env, info, tokens_to_repay, cycle_profit, limit),
         ExecuteMsg::SetVault { vault } => handle_set_vault(deps, env, info, vault),
         ExecuteMsg::SetGrants { grants } => handle_set_grants(deps, env, info, grants),
         ExecuteMsg::UpdateConfig { grants, controller } => {

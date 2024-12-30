@@ -158,14 +158,14 @@ impl TestEnv {
         wasm: &Wasm<OsmosisTestApp>,
         contract_addr: &str,
         cycle_profit: Option<Decimal>,
-        max_queue_amount: Option<u64>,
+        limit: Option<u64>,
         funds: &[Coin],
         signer: &SigningAccount,
     ) -> RunnerExecuteResult<MsgExecuteContractResponse> {
         let set_open_msg = ExecuteMsg::VaultExtension(ExtensionExecuteMsg::Vaultenator(
             VaultenatorExtensionExecuteMsg::RepayQueue {
                 cycle_profit,
-                max_queue_amount,
+                limit,
             },
         ));
         wasm.execute(contract_addr, &set_open_msg, funds, signer)

@@ -71,7 +71,7 @@ pub enum VaultenatorExtensionExecuteMsg {
     },
     RepayQueue {
         cycle_profit: Option<Decimal>,
-        max_queue_amount: Option<u64>,
+        limit: Option<u64>,
     },
 }
 

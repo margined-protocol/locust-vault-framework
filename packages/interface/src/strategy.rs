@@ -23,6 +23,11 @@ pub enum ExecuteMsg {
         tokens_to_repay: Vec<Coin>,
         cycle_profit: Option<Decimal>,
     },
+    RepayQueue {
+        tokens_to_repay: Vec<Coin>,
+        cycle_profit: Option<Decimal>,
+        limit: Option<u64>,
+    },
     SetVault {
         vault: String,
     },

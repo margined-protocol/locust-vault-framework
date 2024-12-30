@@ -10,7 +10,13 @@ CHAIN_ID="neutron-1"
 CONTRACT_NAME=fund.wasm
 CONTRACT_NAME=strategy-slinky.wasm
 CONTRACT_NAME=strategy-astroport.wasm
-CONTRACT_ADDRESS=neutron1puedrclm6rn33x3zv66xg6m23qcdagayqua6jj2wqzvfznlqef8qe53wr2
+CONTRACT_ADDRESS=neutron1f99ujxefjr4jqmskc7hvg09am6pdq2j2c5049xwl0de4cavc4rfsl866y0 # ATOM<>dATOM 2861
+CONTRACT_ADDRESS=neutron17fyzkafg4scrd6xu0sp9llrl6hazegza7yer4erlea0kvk30yxsqk2xqfd # wBTC<>USDC 2861
+CONTRACT_ADDRESS=neutron1t0fl9k43g86sv60ghx9vtwed9rpgtf49rxzm05ff477j23h52c6s0urdc7 # NTRN<>USDC 2861
+CONTRACT_ADDRESS=neutron1wv8pl7tsatzx6n9yaqfksvu5y0x7j50g6mhy636udwfn3vyqp0hsu7g8yk # TIA<>USDC 2861
+CONTRACT_ADDRESS=neutron1krqwpk0kmphl93kykavp2fnr88g5rnrpk40c34a55yrl00tmfz0s99ewc6 # ATOM<>USDC 2861
+CONTRACT_ADDRESS=neutron1puedrclm6rn33x3zv66xg6m23qcdagayqua6jj2wqzvfznlqef8qe53wr2 # dATOM 2884
+CONTRACT_ADDRESS=neutron14q3umuuvyv6mndd5acuc3n8u5mlvrrq3kkzrputu3rkhz8nd2uzqmfl4v6 # dTIA 2861
 ```
 
 ### Testnet
@@ -62,10 +68,17 @@ neutrond tx wasm execute $CONTRACT_ADDRESS "{\"deposit\": {\"amount\": \"1\"}}" 
 neutrond tx wasm execute $CONTRACT_ADDRESS "{\"redeem\": {\"amount\": \"0\"}}" --from=liquidity-provider --gas=auto --gas-prices 0.003untrn --gas-adjustment 1.3 --output=json --node=$NODE --chain-id=$CHAIN_ID --amount 15118336factory/osmo16s3sxs5886p42kteunp6370pken2n5ukzszz0trkr39epqtawn2qk4r9l5/lsd-vault-1252
 ```
 
+#### Register Sudo
+
+```bash
+neutrond tx wasm execute $CONTRACT_ADDRESS  "{\"vault_extension\": {\"vaultenator\": {\"register_sudo\": {}}}}" --from=deployer-neutron --gas=auto --gas-prices 0.0053untrn --gas-adjustment 1.3 --output=json --node=$NODE --chain-id=$CHAIN_ID
+```
+
+
 #### Set Open
 
 ```bash
-neutrond tx wasm execute $CONTRACT_ADDRESS "{\"vault_extension\": {\"vaultenator\": {\"set_open\": {}}}}"  --from=deployer --gas=auto --gas-prices 0.003untrn --gas-adjustment 1.3 --output=json --node=$NODE --chain-id=$CHAIN_ID
+neutrond tx wasm execute $CONTRACT_ADDRESS "{\"vault_extension\": {\"vaultenator\": {\"set_open\": {}}}}"  --from=deployer-neutron --gas=auto --gas-prices 0.0053untrn --gas-adjustment 1.3 --output=json --node=$NODE --chain-id=$CHAIN_ID
 ```
 
 #### Set Vault
@@ -74,11 +87,17 @@ neutrond tx wasm execute $CONTRACT_ADDRESS "{\"vault_extension\": {\"vaultenator
 neutrond tx wasm execute $CONTRACT_ADDRESS "{\"set_vault\": {\"vault\":\"neutron1krqwpk0kmphl93kykavp2fnr88g5rnrpk40c34a55yrl00tmfz0s99ewc6\"}}"  --from=deployer-neutron --gas=auto --gas-prices 0.0053untrn --gas-adjustment 1.3 --output=json --node=$NODE --chain-id=$CHAIN_ID
 ```
 
-#### Update Config
+#### Update Config - Fund
 
 ```bash
 neutrond tx wasm execute $CONTRACT_ADDRESS "{\"vault_extension\": {\"vaultenator\": {\"update_config\": {\"new_config\": {\"strategy_cap\": \"500000000000\"}}}}}"  --from=deployer --gas=auto --gas-prices 0.0053untrn --gas-adjustment 1.3 --output=json --node=$NODE --chain-id=$CHAIN_ID
 neutrond tx wasm execute $CONTRACT_ADDRESS "{\"vault_extension\": {\"vaultenator\": {\"update_config\": {\"new_config\": {\"controller\": \"neutron1ajk4hcvtf48qwt773v8cpwraq2qtj9kum6x6twua8jzv7863y8csqs64ca\"}}}}}"  --from=deployer --gas=auto --gas-prices 0.008untrn --gas-adjustment 1.3 --output=json --node=$NODE --chain-id=$CHAIN_ID
+```
+
+#### Update Config - Strategy
+
+```bash
+neutrond tx wasm execute $CONTRACT_ADDRESS "{\"set_grants\": {\"grants\":  [\"/cosmwasm.wasm.v1.MsgExecuteContract\",\"/neutron.dex.MsgPlaceLimitOrder\",\"/neutron.dex.MsgDeposit\",\"/neutron.dex.MsgWithdrawal\"]}}"  --from=deployer-neutron --gas=auto --gas-prices 0.0053untrn --gas-adjustment 1.3 --output=json --node=$NODE --chain-id=$CHAIN_ID
 ```
 
 ### Migrate
@@ -92,39 +111,57 @@ neutrond tx wasm migrate $CONTRACT_ADDRESS $CODE_ID '{}'  --from=deployer --gas=
 #### Config
 
 ```bash
-neutrond query wasm contract-state smart $CONTRACT_ADDRESS "{\"vault_extension\": {\"vaultenator\": {\"config\": {}}}}" --node=$NODE --output=json | jq .
-neutrond query wasm contract-state smart $CONTRACT_ADDRESS "{\"config\": {}}" --node=$NODE --output=json | jq .
+neutrond q wasm contract-state smart $CONTRACT_ADDRESS "{\"vault_extension\": {\"vaultenator\": {\"config\": {}}}}" --node=$NODE --output=json | jq .
+neutrond q wasm contract-state smart $CONTRACT_ADDRESS "{\"config\": {}}" --node=$NODE --output=json | jq .
 ```
 
 #### State
 
 ```bash
-neutrond query wasm contract-state smart $CONTRACT_ADDRESS "{\"vault_extension\": {\"vaultenator\": {\"state\": {}}}}" --node=$NODE --output=json | jq .
-neutrond query wasm contract-state smart $CONTRACT_ADDRESS "{\"state\": {}}" --node=$NODE --output=json | jq .
+neutrond q wasm contract-state smart $CONTRACT_ADDRESS "{\"vault_extension\": {\"vaultenator\": {\"state\": {}}}}" --node=$NODE --output=json | jq .
+neutrond q wasm contract-state smart $CONTRACT_ADDRESS "{\"state\": {}}" --node=$NODE --output=json | jq .
 ```
 
 #### Estimate Vault Assets
 
 ```bash
-neutrond query wasm contract-state smart $CONTRACT_ADDRESS "{\"vault_extension\": {\"vaultenator\": {\"estimate_vault_assets\": { \"amount\": \"1000\" }}}}" --node=$NODE --output=json | jq .
+neutrond q wasm contract-state smart $CONTRACT_ADDRESS "{\"vault_extension\": {\"vaultenator\": {\"estimate_vault_assets\": { \"amount\": \"1000\" }}}}" --node=$NODE --output=json | jq .
 ```
 
 #### Total Vault Token Supply
 
 ```bash
-neutrond query wasm contract-state smart $CONTRACT_ADDRESS "{\"total_vault_token_supply\": {}}" --node=$NODE --output=json | jq .
+neutrond q wasm contract-state smart $CONTRACT_ADDRESS "{\"total_vault_token_supply\": {}}" --node=$NODE --output=json | jq .
 ```
 
 #### Version
 
 ```bash
-neutrond query wasm contract-state smart $CONTRACT_ADDRESS "{\"vault_extension\": {\"vaultenator\": {\"version\": {}}}}" --node=$NODE --output=json | jq .
+neutrond q wasm contract-state smart $CONTRACT_ADDRESS "{\"vault_extension\": {\"vaultenator\": {\"version\": {}}}}" --node=$NODE --output=json | jq .
 ```
 
 #### Withdrawable Amount
 
 ```bash
-neutrond query wasm contract-state smart $CONTRACT_ADDRESS "{\"vault_extension\": {\"vaultenator\": {\"withdrawable_amount\": {}}}}" --node=$NODE --output=json | jq .
+neutrond q wasm contract-state smart $CONTRACT_ADDRESS "{\"vault_extension\": {\"vaultenator\": {\"withdrawable_amount\": {}}}}" --node=$NODE --output=json | jq .
+```
+
+#### Wasm Contract Info
+
+```bash
+neutrond q wasm contract $CONTRACT_ADDRESS  --output=json --node=$NODE  | jq .
+```
+
+#### Tokenfactory Params
+
+```bash
+neutrond q tokenfactory params --output=json --node=$NODE  | jq .
+```
+
+#### Tokenfactory Check Hooks
+
+```bash
+neutrond q tokenfactory before-send-hook factory/$CONTRACT_ADDRESS/fund  --output=json --node=$NODE  | jq .
 ```
 
 ### Other

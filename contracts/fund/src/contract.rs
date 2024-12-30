@@ -121,8 +121,8 @@ pub fn execute(
                 }
                 VaultenatorExtensionExecuteMsg::RepayQueue {
                     cycle_profit,
-                    max_queue_amount,
-                } => handle_repay_queue(deps, env, info, cycle_profit, max_queue_amount),
+                    limit,
+                } => handle_repay_queue(deps, env, info, cycle_profit, limit),
                 VaultenatorExtensionExecuteMsg::Unpause {} => {
                     StructuredVault.handle_unpause_contract(deps, info)
                 }
