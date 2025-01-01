@@ -13,7 +13,7 @@ use cw2::get_contract_version;
 use interface::fund::{Redemption, StateResponse, VersionResponse};
 use vaultenator::{config::Configure, state::ManageState};
 
-pub const DEFAULT_LIMIT: u32 = 150u32;
+pub const DEFAULT_LIMIT: u64 = 150u64;
 
 pub fn query_estimate_vault_assets(amount: Uint128, deps: Deps, env: Env) -> StdResult<Vec<Coin>> {
     let config =
@@ -45,7 +45,7 @@ pub fn query_estimate_vault_assets(amount: Uint128, deps: Deps, env: Env) -> Std
     Ok(assets)
 }
 
-pub fn query_pending_redemptions(deps: Deps, limit: Option<u32>) -> StdResult<Vec<Redemption>> {
+pub fn query_pending_redemptions(deps: Deps, limit: Option<u64>) -> StdResult<Vec<Redemption>> {
     let query_limit = limit.unwrap_or(DEFAULT_LIMIT) as usize;
 
     // Iterate through redemptions by timestamp
@@ -53,25 +53,12 @@ pub fn query_pending_redemptions(deps: Deps, limit: Option<u32>) -> StdResult<Ve
 
     // Collect results into a Vec<Redemption>
     let res: Vec<Redemption> = iterator
-        .map(|result| {
-            match &result {
-                Ok((timestamp, redemption)) => {
-                    deps.api.debug(&format!(
-                        "Found redemption: Timestamp: {}, User: {}, Amount: {}",
-                        timestamp, redemption.user, redemption.total_deposits
-                    ));
-                }
-                Err(err) => {
-                    deps.api
-                        .debug(&format!("Error iterating redemptions: {:?}", err));
-                }
-            }
-            result.map(|(_, redemption)| redemption)
-        })
+        .map(|result| result.map(|(_, redemption)| redemption)) // Extract Redemption
         .collect::<StdResult<Vec<Redemption>>>()?; // Collect into Vec<Redemption> and propagate errors
 
     Ok(res)
 }
+
 pub fn query_state_wrapper(deps: Deps) -> StdResult<StateResponse> {
     let state = State::get_from_storage(deps).map_err(|e| StdError::generic_err(e.to_string()))?;
 

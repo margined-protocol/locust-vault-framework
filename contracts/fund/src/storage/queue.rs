@@ -33,10 +33,6 @@ pub fn redemptions_by_user<'a>() -> MultiIndex<'a, String, Redemption, String> {
     redemptions().idx.user
 }
 
-pub fn redemptions_by_timestamp<'a>() -> MultiIndex<'a, u64, Redemption, String> {
-    redemptions().idx.timestamp
-}
-
 pub fn filter_queue_by_user<'a>(
     storage: &'a dyn Storage,
     user: String,
@@ -58,17 +54,6 @@ pub fn get_all_user_redemptions(storage: &dyn Storage, user: String) -> StdResul
             .map(|(_, strategy)| strategy.clone())
             .collect::<Vec<_>>(), // Collect the final Vec
     )
-}
-
-pub fn get_all_redemptions(storage: &dyn Storage, limit: usize) -> StdResult<Vec<Redemption>> {
-    redemptions()
-        .range(storage, None, None, Order::Ascending)
-        .take(limit)
-        .map(|item| {
-            let (_, strategy) = item?;
-            Ok(strategy)
-        })
-        .collect()
 }
 
 pub fn iterate_redemptions_by_timestamp<'a>(

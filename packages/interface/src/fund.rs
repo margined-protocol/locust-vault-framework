@@ -37,7 +37,7 @@ pub enum VaultenatorExtensionQueryMsg {
     State {},
     Version {},
     EstimateVaultAssets { amount: Uint128 },
-    PendingRedemptions { limit: Option<u32> },
+    PendingRedemptions { limit: Option<u64> },
     UserRedemption { user: String },
     WithdrawableAmount {},
 }

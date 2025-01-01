@@ -664,12 +664,35 @@ fn test_queue_from_second_user() {
 
     env.create_redemption_fund(&wasm, &vault_addr, &[redeem.clone()], &env.traders[1])
         .unwrap();
+    let timestamp = env.app.get_block_timestamp();
+
+    let pending_redemption = env
+        .query_pending_redemptions_fund(&wasm, &vault_addr, None)
+        .unwrap();
+    assert_eq!(pending_redemption.len(), 1);
+    assert_eq!(
+        pending_redemption[0],
+        Redemption {
+            user: env.traders[1].address(),
+            total_deposits: redeem.amount,
+            timestamp: timestamp.seconds(),
+        }
+    );
 
     let trader_strategy_after = env.get_balance(&env.traders[1].address(), &config.strategy_denom);
     assert!(trader_strategy_after.is_zero());
 
+    env.withdraw_fund(&wasm, &vault_addr, vec![deposit.clone()], &env.controller)
+        .unwrap();
+
+    env.repay_queue_fund(&wasm, &vault_addr, None, None, &[deposit], &env.controller)
+        .unwrap();
+
     let contract_base_after = env.get_balance(&vault_addr, BASE_DENOM);
-    assert_eq!(contract_base_before, contract_base_after);
+    assert_eq!(
+        contract_base_before.checked_add(DUST).unwrap(),
+        contract_base_after
+    );
 }
 
 #[test]
@@ -733,6 +756,195 @@ fn test_queue_from_second_user_multiple_times() {
     let trader_strategy_after = env.get_balance(&env.traders[1].address(), &config.strategy_denom);
     assert!(trader_strategy_after.is_zero());
 
+    let pending_redemption = env
+        .query_pending_redemptions_fund(&wasm, &vault_addr, None)
+        .unwrap();
+    assert_eq!(pending_redemption.len(), 2);
+
+    let trader_strategy_after = env.get_balance(&env.traders[1].address(), &config.strategy_denom);
+    assert!(trader_strategy_after.is_zero());
+
+    env.withdraw_fund(&wasm, &vault_addr, vec![deposit.clone()], &env.controller)
+        .unwrap();
+
+    env.repay_queue_fund(&wasm, &vault_addr, None, None, &[deposit], &env.controller)
+        .unwrap();
+
     let contract_base_after = env.get_balance(&vault_addr, BASE_DENOM);
-    assert_eq!(contract_base_before, contract_base_after);
+    assert_eq!(
+        contract_base_before.checked_add(DUST).unwrap(),
+        contract_base_after.checked_sub(DUST).unwrap()
+    );
+
+    let pending_redemption = env
+        .query_pending_redemptions_fund(&wasm, &vault_addr, None)
+        .unwrap();
+    assert!(pending_redemption.is_empty());
+}
+
+#[test]
+fn test_queue_insufficient_funds_then_complete() {
+    let env = TestEnv::new();
+    let wasm = Wasm::new(&env.app);
+
+    let mut msg = env.default_fund_instantiation_msg();
+    msg.token1 = None;
+
+    let vault_addr = env.deploy_fund_contract(&wasm, msg);
+
+    env.set_open_fund(&wasm, &vault_addr, &env.signer).unwrap();
+
+    let config = env.query_config_fund(&wasm, &vault_addr).unwrap();
+
+    let contract_base_before = env.get_balance(&vault_addr, BASE_DENOM);
+
+    let deposit = coin(100_000_000, BASE_DENOM);
+    env.deposit_fund(&wasm, &vault_addr, &[deposit.clone()], &env.traders[0])
+        .unwrap();
+
+    let deposit_1 = coin(200_000_000, BASE_DENOM);
+    env.deposit_fund(&wasm, &vault_addr, &[deposit_1.clone()], &env.traders[1])
+        .unwrap();
+
+    let trader_strategy_before = env.get_balance(&env.traders[0].address(), &config.strategy_denom);
+    assert!(!trader_strategy_before.is_zero());
+
+    let trader_1_strategy_before =
+        env.get_balance(&env.traders[1].address(), &config.strategy_denom);
+    assert!(!trader_1_strategy_before.is_zero());
+
+    let redeem = coin(trader_strategy_before.u128(), config.strategy_denom.clone());
+    env.create_redemption_fund(&wasm, &vault_addr, &[redeem.clone()], &env.traders[0])
+        .unwrap();
+    let timestamp = env.app.get_block_timestamp();
+
+    let redeem_1 = coin(
+        trader_1_strategy_before.u128(),
+        config.strategy_denom.clone(),
+    );
+    env.create_redemption_fund(&wasm, &vault_addr, &[redeem_1.clone()], &env.traders[1])
+        .unwrap();
+    let timestamp_1 = env.app.get_block_timestamp();
+
+    let pending_redemption = env
+        .query_pending_redemptions_fund(&wasm, &vault_addr, None)
+        .unwrap();
+    assert_eq!(pending_redemption.len(), 2);
+    assert_eq!(
+        pending_redemption,
+        vec![
+            Redemption {
+                user: env.traders[0].address(),
+                total_deposits: redeem.amount,
+                timestamp: timestamp.seconds(),
+            },
+            Redemption {
+                user: env.traders[1].address(),
+                total_deposits: redeem_1.amount,
+                timestamp: timestamp_1.seconds(),
+            },
+        ]
+    );
+
+    let trader_strategy_after = env.get_balance(&env.traders[0].address(), &config.strategy_denom);
+    assert!(trader_strategy_after.is_zero());
+
+    let trader_1_strategy_after =
+        env.get_balance(&env.traders[1].address(), &config.strategy_denom);
+    assert!(trader_1_strategy_after.is_zero());
+
+    let total_deposit = coin(
+        deposit.amount.checked_add(deposit_1.amount).unwrap().u128(),
+        BASE_DENOM,
+    );
+    env.withdraw_fund(
+        &wasm,
+        &vault_addr,
+        vec![total_deposit.clone()],
+        &env.controller,
+    )
+    .unwrap();
+
+    // First pay back insufficient funds
+    let repayment_insufficient = coin(25_000_000u128, BASE_DENOM);
+    env.repay_queue_fund(
+        &wasm,
+        &vault_addr,
+        None,
+        None,
+        &[repayment_insufficient],
+        &env.controller,
+    )
+    .unwrap();
+
+    let pending_redemption = env
+        .query_pending_redemptions_fund(&wasm, &vault_addr, None)
+        .unwrap();
+    assert_eq!(pending_redemption.len(), 2);
+    assert_eq!(
+        pending_redemption,
+        vec![
+            Redemption {
+                user: env.traders[0].address(),
+                total_deposits: redeem.amount,
+                timestamp: timestamp.seconds(),
+            },
+            Redemption {
+                user: env.traders[1].address(),
+                total_deposits: redeem_1.amount,
+                timestamp: timestamp_1.seconds(),
+            },
+        ]
+    );
+
+    // repay first user
+    let repayment_sufficient = coin(75_000_000u128, BASE_DENOM);
+    env.repay_queue_fund(
+        &wasm,
+        &vault_addr,
+        None,
+        None,
+        &[repayment_sufficient],
+        &env.controller,
+    )
+    .unwrap();
+
+    let pending_redemption = env
+        .query_pending_redemptions_fund(&wasm, &vault_addr, None)
+        .unwrap();
+    assert_eq!(pending_redemption.len(), 1);
+    assert_eq!(
+        pending_redemption,
+        vec![Redemption {
+            user: env.traders[1].address(),
+            total_deposits: redeem_1.amount,
+            timestamp: timestamp_1.seconds(),
+        },]
+    );
+
+    // repay second user
+    let repayment_sufficient = coin(200_000_000u128, BASE_DENOM);
+    env.repay_queue_fund(
+        &wasm,
+        &vault_addr,
+        None,
+        None,
+        &[repayment_sufficient],
+        &env.controller,
+    )
+    .unwrap();
+
+    let pending_redemption = env
+        .query_pending_redemptions_fund(&wasm, &vault_addr, None)
+        .unwrap();
+    assert!(pending_redemption.is_empty());
+
+    let state = env.query_state_fund(&wasm, &vault_addr).unwrap();
+    assert!(state.total_staked_tokens.is_zero());
+
+    let contract_base_after = env.get_balance(&vault_addr, BASE_DENOM);
+    assert_eq!(
+        contract_base_before.checked_add(DUST).unwrap(),
+        contract_base_after
+    );
 }

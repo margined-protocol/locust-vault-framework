@@ -287,7 +287,7 @@ impl TestEnv {
         &self,
         wasm: &Wasm<OsmosisTestApp>,
         contract_addr: &str,
-        limit: Option<u32>,
+        limit: Option<u64>,
     ) -> RunnerResult<Vec<Redemption>> {
         let query_msg = QueryMsg::VaultExtension(ExtensionQueryMsg::Vaultenator(
             VaultenatorExtensionQueryMsg::PendingRedemptions { limit },

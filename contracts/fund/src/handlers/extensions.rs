@@ -7,16 +7,15 @@ use crate::{
     },
     messages::create_bank_message,
     process::{process_management_fees_and_modify_response, process_redeem, process_repayments},
+    queries::extensions::query_pending_redemptions,
     storage::{
         config::Config,
-        queue::{add_to_queue, redemptions, remove_from_queue},
-        state::{update_user_deposit, State, DEFAULT_QUEUE_LIMIT},
+        queue::{add_to_queue, remove_from_queue},
+        state::{update_user_deposit, State},
     },
 };
 
-use cosmwasm_std::{
-    coin, ensure, Coin, Decimal, DepsMut, Env, MessageInfo, Order, Response, Uint128,
-};
+use cosmwasm_std::{coin, ensure, Coin, Decimal, DepsMut, Env, MessageInfo, Response, Uint128};
 use cw_utils::{must_pay, nonpayable};
 use vaultenator::{config::Configure, errors::ContractError, state::ManageState};
 
@@ -179,7 +178,7 @@ pub fn handle_repay_queue(
 
     State::is_open_and_unpaused(deps.as_ref())?;
 
-    // 2. Load configuration and state immutably
+    // 2. Load configuration and state
     let config = Config::get_from_storage(deps.as_ref())?;
     let mut state = State::get_from_storage(deps.as_ref())?;
 
@@ -189,7 +188,7 @@ pub fn handle_repay_queue(
         ContractError::Unauthorized {}
     );
 
-    // 4. Process repayments (mutable `deps` is passed here)
+    // 4. Process repayments
     response = process_repayments(
         &info,
         &config,
@@ -199,7 +198,7 @@ pub fn handle_repay_queue(
         response,
     )?;
 
-    // 5. Immutable borrow: Get the vault balance and then make a mutable copy to track remaining balance
+    // 5. Get the vault balance and then make a mutable copy to track remaining balance
     let vault_balance = get_vault_balance(&deps.as_ref(), &config, env.contract.address.as_str())?;
     let mut remaining_balance = vault_balance;
 
@@ -207,18 +206,11 @@ pub fn handle_repay_queue(
     let mut redemptions_to_process = vec![];
 
     // 7. Process redemptions
-    let limit = limit.unwrap_or(DEFAULT_QUEUE_LIMIT);
+    let pending_redemptions = query_pending_redemptions(deps.as_ref(), limit)?;
 
-    for result in redemptions()
-        .range(deps.storage, None, None, Order::Ascending)
-        .take(limit as usize)
-    {
-        let (_, redemption) = result?;
-
-        // Immutable operations
+    for redemption in pending_redemptions.iter() {
         let strategy_denom_sent = redemption.total_deposits;
 
-        // Immutable operations done here
         let (burn_ratio, assets_to_redeem) = calculate_share_to_burn(
             deps.as_ref(),
             &config,
@@ -228,25 +220,19 @@ pub fn handle_repay_queue(
             strategy_denom_sent,
         )?;
 
-        match calculate_total_assets_redeemable(&assets_to_redeem, &mut remaining_balance) {
-            Result::Ok(_) => {}
-            Result::Err(_) => {
-                break;
-            }
+        if calculate_total_assets_redeemable(&assets_to_redeem, &mut remaining_balance).is_err() {
+            break; // Stop processing if the balance is insufficient
         }
 
         // Add the redemption to the list of redemptions to process
         redemptions_to_process.push((redemption, burn_ratio, assets_to_redeem));
     }
 
-    for redemption in redemptions_to_process.iter() {
-        let (redemption, burn_ratio, assets_to_redeem) = redemption;
-
-        // Update user deposit
+    // 8. Finalize each redemption
+    for (redemption, burn_ratio, assets_to_redeem) in redemptions_to_process.iter() {
         let user = deps.api.addr_validate(&redemption.user)?;
-        update_user_deposit(deps.storage, user.clone(), *burn_ratio, &mut state)?;
 
-        // Save state
+        update_user_deposit(deps.storage, user.clone(), *burn_ratio, &mut state)?;
         state.save_to_storage(&mut deps)?;
 
         // Process redeem
@@ -258,12 +244,6 @@ pub fn handle_repay_queue(
             &env,
             redemption.total_deposits,
         )?;
-
-        deps.api
-            .debug(&format!("Redemption processed: {:#?}", response));
-
-        deps.api
-            .debug(&format!("Redemption processed: {:#?}", user));
 
         // Remove the redemption from the queue
         remove_from_queue(deps.storage, redemption.user.clone())?;
