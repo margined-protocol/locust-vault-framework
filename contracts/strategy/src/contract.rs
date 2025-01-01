@@ -137,7 +137,7 @@ pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, C
 
     match contract_version.contract.as_ref() {
         "crates.io:strategy" => match contract_version.version.as_ref() {
-            "0.0.1" => {
+            "0.0.4" => {
                 set_contract_version(
                     deps.storage,
                     format!("crates.io:{CONTRACT_NAME}"),

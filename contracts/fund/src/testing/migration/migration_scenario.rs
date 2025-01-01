@@ -1,16 +1,15 @@
 use crate::contract::{CONTRACT_NAME, CONTRACT_VERSION};
 
-use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{coin, Decimal, Uint128};
+use cosmwasm_std::{coin, Decimal};
 use interface::fund::{
     ConfigResponse, ExtensionQueryMsg, InstantiateMsg, MigrateMsg, QueryMsg,
     VaultenatorExtensionQueryMsg,
 };
+use neutron_test_tube::{Account, Module, Runner, Wasm};
 use osmosis_std::types::cosmwasm::wasm::v1::{
     MsgMigrateContract, MsgMigrateContractResponse, QueryContractInfoRequest,
     QueryContractInfoResponse,
 };
-use osmosis_test_tube::{Account, Module, Runner, Wasm};
 use test_tube::ExecuteResponse;
 use testing::{
     setup::{TestEnv, BASE_DENOM, STRATEGY_CAP},
@@ -23,8 +22,7 @@ fn test_migration() {
     let wasm = Wasm::new(&env.app);
 
     let wasm_byte_code =
-        std::fs::read("../../contracts/fund-vault/src/testing/artifacts/fund_vault-v004.wasm")
-            .unwrap();
+        std::fs::read("../../contracts/fund/src/testing/artifacts/fund_vault-v010.wasm").unwrap();
 
     let fund_vault_v003 = wasm
         .store_code(&wasm_byte_code, None, &env.signer)
@@ -32,14 +30,15 @@ fn test_migration() {
         .data
         .code_id;
 
-    let msg = OldInstantiateMsg {
+    let msg = InstantiateMsg {
         admin: env.signer.address().to_string(),
         controller: env.signer.address().to_string(),
         treasury: env.treasury.address().to_string(),
         strategy_cap: STRATEGY_CAP,
-        float: Uint128::zero(),
+        float: Decimal::zero(),
         token0: BASE_DENOM.to_string(),
         token1: None,
+        management_fee_rate: Decimal::zero(),
         performance_fee_rate: Decimal::zero(),
         vault_type: "fund".to_string(),
     };
@@ -58,7 +57,8 @@ fn test_migration() {
         .unwrap()
         .data
         .address;
-    env.set_open(&wasm, &contract_addr, &env.signer).unwrap();
+    env.set_open_fund(&wasm, &contract_addr, &env.signer)
+        .unwrap();
 
     // let config = env.query_config(&wasm, &contract_addr).unwrap();
     let query_msg = QueryMsg::VaultExtension(ExtensionQueryMsg::Vaultenator(
@@ -68,15 +68,15 @@ fn test_migration() {
     let config: ConfigResponse = wasm.query(&contract_addr, &query_msg).unwrap();
 
     // note: for v0.0.2 onwards the denom is omitted
-    let expected_strategy_denom = format!("factory/{}/fund-vault", contract_addr);
+    let expected_strategy_denom = format!("factory/{}/fund", contract_addr);
 
     assert_eq!(config.strategy_denom, expected_strategy_denom);
     assert_eq!(config.token0, BASE_DENOM.to_string());
 
-    let version = env.query_version(&wasm, &contract_addr).unwrap();
+    let version = env.query_version_fund(&wasm, &contract_addr).unwrap();
 
-    assert_eq!(version.name, "crates.io:fund-vault".to_string());
-    assert_eq!(version.version, "0.0.4".to_string());
+    assert_eq!(version.name, "crates.io:fund".to_string());
+    assert_eq!(version.version, "0.1.0".to_string());
 
     let code_id = store_code(&wasm, &env.signer, "fund").unwrap();
 
@@ -114,7 +114,7 @@ fn test_migration() {
     assert_eq!(contract_info.label, "fund-vault");
 
     let config = env.query_config_fund(&wasm, &contract_addr).unwrap();
-    let expected_strategy_denom = format!("factory/{}/fund-vault", contract_addr);
+    let expected_strategy_denom = format!("factory/{}/fund", contract_addr);
 
     assert_eq!(config.strategy_denom, expected_strategy_denom);
     assert_eq!(config.token0, BASE_DENOM.to_string());

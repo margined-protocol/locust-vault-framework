@@ -102,3 +102,42 @@ fn test_fail_instantiation() {
         ContractError::Std(StdError::generic_err("Grants must be non-empty")),
     );
 }
+
+#[test]
+fn test_fail_instantiation_duplicate_grant() {
+    let env = TestEnv::new();
+
+    let wasm = Wasm::new(&env.app);
+
+    let code_id = store_code(&wasm, &env.signer, "strategy").unwrap();
+
+    let err = wasm
+        .instantiate(
+            code_id,
+            &InstantiateMsg {
+                admin: env.signer.address(),
+                controller: env.controller.address(),
+                token0: BASE_DENOM.to_string(),
+                token1: None,
+                grants: vec![
+                    DefaultMsg::TYPE_URL.to_string(),
+                    DefaultMsg::TYPE_URL.to_string(),
+                ],
+                pool_info: PoolInfo::Osmosis {
+                    id: 1,
+                    token0: BASE_DENOM.to_string(),
+                    token1: QUOTE_DENOM.to_string(),
+                },
+            },
+            None,
+            Some("strategy-contract"),
+            &[],
+            &env.signer,
+        )
+        .unwrap_err();
+
+    assert_err(
+        err,
+        ContractError::Std(StdError::generic_err("Duplicate grants are not allowed")),
+    );
+}

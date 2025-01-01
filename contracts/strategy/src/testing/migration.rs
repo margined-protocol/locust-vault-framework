@@ -30,7 +30,7 @@ fn test_migration() {
     let wasm = Wasm::new(&env.app);
 
     let wasm_byte_code =
-        std::fs::read("../../contracts/strategy/src/testing/artifacts/strategy-v001.wasm").unwrap();
+        std::fs::read("../../contracts/strategy/src/testing/artifacts/strategy-v004.wasm").unwrap();
 
     let fund_vault_v003 = wasm
         .store_code(&wasm_byte_code, None, &env.signer)
@@ -81,9 +81,9 @@ fn test_migration() {
                 token0: BASE_DENOM.to_string(),
                 token1: QUOTE_DENOM.to_string(),
             },
-            grants: vec![DefaultMsg::TYPE_URL.to_string()],
+            grants: vec![DefaultMsg::TYPE_URL.to_string(),],
             name: format!("crates.io:{}", CONTRACT_NAME),
-            version: "0.0.1".to_string(),
+            version: "0.0.4".to_string(),
         }
     );
 

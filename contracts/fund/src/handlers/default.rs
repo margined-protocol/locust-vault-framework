@@ -9,8 +9,8 @@ use crate::{
     process::{process_deposit, process_management_fees_and_modify_response, process_redeem},
     reply::ReplyIDs,
     storage::{
-        config::{migrate_config, Config},
-        state::{migrate_state, update_user_deposit, State, UserDeposit, USER_DEPOSITS},
+        config::Config,
+        state::{update_user_deposit, State, UserDeposit, USER_DEPOSITS},
     },
 };
 
@@ -213,18 +213,8 @@ impl Handle<Config, State> for StructuredVault {
         let contract_version = get_contract_version(deps.storage)?;
 
         match contract_version.contract.as_ref() {
-            "crates.io:fund" => match contract_version.version.as_ref() {
-                "0.0.4" => {
-                    set_contract_version(
-                        deps.storage,
-                        format!("crates.io:{CONTRACT_NAME}"),
-                        CONTRACT_VERSION,
-                    )?;
-
-                    let (deps, _) = migrate_config(deps)?;
-                    migrate_state(deps)?;
-                }
-                "0.0.5" => {
+            "crates.io:fund" | "crates.io:fund-vault" => match contract_version.version.as_ref() {
+                "0.1.0" => {
                     set_contract_version(
                         deps.storage,
                         format!("crates.io:{CONTRACT_NAME}"),
