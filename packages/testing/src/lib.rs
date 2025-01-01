@@ -4,5 +4,5 @@ pub mod helpers;
 pub mod deployment;
 pub mod fund;
 pub mod setup;
+pub mod strategy;
 pub mod utils;
-pub mod wrapper;

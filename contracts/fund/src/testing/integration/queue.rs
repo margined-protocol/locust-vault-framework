@@ -1,4 +1,4 @@
-use cosmwasm_std::{assert_approx_eq, coin, coins, Uint128};
+use cosmwasm_std::{coin, coins, Uint128};
 use interface::fund::{Redemption, StateResponse};
 use neutron_std::types::osmosis::tokenfactory::WhitelistedHook;
 use neutron_test_tube::{Account, Module, Wasm};
@@ -488,8 +488,16 @@ fn test_queue_end_to_end_with_repayment_multiple_denom() {
     let env = TestEnv::new();
     let wasm = Wasm::new(&env.app);
 
-    let vault_addr = env.deploy_fund_contract(&wasm, env.default_fund_instantiation_msg());
+    let strategy_addr = env.deploy_strategy_contract(&wasm, None);
+
+    let mut msg = env.default_fund_instantiation_msg();
+    msg.controller = strategy_addr.to_string();
+
+    let vault_addr = env.deploy_fund_contract(&wasm, msg);
     let block_time = env.app.get_block_timestamp();
+
+    env.set_vault_strategy(&wasm, &strategy_addr, &vault_addr, &env.signer)
+        .unwrap();
 
     env.set_open_fund(&wasm, &vault_addr, &env.signer).unwrap();
 
@@ -524,9 +532,9 @@ fn test_queue_end_to_end_with_repayment_multiple_denom() {
     {
         let withdraw_amount_base = coin(150_000_000, BASE_DENOM);
         let withdraw_amount_quote = coin(50_000_000, QUOTE_DENOM);
-        env.withdraw_fund(
+        env.withdraw_strategy(
             &wasm,
-            &vault_addr,
+            &strategy_addr,
             vec![withdraw_amount_base.clone(), withdraw_amount_quote.clone()],
             &env.controller,
         )
@@ -561,8 +569,11 @@ fn test_queue_end_to_end_with_repayment_multiple_denom() {
         let expected_state = StateResponse {
             is_open: true,
             is_paused: false,
-            total_staked_tokens: Uint128::new(250_000_000),
-            total_withdrawn_tokens: vec![coin(0u128, QUOTE_DENOM), coin(0u128, BASE_DENOM)],
+            total_staked_tokens: Uint128::new(425_000_000),
+            total_withdrawn_tokens: vec![
+                coin(50_000_000u128, QUOTE_DENOM),
+                coin(150_000_000u128, BASE_DENOM),
+            ],
             last_pause: block_time,
             last_claim: latest_block_time,
             pending_management_fees: vec![],
@@ -576,16 +587,15 @@ fn test_queue_end_to_end_with_repayment_multiple_denom() {
     {
         let profit = coin(50_000_000, BASE_DENOM);
         // send funds to the controller
-        env.send(&vault_addr, profit.into(), &env.traders[5]);
+        env.send(&strategy_addr, profit.into(), &env.traders[5]);
 
         let repay_amount_base = coin(200_000_000, BASE_DENOM);
         let repay_amount_quote = coin(50_000_000, QUOTE_DENOM);
-        env.repay_queue_fund(
+        env.repay_queue_strategy(
             &wasm,
-            &vault_addr,
+            &strategy_addr,
+            vec![repay_amount_base, repay_amount_quote],
             None,
-            None,
-            &[repay_amount_base, repay_amount_quote],
             &env.controller,
         )
         .unwrap();
@@ -609,120 +619,120 @@ fn test_queue_end_to_end_with_repayment_multiple_denom() {
     );
 }
 
-// #[test]
-// fn test_queue_from_second_user() {
-//     let env = TestEnv::new();
-//     let wasm = Wasm::new(&env.app);
+#[test]
+fn test_queue_from_second_user() {
+    let env = TestEnv::new();
+    let wasm = Wasm::new(&env.app);
 
-//     let mut msg = env.default_fund_instantiation_msg();
-//     msg.token1 = None;
+    let mut msg = env.default_fund_instantiation_msg();
+    msg.token1 = None;
 
-//     let vault_addr = env.deploy_fund_contract(&wasm, msg);
+    let vault_addr = env.deploy_fund_contract(&wasm, msg);
 
-//     env.whitelist_hooks(vec![WhitelistedHook {
-//         code_id: 2,
-//         denom_creator: vault_addr.to_string(),
-//     }]);
+    env.whitelist_hooks(vec![WhitelistedHook {
+        code_id: 1,
+        denom_creator: vault_addr.to_string(),
+    }]);
 
-//     env.register_sudo_fund(&wasm, &vault_addr, &env.signer)
-//         .unwrap();
-//     env.set_open_fund(&wasm, &vault_addr, &env.signer).unwrap();
+    env.register_sudo_fund(&wasm, &vault_addr, &env.signer)
+        .unwrap();
+    env.set_open_fund(&wasm, &vault_addr, &env.signer).unwrap();
 
-//     let config = env.query_config_fund(&wasm, &vault_addr).unwrap();
+    let config = env.query_config_fund(&wasm, &vault_addr).unwrap();
 
-//     let contract_base_before = env.get_balance(&vault_addr, BASE_DENOM);
+    let contract_base_before = env.get_balance(&vault_addr, BASE_DENOM);
 
-//     let deposit = coin(100_000_000, BASE_DENOM);
-//     env.deposit_fund(&wasm, &vault_addr, &[deposit.clone()], &env.traders[0])
-//         .unwrap();
+    let deposit = coin(100_000_000, BASE_DENOM);
+    env.deposit_fund(&wasm, &vault_addr, &[deposit.clone()], &env.traders[0])
+        .unwrap();
 
-//     let state = env.query_state_fund(&wasm, &vault_addr).unwrap();
-//     assert_eq!(state.total_staked_tokens, deposit.amount);
+    let state = env.query_state_fund(&wasm, &vault_addr).unwrap();
+    assert_eq!(state.total_staked_tokens, deposit.amount);
 
-//     let trader_strategy_before = env.get_balance(&env.traders[0].address(), &config.strategy_denom);
+    let trader_strategy_before = env.get_balance(&env.traders[0].address(), &config.strategy_denom);
 
-//     // send funds to the trader 1
-//     let redeem = coin(trader_strategy_before.u128(), config.strategy_denom.clone());
-//     env.send(
-//         &env.traders[1].address(),
-//         redeem.clone().into(),
-//         &env.traders[0],
-//     );
+    // send funds to the trader 1
+    let redeem = coin(trader_strategy_before.u128(), config.strategy_denom.clone());
+    env.send(
+        &env.traders[1].address(),
+        redeem.clone().into(),
+        &env.traders[0],
+    );
 
-//     let trader_strategy_before = env.get_balance(&env.traders[1].address(), &config.strategy_denom);
-//     assert!(!trader_strategy_before.is_zero());
+    let trader_strategy_before = env.get_balance(&env.traders[1].address(), &config.strategy_denom);
+    assert!(!trader_strategy_before.is_zero());
 
-//     env.create_redemption_fund(&wasm, &vault_addr, redeem.clone(), &env.traders[1])
-//         .unwrap();
+    env.create_redemption_fund(&wasm, &vault_addr, &[redeem.clone()], &env.traders[1])
+        .unwrap();
 
-//     let trader_strategy_after = env.get_balance(&env.traders[1].address(), &config.strategy_denom);
-//     assert!(trader_strategy_after.is_zero());
+    let trader_strategy_after = env.get_balance(&env.traders[1].address(), &config.strategy_denom);
+    assert!(trader_strategy_after.is_zero());
 
-//     let contract_base_after = env.get_balance(&vault_addr, BASE_DENOM);
-//     assert_eq!(contract_base_before, contract_base_after, "1");
-// }
+    let contract_base_after = env.get_balance(&vault_addr, BASE_DENOM);
+    assert_eq!(contract_base_before, contract_base_after);
+}
 
-// #[test]
-// fn test_queue_from_second_user_multiple_times() {
-//     let env = TestEnv::new();
-//     let wasm = Wasm::new(&env.app);
+#[test]
+fn test_queue_from_second_user_multiple_times() {
+    let env = TestEnv::new();
+    let wasm = Wasm::new(&env.app);
 
-//     let mut msg = env.default_fund_instantiation_msg();
-//     msg.token1 = None;
+    let mut msg = env.default_fund_instantiation_msg();
+    msg.token1 = None;
 
-//     let vault_addr = env.deploy_fund_contract(&wasm, msg);
+    let vault_addr = env.deploy_fund_contract(&wasm, msg);
 
-//     env.whitelist_hooks(vec![WhitelistedHook {
-//         code_id: 2,
-//         denom_creator: vault_addr.to_string(),
-//     }]);
+    env.whitelist_hooks(vec![WhitelistedHook {
+        code_id: 1,
+        denom_creator: vault_addr.to_string(),
+    }]);
 
-//     env.register_sudo_fund(&wasm, &vault_addr, &env.signer)
-//         .unwrap();
-//     env.set_open_fund(&wasm, &vault_addr, &env.signer).unwrap();
+    env.register_sudo_fund(&wasm, &vault_addr, &env.signer)
+        .unwrap();
+    env.set_open_fund(&wasm, &vault_addr, &env.signer).unwrap();
 
-//     let config = env.query_config_fund(&wasm, &vault_addr).unwrap();
+    let config = env.query_config_fund(&wasm, &vault_addr).unwrap();
 
-//     let contract_base_before = env.get_balance(&vault_addr, BASE_DENOM);
+    let contract_base_before = env.get_balance(&vault_addr, BASE_DENOM);
 
-//     let deposit = coin(100_000_000, BASE_DENOM);
-//     env.deposit_fund(&wasm, &vault_addr, &[deposit.clone()], &env.traders[0])
-//         .unwrap();
+    let deposit = coin(100_000_000, BASE_DENOM);
+    env.deposit_fund(&wasm, &vault_addr, &[deposit.clone()], &env.traders[0])
+        .unwrap();
 
-//     let state = env.query_state_fund(&wasm, &vault_addr).unwrap();
-//     assert_eq!(state.total_staked_tokens, deposit.amount);
+    let state = env.query_state_fund(&wasm, &vault_addr).unwrap();
+    assert_eq!(state.total_staked_tokens, deposit.amount);
 
-//     let trader_strategy_before = env.get_balance(&env.traders[0].address(), &config.strategy_denom);
+    let trader_strategy_before = env.get_balance(&env.traders[0].address(), &config.strategy_denom);
 
-//     // send funds to the trader 1
-//     let send = coin(
-//         trader_strategy_before.u128().checked_div(2).unwrap(),
-//         config.strategy_denom.clone(),
-//     );
-//     env.send(
-//         &env.traders[1].address(),
-//         send.clone().into(),
-//         &env.traders[0],
-//     );
+    // send funds to the trader 1
+    let send = coin(
+        trader_strategy_before.u128().checked_div(2).unwrap(),
+        config.strategy_denom.clone(),
+    );
+    env.send(
+        &env.traders[1].address(),
+        send.clone().into(),
+        &env.traders[0],
+    );
 
-//     let trader_strategy_before = env.get_balance(&env.traders[0].address(), &config.strategy_denom);
-//     let redeem = coin(trader_strategy_before.u128(), config.strategy_denom.clone());
+    let trader_strategy_before = env.get_balance(&env.traders[0].address(), &config.strategy_denom);
+    let redeem = coin(trader_strategy_before.u128(), config.strategy_denom.clone());
 
-//     env.create_redemption_fund(&wasm, &vault_addr, redeem.clone(), &env.traders[0])
-//         .unwrap();
+    env.create_redemption_fund(&wasm, &vault_addr, &[redeem.clone()], &env.traders[0])
+        .unwrap();
 
-//     let trader_strategy_after = env.get_balance(&env.traders[0].address(), &config.strategy_denom);
-//     assert!(trader_strategy_after.is_zero());
+    let trader_strategy_after = env.get_balance(&env.traders[0].address(), &config.strategy_denom);
+    assert!(trader_strategy_after.is_zero());
 
-//     let trader_strategy_before = env.get_balance(&env.traders[1].address(), &config.strategy_denom);
-//     let redeem = coin(trader_strategy_before.u128(), config.strategy_denom.clone());
+    let trader_strategy_before = env.get_balance(&env.traders[1].address(), &config.strategy_denom);
+    let redeem = coin(trader_strategy_before.u128(), config.strategy_denom.clone());
 
-//     env.create_redemption_fund(&wasm, &vault_addr, redeem.clone(), &env.traders[1])
-//         .unwrap();
+    env.create_redemption_fund(&wasm, &vault_addr, &[redeem.clone()], &env.traders[1])
+        .unwrap();
 
-//     let trader_strategy_after = env.get_balance(&env.traders[1].address(), &config.strategy_denom);
-//     assert!(trader_strategy_after.is_zero());
+    let trader_strategy_after = env.get_balance(&env.traders[1].address(), &config.strategy_denom);
+    assert!(trader_strategy_after.is_zero());
 
-//     let contract_base_after = env.get_balance(&vault_addr, BASE_DENOM);
-//     assert_eq!(contract_base_before, contract_base_after, "1");
-// }
+    let contract_base_after = env.get_balance(&vault_addr, BASE_DENOM);
+    assert_eq!(contract_base_before, contract_base_after);
+}

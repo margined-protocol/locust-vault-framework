@@ -189,8 +189,6 @@ pub fn handle_repay_queue(
         ContractError::Unauthorized {}
     );
 
-    deps.api.debug(&format!("State: {:?}", state));
-
     // 4. Process repayments (mutable `deps` is passed here)
     response = process_repayments(
         &info,
@@ -200,8 +198,6 @@ pub fn handle_repay_queue(
         cycle_profit,
         response,
     )?;
-
-    deps.api.debug(&format!("State: {:?}", state));
 
     // 5. Immutable borrow: Get the vault balance and then make a mutable copy to track remaining balance
     let vault_balance = get_vault_balance(&deps.as_ref(), &config, env.contract.address.as_str())?;
@@ -231,11 +227,6 @@ pub fn handle_repay_queue(
             env.contract.address.as_str(),
             strategy_denom_sent,
         )?;
-
-        deps.api.debug(&format!(
-            "Redemption: {:?}, Burn Ratio: {:?}, Assets to redeem: {:?}",
-            redemption, burn_ratio, assets_to_redeem
-        ));
 
         match calculate_total_assets_redeemable(&assets_to_redeem, &mut remaining_balance) {
             Result::Ok(_) => {}
