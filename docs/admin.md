@@ -12,6 +12,7 @@ CONTRACT_NAME=strategy-slinky.wasm
 CONTRACT_NAME=strategy-astroport.wasm
 CONTRACT_ADDRESS=neutron1f99ujxefjr4jqmskc7hvg09am6pdq2j2c5049xwl0de4cavc4rfsl866y0 # ATOM<>dATOM 2861
 CONTRACT_ADDRESS=neutron17fyzkafg4scrd6xu0sp9llrl6hazegza7yer4erlea0kvk30yxsqk2xqfd # wBTC<>USDC 2861
+CONTRACT_ADDRESS=neutron1egc0ujxyqh8p35nxrvxd04uq0z9536k6fvwzwecfgjj9yg7wkdgq2jzj38 # wBTC.axl<>USDC
 CONTRACT_ADDRESS=neutron1t0fl9k43g86sv60ghx9vtwed9rpgtf49rxzm05ff477j23h52c6s0urdc7 # NTRN<>USDC 2861
 CONTRACT_ADDRESS=neutron1wv8pl7tsatzx6n9yaqfksvu5y0x7j50g6mhy636udwfn3vyqp0hsu7g8yk # TIA<>USDC 2861
 CONTRACT_ADDRESS=neutron1krqwpk0kmphl93kykavp2fnr88g5rnrpk40c34a55yrl00tmfz0s99ewc6 # ATOM<>USDC 2861
@@ -39,21 +40,26 @@ neutrond tx wasm store ./artifacts/$CONTRACT_NAME --from=deployer-neutron --gas=
 ### Instantiate - Fund
 
 ```bash
-neutrond tx wasm instantiate $CODE_ID "{\"admin\": \"neutron1ha2hjlce7sqp59g8xhxz2jds97x8fdw9k9wngp\", \"controller\": \"neutron1kz5qqv5jmz7q6y96ftq0ew9023m3tmhpex788z4slhm0xuax7vpqz72jev\", \"treasury\": \"neutron1d9uwvv4w4n8yfnng8enl643vml4xwke63m63gl\", \"strategy_cap\": \"50000000000\", \"float\": \"0.02\", \"token0\": \"ibc/773B4D0A3CD667B2275D5A4A7A2F0909C0BA0F4059C0B9181E680DDF4965DCC7\", \"performance_fee_rate\": \"0.15\", \"management_fee_rate\": \"0.02\", \"vault_type\": \"fund\"}" --label="margined-locust-fund-vault-dtia" --admin deployer-neutron --from=deployer-neutron --gas=auto --gas-prices 0.008untrn --gas-adjustment 1.3 --output=json --node=$NODE --chain-id=$CHAIN_ID  --amount 100000ibc/773B4D0A3CD667B2275D5A4A7A2F0909C0BA0F4059C0B9181E680DDF4965DCC7
+neutrond tx wasm instantiate $CODE_ID "{\"admin\": \"neutron1ha2hjlce7sqp59g8xhxz2jds97x8fdw9k9wngp\", \"controller\": \"neutron1tvg8hupp64s7aycmhdw638w9g5zkuhc643ywcg9upa0md0kcm4us9eh0kc\", \"treasury\": \"neutron1d9uwvv4w4n8yfnng8enl643vml4xwke63m63gl\", \"strategy_cap\": \"50000000000\", \"float\": \"0.02\",\"token0\": \"ibc/DF8722298D192AAB85D86D0462E8166234A6A9A572DD4A2EA7996029DF4DB363\",\"token1\": \"ibc/B559A80D62249C8AA07A380E2A2BEA6E5CA9A6F079C912C3A9E9B494105E4F81\", \"performance_fee_rate\": \"0.15\", \"management_fee_rate\": \"0.02\", \"vault_type\": \"fund\"}" --label="margined-locust-fund-vault-wbtc.axl" --admin deployer --from=deployer --gas=auto --gas-prices 0.008untrn --gas-adjustment 1.3 --output=json --node=$NODE --chain-id=$CHAIN_ID  --amount 1018ibc/DF8722298D192AAB85D86D0462E8166234A6A9A572DD4A2EA7996029DF4DB363
 ```
 
 ### Instantiate - Strategy Drop
 
 ```bash
-neutrond tx wasm instantiate $CODE_ID "{\"admin\": \"neutron1ha2hjlce7sqp59g8xhxz2jds97x8fdw9k9wngp\", \"controller\": \"neutron1nz852flh6np9xlg9ju3ka6w5txezsxt0j4lypn\", \"token0\": \"ibc/C4CFF46FD6DE35CA4CF4CE031E643C8FDC9BA4B99AE598E9B0ED98FE3A2319F9\", \"token1\": \"ibc/B559A80D62249C8AA07A380E2A2BEA6E5CA9A6F079C912C3A9E9B494105E4F81\", \"grants\": [\"/neutron.dex.MsgPlaceLimitOrder\",\"/neutron.dex.MsgDeposit\",\"/neutron.dex.MsgWithdrawal\",\"/neutron.dex.MsgPlaceLimitOrder\",\"/neutron.dex.MsgWithdrawFilledLimitOrder\",\"/neutron.dex.MsgCancelLimitOrder\"], \"pool_info\": {\"slinky\": {\"timeout\": 900, \"base\": \"ATOM\",\"quote\": \"USD\"}}}" --label="margined-locust-strategy-{$DENOMS}" --admin deployer-neutron --from=deployer-neutron --gas=auto --gas-prices 0.008untrn --gas-adjustment 1.3 --output=json --node=$NODE --chain-id=$CHAIN_ID
+neutrond tx wasm instantiate $CODE_ID "{\"admin\": \"neutron1ha2hjlce7sqp59g8xhxz2jds97x8fdw9k9wngp\", \"controller\": \"neutron1nz852flh6np9xlg9ju3ka6w5txezsxt0j4lypn\", \"token0\": \"ibc/C4CFF46FD6DE35CA4CF4CE031E643C8FDC9BA4B99AE598E9B0ED98FE3A2319F9\", \"token1\": \"ibc/B559A80D62249C8AA07A380E2A2BEA6E5CA9A6F079C912C3A9E9B494105E4F81\", \"grants\": [\"/neutron.dex.MsgDeposit\",\"/neutron.dex.MsgWithdrawal\",\"/neutron.dex.MsgPlaceLimitOrder\",\"/neutron.dex.MsgWithdrawFilledLimitOrder\",\"/neutron.dex.MsgCancelLimitOrder\"], \"pool_info\": {\"slinky\": {\"timeout\": 900, \"base\": \"ATOM\",\"quote\": \"USD\"}}}" --label="margined-locust-strategy-{$DENOMS}" --admin deployer-neutron --from=deployer-neutron --gas=auto --gas-prices 0.008untrn --gas-adjustment 1.3 --output=json --node=$NODE --chain-id=$CHAIN_ID
 ```
 
 ### Instantiate - Strategy Astroport
 
 ```bash
-neutrond tx wasm instantiate $CODE_ID "{\"admin\": \"neutron1ha2hjlce7sqp59g8xhxz2jds97x8fdw9k9wngp\", \"controller\": \"neutron1nz852flh6np9xlg9ju3ka6w5txezsxt0j4lypn\", \"token0\": \"ibc/773B4D0A3CD667B2275D5A4A7A2F0909C0BA0F4059C0B9181E680DDF4965DCC7\", \"grants\": [\"/neutron.dex.MsgPlaceLimitOrder\",\"/neutron.dex.MsgDeposit\",\"/neutron.dex.MsgWithdrawal\",\"/neutron.dex.MsgPlaceLimitOrder\",\"/neutron.dex.MsgWithdrawFilledLimitOrder\",\"/neutron.dex.MsgCancelLimitOrder\"], \"pool_info\": {\"astroport\": {\"pool_address\": \"neutron1f6wucml5pmys4uh7mwurz2ge2v7gamkqdy03rfuatpdphmjjag3qeutzgx\", \"token0\": \"ibc/773B4D0A3CD667B2275D5A4A7A2F0909C0BA0F4059C0B9181E680DDF4965DCC7\",\"token1\": \"factory/neutron1ut4c6pv4u6vyu97yw48y8g7mle0cat54848v6m97k977022lzxtsaqsgmq/udtia\"}}}" --label="margined-locust-strategy-dtia" --admin deployer-neutron --from=deployer-neutron --gas=auto --gas-prices 0.008untrn --gas-adjustment 1.3 --output=json --node=$NODE --chain-id=$CHAIN_ID
+neutrond tx wasm instantiate $CODE_ID "{\"admin\": \"neutron1ha2hjlce7sqp59g8xhxz2jds97x8fdw9k9wngp\", \"controller\": \"neutron1nz852flh6np9xlg9ju3ka6w5txezsxt0j4lypn\", \"token0\": \"ibc/773B4D0A3CD667B2275D5A4A7A2F0909C0BA0F4059C0B9181E680DDF4965DCC7\", \"grants\": [\"/neutron.dex.MsgDeposit\",\"/neutron.dex.MsgWithdrawal\",\"/neutron.dex.MsgPlaceLimitOrder\",\"/neutron.dex.MsgWithdrawFilledLimitOrder\",\"/neutron.dex.MsgCancelLimitOrder\"], \"pool_info\": {\"astroport\": {\"pool_address\": \"neutron1f6wucml5pmys4uh7mwurz2ge2v7gamkqdy03rfuatpdphmjjag3qeutzgx\", \"token0\": \"ibc/773B4D0A3CD667B2275D5A4A7A2F0909C0BA0F4059C0B9181E680DDF4965DCC7\",\"token1\": \"factory/neutron1ut4c6pv4u6vyu97yw48y8g7mle0cat54848v6m97k977022lzxtsaqsgmq/udtia\"}}}" --label="margined-locust-strategy-dtia" --admin deployer-neutron --from=deployer-neutron --gas=auto --gas-prices 0.008untrn --gas-adjustment 1.3 --output=json --node=$NODE --chain-id=$CHAIN_ID
 ```
 
+### Instantiate - Strategy Slinky
+
+```bash
+neutrond tx wasm instantiate $CODE_ID "{\"admin\": \"neutron1ha2hjlce7sqp59g8xhxz2jds97x8fdw9k9wngp\", \"controller\": \"neutron1nz852flh6np9xlg9ju3ka6w5txezsxt0j4lypn\", \"token0\": \"ibc/DF8722298D192AAB85D86D0462E8166234A6A9A572DD4A2EA7996029DF4DB363\",\"token1\": \"ibc/B559A80D62249C8AA07A380E2A2BEA6E5CA9A6F079C912C3A9E9B494105E4F81\", \"grants\": [\"/neutron.dex.MsgDeposit\",\"/neutron.dex.MsgWithdrawal\",\"/neutron.dex.MsgPlaceLimitOrder\",\"/neutron.dex.MsgWithdrawFilledLimitOrder\",\"/neutron.dex.MsgCancelLimitOrder\"], \"pool_info\": {\"slinky\": {\"base\": \"BTC\", \"quote\": \"USD\",\"timeout\": 900}}}" --label="margined-locust-strategy-wbtc.axl" --admin deployer --from=deployer --gas=auto --gas-prices 0.008untrn --gas-adjustment 1.3 --output=json --node=$NODE --chain-id=$CHAIN_ID
+```
 
 ### Execute
 
@@ -81,7 +87,6 @@ neutrond tx wasm execute $CONTRACT_ADDRESS "{\"redeem\": {\"amount\": \"0\"}}" -
 neutrond tx wasm execute $CONTRACT_ADDRESS  "{\"vault_extension\": {\"vaultenator\": {\"register_sudo\": {}}}}" --from=deployer-neutron --gas=auto --gas-prices 0.0053untrn --gas-adjustment 1.3 --output=json --node=$NODE --chain-id=$CHAIN_ID
 ```
 
-
 #### Set Open
 
 ```bash
@@ -91,7 +96,7 @@ neutrond tx wasm execute $CONTRACT_ADDRESS "{\"vault_extension\": {\"vaultenator
 #### Set Vault
 
 ```bash
-neutrond tx wasm execute $CONTRACT_ADDRESS "{\"set_vault\": {\"vault\":\"neutron14q3umuuvyv6mndd5acuc3n8u5mlvrrq3kkzrputu3rkhz8nd2uzqmfl4v6\"}}"  --from=deployer-neutron --gas=auto --gas-prices 0.0053untrn --gas-adjustment 1.3 --output=json --node=$NODE --chain-id=$CHAIN_ID
+neutrond tx wasm execute $CONTRACT_ADDRESS "{\"set_vault\": {\"vault\":\"neutron1egc0ujxyqh8p35nxrvxd04uq0z9536k6fvwzwecfgjj9yg7wkdgq2jzj38\"}}"  --from=deployer --gas=auto --gas-prices 0.0053untrn --gas-adjustment 1.3 --output=json --node=$NODE --chain-id=$CHAIN_ID
 ```
 
 #### Update Config - Fund
