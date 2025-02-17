@@ -1,9 +1,9 @@
 use crate::contract::{CONTRACT_NAME, CONTRACT_VERSION};
 
-use cosmwasm_std::{coin, Decimal};
+use cosmwasm_schema::cw_serde;
+use cosmwasm_std::{coin, Decimal, Uint128};
 use interface::fund::{
-    ConfigResponse, ExtensionQueryMsg, InstantiateMsg, MigrateMsg, QueryMsg,
-    VaultenatorExtensionQueryMsg,
+    ConfigResponse, ExtensionQueryMsg, MigrateMsg, QueryMsg, VaultenatorExtensionQueryMsg,
 };
 use neutron_test_tube::{Account, Module, Runner, Wasm};
 use osmosis_std::types::cosmwasm::wasm::v1::{
@@ -16,13 +16,27 @@ use testing::{
     utils::store_code,
 };
 
+#[cw_serde]
+pub struct V010InstantiateMsg {
+    pub admin: String,         // manages contract configuration
+    pub controller: String,    // manages contract balance sheet
+    pub treasury: String,      // account fees are paid to
+    pub strategy_cap: Uint128, // maximum value of strategy deposits
+    pub float: Decimal,        // percentage of balance sheet that can be withdrawn
+    pub token0: String,
+    pub token1: Option<String>,
+    pub management_fee_rate: Decimal,
+    pub performance_fee_rate: Decimal,
+    pub vault_type: String,
+}
+
 #[test]
 fn test_migration() {
     let env = TestEnv::new();
     let wasm = Wasm::new(&env.app);
 
     let wasm_byte_code =
-        std::fs::read("../../contracts/fund/src/testing/artifacts/fund-v010.wasm").unwrap();
+        std::fs::read("../../contracts/fund/src/testing/migration/fund-v010.wasm").unwrap();
 
     let fund_vault_v003 = wasm
         .store_code(&wasm_byte_code, None, &env.signer)
@@ -30,7 +44,7 @@ fn test_migration() {
         .data
         .code_id;
 
-    let msg = InstantiateMsg {
+    let msg = V010InstantiateMsg {
         admin: env.signer.address().to_string(),
         controller: env.signer.address().to_string(),
         treasury: env.treasury.address().to_string(),
@@ -88,7 +102,10 @@ fn test_migration() {
                 sender: env.signer.address(),
                 contract: contract_addr.clone(),
                 code_id,
-                msg: serde_json_wasm::to_vec(&MigrateMsg {}).unwrap(),
+                msg: serde_json_wasm::to_vec(&MigrateMsg {
+                    redemption_contract: env.controller.address().to_string(),
+                })
+                .unwrap(),
             },
             "/cosmwasm.wasm.v1.MsgMigrateContract",
             &env.signer,
@@ -118,6 +135,10 @@ fn test_migration() {
 
     assert_eq!(config.strategy_denom, expected_strategy_denom);
     assert_eq!(config.token0, BASE_DENOM.to_string());
+    assert_eq!(
+        config.redemption_contract,
+        env.controller.address().to_string()
+    );
 
     let version = env.query_version_fund(&wasm, &contract_addr).unwrap();
 

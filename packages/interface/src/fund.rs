@@ -18,7 +18,9 @@ pub struct InstantiateMsg {
 }
 
 #[cw_serde]
-pub struct MigrateMsg {}
+pub struct MigrateMsg {
+    pub redemption_contract: String,
+}
 
 #[cw_serde]
 pub enum ExtensionExecuteMsg {

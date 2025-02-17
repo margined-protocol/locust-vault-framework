@@ -9,7 +9,7 @@ use crate::{
     process::{process_deposit, process_management_fees_and_modify_response, process_redeem},
     reply::ReplyIDs,
     storage::{
-        config::Config,
+        config::{migrate_config, Config},
         state::{update_user_deposit, State, UserDeposit, USER_DEPOSITS},
     },
 };
@@ -17,6 +17,7 @@ use crate::{
 use cosmwasm_std::{coin, DepsMut, Env, MessageInfo, Response, StdError, SubMsg, Uint128};
 use cw2::{get_contract_version, set_contract_version};
 use cw_utils::{must_pay, nonpayable};
+use interface::fund::MigrateMsg;
 use serde::{de::DeserializeOwned, Serialize};
 use vaultenator::{
     config::Configure,
@@ -201,15 +202,13 @@ impl Handle<Config, State> for StructuredVault {
         Ok(response)
     }
 
-    fn handle_migrate<M>(
-        &self,
-        deps: DepsMut,
-        _env: Env,
-        _msg: M,
-    ) -> Result<Response, ContractError>
+    fn handle_migrate<M>(&self, deps: DepsMut, _env: Env, msg: M) -> Result<Response, ContractError>
     where
         M: Serialize + DeserializeOwned,
     {
+        // Deserialize the message directly into an MigrateMsg struct
+        let msg: MigrateMsg = serde_json::from_slice(&serde_json::to_vec(&msg).unwrap())?;
+
         let contract_version = get_contract_version(deps.storage)?;
 
         match contract_version.contract.as_ref() {
@@ -220,6 +219,8 @@ impl Handle<Config, State> for StructuredVault {
                         format!("crates.io:{CONTRACT_NAME}"),
                         CONTRACT_VERSION,
                     )?;
+
+                    migrate_config(deps, msg.redemption_contract)?;
                 }
                 _ => {
                     return Err(ContractError::Std(StdError::generic_err(
