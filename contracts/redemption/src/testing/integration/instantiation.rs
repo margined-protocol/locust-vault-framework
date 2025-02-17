@@ -4,40 +4,32 @@ use crate::{
 };
 
 use cosmwasm_std::StdError;
-use interface::redemption::{ConfigResponse, InstantiateMsg, PoolInfo};
-use neutron_test_tube::{
-    neutron_std::types::neutron::dex::MsgPlaceLimitOrder as DefaultMsg, Account, Module, Wasm,
-};
+use interface::redemption::{ConfigResponse, FundInfo, InstantiateMsg};
+use neutron_test_tube::{Account, Module, Wasm};
 use testing::{
-    setup::{TestEnv, BASE_DENOM, QUOTE_DENOM},
+    setup::TestEnv,
     utils::{assert_err, store_code},
 };
 
 #[test]
 fn test_instantiation() {
     let env = TestEnv::new();
-
     let wasm = Wasm::new(&env.app);
 
-    let code_id = store_code(&wasm, &env.signer, "strategy").unwrap();
+    let code_id = store_code(&wasm, &env.signer, "redemption").unwrap();
 
-    let strategy_addr = wasm
+    let redemption_addr = wasm
         .instantiate(
             code_id,
             &InstantiateMsg {
                 admin: env.signer.address(),
-                controller: env.controller.address(),
-                token0: BASE_DENOM.to_string(),
-                token1: None,
-                grants: vec![DefaultMsg::TYPE_URL.to_string()],
-                pool_info: PoolInfo::Osmosis {
-                    id: 1,
-                    token0: BASE_DENOM.to_string(),
-                    token1: QUOTE_DENOM.to_string(),
-                },
+                whitelisted_funds: vec![FundInfo {
+                    address: env.traders[0].address(),
+                    metadata: "test fund".to_string(),
+                }],
             },
             None,
-            Some("strategy-contract"),
+            Some("redemption-contract"),
             &[],
             &env.signer,
         )
@@ -45,92 +37,49 @@ fn test_instantiation() {
         .data
         .address;
 
-    let config = env.query_config_strategy(&wasm, &strategy_addr).unwrap();
+    let config = env
+        .query_config_redemption(&wasm, &redemption_addr)
+        .unwrap();
 
     assert_eq!(
         config,
         ConfigResponse {
             admin: env.signer.address(),
-            controller: env.controller.address(),
-            vault: None,
-            token0: BASE_DENOM.to_string(),
-            token1: None,
-            pool_info: PoolInfo::Osmosis {
-                id: 1,
-                token0: BASE_DENOM.to_string(),
-                token1: QUOTE_DENOM.to_string(),
-            },
-            grants: vec![DefaultMsg::TYPE_URL.to_string()],
+            whitelisted_funds: vec![FundInfo {
+                address: env.traders[0].address(),
+                metadata: "test fund".to_string(),
+            }],
             name: format!("crates.io:{}", CONTRACT_NAME),
             version: CONTRACT_VERSION.to_string(),
         }
-    )
-}
-
-#[test]
-fn test_fail_instantiation() {
-    let env = TestEnv::new();
-
-    let wasm = Wasm::new(&env.app);
-
-    let code_id = store_code(&wasm, &env.signer, "strategy").unwrap();
-
-    let err = wasm
-        .instantiate(
-            code_id,
-            &InstantiateMsg {
-                admin: env.signer.address(),
-                controller: env.controller.address(),
-                token0: BASE_DENOM.to_string(),
-                token1: None,
-                grants: vec![],
-                pool_info: PoolInfo::Osmosis {
-                    id: 1,
-                    token0: BASE_DENOM.to_string(),
-                    token1: QUOTE_DENOM.to_string(),
-                },
-            },
-            None,
-            Some("strategy-contract"),
-            &[],
-            &env.signer,
-        )
-        .unwrap_err();
-
-    assert_err(
-        err,
-        ContractError::Std(StdError::generic_err("Grants must be non-empty")),
     );
 }
 
 #[test]
-fn test_fail_instantiation_duplicate_grant() {
+fn test_fail_instantiation_duplicate_funds() {
     let env = TestEnv::new();
-
     let wasm = Wasm::new(&env.app);
 
-    let code_id = store_code(&wasm, &env.signer, "strategy").unwrap();
+    let code_id = store_code(&wasm, &env.signer, "redemption").unwrap();
 
     let err = wasm
         .instantiate(
             code_id,
             &InstantiateMsg {
                 admin: env.signer.address(),
-                controller: env.controller.address(),
-                token0: BASE_DENOM.to_string(),
-                token1: None,
-                grants: vec![
-                    DefaultMsg::TYPE_URL.to_string(),
-                    DefaultMsg::TYPE_URL.to_string(),
+                whitelisted_funds: vec![
+                    FundInfo {
+                        address: env.traders[0].address(),
+                        metadata: "test fund".to_string(),
+                    },
+                    FundInfo {
+                        address: env.traders[0].address(),
+                        metadata: "duplicate fund".to_string(),
+                    },
                 ],
-                pool_info: PoolInfo::Osmosis {
-                    id: 1,
-                    token0: BASE_DENOM.to_string(),
-                    token1: QUOTE_DENOM.to_string(),
-                },
             },
             None,
-            Some("strategy-contract"),
+            Some("redemption-contract"),
             &[],
             &env.signer,
         )
@@ -138,6 +87,110 @@ fn test_fail_instantiation_duplicate_grant() {
 
     assert_err(
         err,
-        ContractError::Std(StdError::generic_err("Duplicate grants are not allowed")),
+        ContractError::Std(StdError::generic_err(
+            "Duplicate fund contracts are not allowed",
+        )),
+    );
+}
+
+#[test]
+fn test_fail_instantiation_invalid_fund_address() {
+    let env = TestEnv::new();
+    let wasm = Wasm::new(&env.app);
+
+    let code_id = store_code(&wasm, &env.signer, "redemption").unwrap();
+
+    let err = wasm
+        .instantiate(
+            code_id,
+            &InstantiateMsg {
+                admin: env.signer.address(),
+                whitelisted_funds: vec![FundInfo {
+                    address: "invalid/address".to_string(),
+                    metadata: "test fund".to_string(),
+                }],
+            },
+            None,
+            Some("redemption-contract"),
+            &[],
+            &env.signer,
+        )
+        .unwrap_err();
+    println!("err: {}", err);
+
+    assert_err(
+        err,
+        ContractError::Std(StdError::generic_err(
+            "addr_validate errored: decoding bech32 failed",
+        )),
+    );
+}
+
+#[test]
+fn test_fail_instantiation_invalid_metadata_length() {
+    let env = TestEnv::new();
+    let wasm = Wasm::new(&env.app);
+
+    let code_id = store_code(&wasm, &env.signer, "redemption").unwrap();
+
+    let err = wasm
+        .instantiate(
+            code_id,
+            &InstantiateMsg {
+                admin: env.signer.address(),
+                whitelisted_funds: vec![FundInfo {
+                    address: env.traders[0].address(),
+                    metadata: "a".repeat(256),
+                }],
+            },
+            None,
+            Some("redemption-contract"),
+            &[],
+            &env.signer,
+        )
+        .unwrap_err();
+
+    assert_err(
+        err,
+        ContractError::Std(StdError::generic_err(
+            "Metadata length exceeds maximum of 255 characters",
+        )),
+    );
+}
+
+#[test]
+fn test_fail_instantiation_too_many_funds() {
+    let env = TestEnv::new();
+    let wasm = Wasm::new(&env.app);
+    let code_id = store_code(&wasm, &env.signer, "redemption").unwrap();
+
+    // Create more than MAX_WHITELISTED_FUNDS funds
+    let mut funds = Vec::new();
+    for i in 0..101 {
+        funds.push(FundInfo {
+            address: env.traders[i % env.traders.len()].address(),
+            metadata: format!("test fund {}", i),
+        });
+    }
+
+    let err = wasm
+        .instantiate(
+            code_id,
+            &InstantiateMsg {
+                admin: env.signer.address(),
+                whitelisted_funds: funds,
+            },
+            None,
+            Some("redemption-contract"),
+            &[],
+            &env.signer,
+        )
+        .unwrap_err();
+
+    assert_err(
+        err,
+        ContractError::Std(StdError::generic_err(
+            "Number of whitelisted funds exceeds maximum of 100",
+        )),
     );
 }

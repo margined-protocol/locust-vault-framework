@@ -9,11 +9,20 @@ pub enum ContractError {
     #[error("Unable to perform migration")]
     MigrationError {},
 
+    #[error("No redemptions found")]
+    NoRedemptionsFound {},
+
     #[error("Unauthorized")]
     Unauthorized {},
 
     #[error("Vault not set")]
     VaultNotSet {},
+
+    #[error("Unauthorized fund")]
+    UnauthorizedFund {},
+
+    #[error("Insufficient funds")]
+    InsufficientFunds {},
 }
 
 impl ContractError {

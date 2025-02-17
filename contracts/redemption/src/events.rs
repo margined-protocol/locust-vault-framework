@@ -1,46 +1,46 @@
-use crate::contract::{CONTRACT_NAME, CONTRACT_VERSION};
+use crate::{
+    contract::{CONTRACT_NAME, CONTRACT_VERSION},
+    utils::tokens_to_string,
+};
 
 use cosmwasm_std::Event;
 use cw2::ContractVersion;
+use interface::redemption::{FundInfo, PendingRedemption};
 
-pub fn event_withdraw(withdraw: String) -> Event {
-    Event::new("withdraw").add_attributes([
-        ("version", CONTRACT_VERSION),
-        ("contract", CONTRACT_NAME),
-        ("withdraw", &withdraw),
-    ])
+pub fn event_send_redemption(redemption: PendingRedemption) -> Event {
+    Event::new("send_redemption")
+        .add_attribute("user", redemption.user)
+        .add_attribute("timestamp", redemption.timestamp.to_string())
+        .add_attribute("source", redemption.source)
+        .add_attribute("funds", tokens_to_string(redemption.funds))
 }
 
-pub fn event_repay(repay: String) -> Event {
-    Event::new("repay").add_attributes([
-        ("version", CONTRACT_VERSION),
-        ("contract", CONTRACT_NAME),
-        ("repay", &repay),
-    ])
+pub fn event_claim_redemption(redemptions: Vec<PendingRedemption>) -> Event {
+    Event::new("claim_redemption")
+        .add_attribute("user", redemptions[0].user.clone())
+        .add_attribute("count", redemptions.len().to_string())
+        .add_attribute(
+            "total_claimed",
+            redemptions
+                .iter()
+                .map(|r| r.funds.iter().map(|c| c.amount.u128()).sum::<u128>())
+                .sum::<u128>()
+                .to_string(),
+        )
 }
 
-pub fn event_set_vault(vault: String) -> Event {
-    Event::new("set_vault").add_attributes([
+pub fn event_update_config(add_fund: Option<FundInfo>, remove_fund: Option<FundInfo>) -> Event {
+    Event::new("update_config").add_attributes([
         ("version", CONTRACT_VERSION),
         ("contract", CONTRACT_NAME),
-        ("vault", &vault),
-    ])
-}
-
-pub fn event_set_grants(grants: Vec<String>) -> Event {
-    Event::new("set_grants").add_attributes([
-        ("version", CONTRACT_VERSION),
-        ("contract", CONTRACT_NAME),
-        ("grants", &grants.join(",")),
-    ])
-}
-
-pub fn event_update_config(grants: Option<Vec<String>>, controller: Option<String>) -> Event {
-    Event::new("set_grants").add_attributes([
-        ("version", CONTRACT_VERSION),
-        ("contract", CONTRACT_NAME),
-        ("grants", &grants.unwrap_or_default().join(",")),
-        ("controller", &controller.unwrap_or_default()),
+        (
+            "add_fund",
+            &add_fund.map_or_else(String::new, |f| f.to_string()),
+        ),
+        (
+            "remove_fund",
+            &remove_fund.map_or_else(String::new, |f| f.to_string()),
+        ),
     ])
 }
 

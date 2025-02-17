@@ -1,230 +1,79 @@
-use crate::contract::{CONTRACT_NAME, CONTRACT_VERSION};
-
-use interface::redemption::{ConfigResponse, InstantiateMsg, PoolInfo};
-use neutron_test_tube::{
-    neutron_std::types::neutron::dex::{
-        MsgCancelLimitOrder as SecondMsg, MsgPlaceLimitOrder as DefaultMsg,
-    },
-    Account, Module, Wasm,
-};
-use testing::{
-    setup::{TestEnv, BASE_DENOM, QUOTE_DENOM},
-    utils::store_code,
-};
-
-#[test]
-fn test_set_vault() {
-    let env = TestEnv::new();
-
-    let wasm = Wasm::new(&env.app);
-
-    let code_id = store_code(&wasm, &env.signer, "strategy").unwrap();
-
-    let strategy_addr = wasm
-        .instantiate(
-            code_id,
-            &InstantiateMsg {
-                admin: env.signer.address(),
-                controller: env.controller.address(),
-                token0: BASE_DENOM.to_string(),
-                token1: None,
-                grants: vec![DefaultMsg::TYPE_URL.to_string()],
-                pool_info: PoolInfo::Osmosis {
-                    id: 1,
-                    token0: BASE_DENOM.to_string(),
-                    token1: QUOTE_DENOM.to_string(),
-                },
-            },
-            None,
-            Some("strategy-contract"),
-            &[],
-            &env.signer,
-        )
-        .unwrap()
-        .data
-        .address;
-
-    env.set_vault_strategy(
-        &wasm,
-        &strategy_addr,
-        &env.controller.address(),
-        &env.signer,
-    )
-    .unwrap();
-
-    let config = env.query_config_strategy(&wasm, &strategy_addr).unwrap();
-
-    assert_eq!(
-        config,
-        ConfigResponse {
-            admin: env.signer.address(),
-            controller: env.controller.address(),
-            vault: Some(env.controller.address()),
-            token0: BASE_DENOM.to_string(),
-            token1: None,
-            pool_info: PoolInfo::Osmosis {
-                id: 1,
-                token0: BASE_DENOM.to_string(),
-                token1: QUOTE_DENOM.to_string(),
-            },
-            grants: vec![DefaultMsg::TYPE_URL.to_string()],
-            name: format!("crates.io:{}", CONTRACT_NAME),
-            version: CONTRACT_VERSION.to_string(),
-        }
-    )
-}
-
-#[test]
-fn test_set_grants() {
-    let env = TestEnv::new();
-
-    let wasm = Wasm::new(&env.app);
-
-    let code_id = store_code(&wasm, &env.signer, "strategy").unwrap();
-
-    let strategy_addr = wasm
-        .instantiate(
-            code_id,
-            &InstantiateMsg {
-                admin: env.signer.address(),
-                controller: env.controller.address(),
-                token0: BASE_DENOM.to_string(),
-                token1: None,
-                grants: vec![DefaultMsg::TYPE_URL.to_string()],
-                pool_info: PoolInfo::Osmosis {
-                    id: 1,
-                    token0: BASE_DENOM.to_string(),
-                    token1: QUOTE_DENOM.to_string(),
-                },
-            },
-            None,
-            Some("strategy-contract"),
-            &[],
-            &env.signer,
-        )
-        .unwrap()
-        .data
-        .address;
-
-    env.set_grants_strategy(
-        &wasm,
-        &strategy_addr,
-        vec![SecondMsg::TYPE_URL.to_string()],
-        &env.signer,
-    )
-    .unwrap();
-
-    let config = env.query_config_strategy(&wasm, &strategy_addr).unwrap();
-
-    assert_eq!(
-        config,
-        ConfigResponse {
-            admin: env.signer.address(),
-            controller: env.controller.address(),
-            vault: None,
-            token0: BASE_DENOM.to_string(),
-            token1: None,
-            pool_info: PoolInfo::Osmosis {
-                id: 1,
-                token0: BASE_DENOM.to_string(),
-                token1: QUOTE_DENOM.to_string(),
-            },
-            grants: vec![SecondMsg::TYPE_URL.to_string()],
-            name: format!("crates.io:{}", CONTRACT_NAME),
-            version: CONTRACT_VERSION.to_string(),
-        }
-    )
-}
+use interface::redemption::FundInfo;
+use neutron_test_tube::{Account, Module, Wasm};
+use testing::setup::TestEnv;
 
 #[test]
 fn test_update_config() {
     let env = TestEnv::new();
-
     let wasm = Wasm::new(&env.app);
+    let redemption_addr = env.deploy_redemption_contract(&wasm, None);
 
-    let code_id = store_code(&wasm, &env.signer, "strategy").unwrap();
+    let new_fund = FundInfo {
+        address: env.traders[0].address(),
+        metadata: "new fund".to_string(),
+    };
 
-    let strategy_addr = wasm
-        .instantiate(
-            code_id,
-            &InstantiateMsg {
-                admin: env.signer.address(),
-                controller: env.controller.address(),
-                token0: BASE_DENOM.to_string(),
-                token1: None,
-                grants: vec![DefaultMsg::TYPE_URL.to_string()],
-                pool_info: PoolInfo::Osmosis {
-                    id: 1,
-                    token0: BASE_DENOM.to_string(),
-                    token1: QUOTE_DENOM.to_string(),
-                },
-            },
+    // Test adding a fund
+    env.update_config(
+        &wasm,
+        &redemption_addr,
+        Some(new_fund.clone()),
+        None,
+        &env.signer,
+    )
+    .unwrap();
+
+    let config = env
+        .query_config_redemption(&wasm, &redemption_addr)
+        .unwrap();
+    assert_eq!(config.whitelisted_funds.len(), 2);
+    assert!(config.whitelisted_funds.contains(&new_fund));
+
+    // Test removing a fund
+    env.update_config(&wasm, &redemption_addr, None, Some(new_fund), &env.signer)
+        .unwrap();
+
+    let config = env
+        .query_config_redemption(&wasm, &redemption_addr)
+        .unwrap();
+    assert_eq!(config.whitelisted_funds.len(), 1);
+}
+
+#[test]
+fn test_fail_update_config_too_many_funds() {
+    let env = TestEnv::new();
+    let wasm = Wasm::new(&env.app);
+    let redemption_addr = env.deploy_redemption_contract(&wasm, None);
+
+    // Add funds until we hit the limit
+    for i in 1..100 {
+        let new_fund = FundInfo {
+            address: env.traders[i % env.traders.len()].address(),
+            metadata: format!("test fund {}", i),
+        };
+
+        env.update_config(&wasm, &redemption_addr, Some(new_fund), None, &env.signer)
+            .unwrap();
+    }
+
+    // Try to add one more fund
+    let err = env
+        .update_config(
+            &wasm,
+            &redemption_addr,
+            Some(FundInfo {
+                address: env.traders[0].address(),
+                metadata: "one too many".to_string(),
+            }),
             None,
-            Some("strategy-contract"),
-            &[],
             &env.signer,
         )
-        .unwrap()
-        .data
-        .address;
+        .unwrap_err();
 
-    env.update_config_strategy(
-        &wasm,
-        &strategy_addr,
-        Some(vec![SecondMsg::TYPE_URL.to_string()]),
-        None,
-        &env.signer,
-    )
-    .unwrap();
-
-    let config = env.query_config_strategy(&wasm, &strategy_addr).unwrap();
-
-    assert_eq!(
-        config,
-        ConfigResponse {
-            admin: env.signer.address(),
-            controller: env.controller.address(),
-            vault: None,
-            token0: BASE_DENOM.to_string(),
-            token1: None,
-            pool_info: PoolInfo::Osmosis {
-                id: 1,
-                token0: BASE_DENOM.to_string(),
-                token1: QUOTE_DENOM.to_string(),
-            },
-            grants: vec![SecondMsg::TYPE_URL.to_string()],
-            name: format!("crates.io:{}", CONTRACT_NAME),
-            version: CONTRACT_VERSION.to_string(),
-        }
+    assert_err(
+        err,
+        ContractError::Std(StdError::generic_err(
+            "Number of whitelisted funds exceeds maximum of 100",
+        )),
     );
-
-    env.update_config_strategy(
-        &wasm,
-        &strategy_addr,
-        None,
-        Some(env.traders[5].address()),
-        &env.signer,
-    )
-    .unwrap();
-
-    let config = env.query_config_strategy(&wasm, &strategy_addr).unwrap();
-
-    assert_eq!(
-        config,
-        ConfigResponse {
-            admin: env.signer.address(),
-            controller: env.traders[5].address(),
-            vault: None,
-            token0: BASE_DENOM.to_string(),
-            token1: None,
-            pool_info: PoolInfo::Osmosis {
-                id: 1,
-                token0: BASE_DENOM.to_string(),
-                token1: QUOTE_DENOM.to_string(),
-            },
-            grants: vec![SecondMsg::TYPE_URL.to_string()],
-            name: format!("crates.io:{}", CONTRACT_NAME),
-            version: CONTRACT_VERSION.to_string(),
-        }
-    )
 }

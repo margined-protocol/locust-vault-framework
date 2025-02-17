@@ -7,5 +7,5 @@ pub mod query;
 pub mod storage;
 pub mod utils;
 
-// #[cfg(test)]
-// mod testing;
+#[cfg(test)]
+mod testing;

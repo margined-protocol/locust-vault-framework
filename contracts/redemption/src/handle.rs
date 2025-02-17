@@ -1,252 +1,143 @@
 use crate::{
     errors::ContractError,
-    events::{event_repay, event_set_grants, event_set_vault, event_update_config, event_withdraw},
-    state::CONFIG,
-    utils::{
-        create_authz_grant_messages, map_to_contract_error, revoke_authz_grant_messages,
-        tokens_to_string,
+    events::{event_claim_redemption, event_send_redemption, event_update_config},
+    storage::{
+        redemptions::{add_to_pending, filter_user_redemptions, remove_from_pending},
+        state::CONFIG,
     },
+    utils::map_to_contract_error,
 };
 
-use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{
-    ensure, to_json_binary, Coin, Decimal, DepsMut, Env, MessageInfo, Response, WasmMsg,
-};
+use cosmwasm_std::{ensure, BankMsg, Coin, DepsMut, Env, MessageInfo, Response, StdResult};
 use cw_utils::nonpayable;
-use cw_vault_standard::VaultStandardExecuteMsg;
+use interface::redemption::{FundInfo, PendingRedemption};
+use std::collections::HashMap;
 
-pub type VaultExecuteMsg = VaultStandardExecuteMsg<ExtensionExecuteMsg>;
-
-#[cw_serde]
-pub enum ExtensionExecuteMsg {
-    Vaultenator(VaultenatorExtensionExecuteMsg),
-}
-
-#[cw_serde]
-pub enum VaultenatorExtensionExecuteMsg {
-    Withdraw {
-        tokens_to_withdraw: Vec<Coin>,
-    },
-    Repay {
-        cycle_profit: Option<Decimal>,
-    },
-    RepayQueue {
-        cycle_profit: Option<Decimal>,
-        limit: Option<u64>,
-    },
-}
-
-pub fn handle_withdraw(
-    deps: DepsMut,
-    _env: Env,
-    info: MessageInfo,
-    tokens_to_withdraw: Vec<Coin>,
-) -> Result<Response, ContractError> {
-    nonpayable(&info).map_err(map_to_contract_error)?;
-
-    let config = CONFIG.load(deps.storage)?;
-
+fn validate_whitelisted_fund(
+    whitelisted_funds: &[FundInfo],
+    source: &str,
+) -> Result<(), ContractError> {
     ensure!(
-        config.controller == info.sender.to_string(),
-        ContractError::Unauthorized {}
+        whitelisted_funds.iter().any(|f| f.address == source),
+        ContractError::UnauthorizedFund {}
     );
+    Ok(())
+}
 
-    let vault = match &config.vault {
-        Some(vault) => vault,
-        None => {
-            return Err(ContractError::VaultNotSet {});
+fn validate_sent_funds(sent: &[Coin], expected: &[Coin]) -> Result<(), ContractError> {
+    let mut sent_map: HashMap<String, u128> = HashMap::new();
+    for coin in sent {
+        sent_map.insert(coin.denom.clone(), coin.amount.u128());
+    }
+
+    for coin in expected {
+        match sent_map.get(&coin.denom) {
+            Some(&amount) if amount == coin.amount.u128() => continue,
+            _ => return Err(ContractError::InsufficientFunds {}),
         }
-    };
+    }
 
-    let msg = WasmMsg::Execute {
-        msg: to_json_binary(&VaultExecuteMsg::VaultExtension(
-            ExtensionExecuteMsg::Vaultenator(VaultenatorExtensionExecuteMsg::Withdraw {
-                tokens_to_withdraw: tokens_to_withdraw.clone(),
-            }),
-        ))?,
-        funds: vec![],
-        contract_addr: vault.to_string(),
-    };
-
-    Ok(Response::default()
-        .add_event(event_withdraw(tokens_to_string(tokens_to_withdraw)))
-        .add_message(msg))
-}
-
-pub fn handle_repay(
-    deps: DepsMut,
-    _env: Env,
-    info: MessageInfo,
-    tokens_to_repay: Vec<Coin>,
-    cycle_profit: Option<Decimal>,
-) -> Result<Response, ContractError> {
-    let config = CONFIG.load(deps.storage)?;
-
-    ensure!(
-        config.controller == info.sender.to_string(),
-        ContractError::Unauthorized {}
-    );
-
-    let vault = match &config.vault {
-        Some(vault) => vault,
-        None => {
-            return Err(ContractError::VaultNotSet {});
-        }
-    };
-
-    let msg = WasmMsg::Execute {
-        msg: to_json_binary(&VaultExecuteMsg::VaultExtension(
-            ExtensionExecuteMsg::Vaultenator(VaultenatorExtensionExecuteMsg::Repay {
-                cycle_profit,
-            }),
-        ))?,
-        funds: tokens_to_repay.clone(),
-        contract_addr: vault.to_string(),
-    };
-
-    Ok(Response::default()
-        .add_event(event_repay(tokens_to_string(tokens_to_repay)))
-        .add_message(msg))
-}
-
-pub fn handle_repay_queue(
-    deps: DepsMut,
-    _env: Env,
-    info: MessageInfo,
-    tokens_to_repay: Vec<Coin>,
-    cycle_profit: Option<Decimal>,
-    limit: Option<u64>,
-) -> Result<Response, ContractError> {
-    let config = CONFIG.load(deps.storage)?;
-
-    ensure!(
-        config.controller == info.sender.to_string(),
-        ContractError::Unauthorized {}
-    );
-
-    let vault = match &config.vault {
-        Some(vault) => vault,
-        None => {
-            return Err(ContractError::VaultNotSet {});
-        }
-    };
-
-    let msg = WasmMsg::Execute {
-        msg: to_json_binary(&VaultExecuteMsg::VaultExtension(
-            ExtensionExecuteMsg::Vaultenator(VaultenatorExtensionExecuteMsg::RepayQueue {
-                cycle_profit,
-                limit,
-            }),
-        ))?,
-        funds: tokens_to_repay.clone(),
-        contract_addr: vault.to_string(),
-    };
-
-    Ok(Response::default()
-        .add_event(event_repay(tokens_to_string(tokens_to_repay)))
-        .add_message(msg))
-}
-
-pub fn handle_set_vault(
-    deps: DepsMut,
-    _env: Env,
-    info: MessageInfo,
-    vault: String,
-) -> Result<Response, ContractError> {
-    let mut config = CONFIG.load(deps.storage)?;
-
-    ensure!(
-        config.admin == info.sender.to_string(),
-        ContractError::Unauthorized {}
-    );
-
-    config.vault = Some(vault.clone());
-    config.validate(&deps.as_ref())?;
-
-    CONFIG.save(deps.storage, &config)?;
-
-    Ok(Response::default().add_event(event_set_vault(vault)))
-}
-
-pub fn handle_set_grants(
-    deps: DepsMut,
-    env: Env,
-    info: MessageInfo,
-    grants: Vec<String>,
-) -> Result<Response, ContractError> {
-    let mut config = CONFIG.load(deps.storage)?;
-
-    ensure!(
-        config.admin == info.sender.to_string(),
-        ContractError::Unauthorized {}
-    );
-
-    let revoke_msgs = revoke_authz_grant_messages(
-        env.contract.address.as_str(),
-        &config.controller,
-        config.grants.clone(),
-    );
-
-    let response = Response::new().add_messages(revoke_msgs);
-
-    config.grants.clone_from(&grants);
-    config.validate(&deps.as_ref())?;
-
-    let grantee = config.controller.clone();
-    let grants_str: Vec<&str> = config.grants.iter().map(|s| s.as_str()).collect();
-
-    let authz_msgs =
-        create_authz_grant_messages(env.contract.address.as_str(), &grantee, &grants_str);
-
-    CONFIG.save(deps.storage, &config)?;
-
-    Ok(response
-        .add_event(event_set_grants(grants))
-        .add_messages(authz_msgs))
+    Ok(())
 }
 
 pub fn handle_update_config(
     deps: DepsMut,
-    env: Env,
+    _env: Env,
     info: MessageInfo,
-    grants: Option<Vec<String>>,
-    controller: Option<String>,
+    add_fund: Option<FundInfo>,
+    remove_fund: Option<FundInfo>,
 ) -> Result<Response, ContractError> {
     let mut config = CONFIG.load(deps.storage)?;
 
+    // Only admin can update config
     ensure!(
-        config.admin == info.sender.as_str(),
+        config.admin == info.sender.to_string(),
         ContractError::Unauthorized {}
     );
 
-    let revoke_msgs = revoke_authz_grant_messages(
-        env.contract.address.as_str(),
-        &config.controller,
-        config.grants.clone(),
-    );
-
-    let response = Response::new().add_messages(revoke_msgs);
-
-    if let Some(controller) = controller.clone() {
-        deps.api.addr_validate(&controller)?;
-        config.controller = controller;
+    // Handle fund addition
+    if let Some(fund) = add_fund.clone() {
+        config.whitelisted_funds.push(fund);
     }
 
-    if let Some(grants) = grants.clone() {
-        config.grants.clone_from(&grants);
+    // Handle fund removal
+    if let Some(fund) = remove_fund.clone() {
+        config
+            .whitelisted_funds
+            .retain(|f| f.address != fund.address);
     }
 
+    // Validate the updated config
     config.validate(&deps.as_ref())?;
 
-    let grantee = config.controller.clone();
-    let grants_str: Vec<&str> = config.grants.iter().map(|s| s.as_str()).collect();
-
-    let authz_msgs =
-        create_authz_grant_messages(env.contract.address.as_str(), &grantee, &grants_str);
-
+    // Save the updated config
     CONFIG.save(deps.storage, &config)?;
 
-    Ok(response
-        .add_event(event_update_config(grants, controller))
-        .add_messages(authz_msgs))
+    Ok(Response::new().add_event(event_update_config(add_fund, remove_fund)))
+}
+
+pub fn handle_send_redemption(
+    deps: DepsMut,
+    env: Env,
+    info: MessageInfo,
+    mut redemption: PendingRedemption,
+) -> Result<Response, ContractError> {
+    let config = CONFIG.load(deps.storage)?;
+
+    // Validate the source is a whitelisted fund
+    validate_whitelisted_fund(&config.whitelisted_funds, info.sender.as_str())?;
+
+    // Validate that sent funds match redemption funds
+    validate_sent_funds(&info.funds, &redemption.funds)?;
+
+    // Set the timestamp to the current block time
+    redemption.timestamp = env.block.time.seconds();
+
+    // Add the redemption to pending
+    add_to_pending(deps.storage, redemption.clone())?;
+
+    Ok(Response::new().add_event(event_send_redemption(redemption)))
+}
+
+pub fn handle_claim_redemption(
+    deps: DepsMut,
+    _env: Env,
+    info: MessageInfo,
+    limit: Option<u32>,
+) -> Result<Response, ContractError> {
+    nonpayable(&info).map_err(map_to_contract_error)?;
+
+    let user = info.sender.to_string();
+    let limit = limit.unwrap_or(10).min(30) as usize;
+
+    // First collect all redemptions to claim
+    let redemptions_to_claim: Vec<(u64, PendingRedemption)> =
+        filter_user_redemptions(deps.storage, user.clone())
+            .take(limit)
+            .map(|result| result.map(|((_, timestamp), redemption)| (timestamp, redemption)))
+            .collect::<StdResult<Vec<_>>>()?;
+
+    ensure!(
+        !redemptions_to_claim.is_empty(),
+        ContractError::NoRedemptionsFound {}
+    );
+
+    // Now remove the redemptions and collect bank messages
+    let mut claimed_redemptions = Vec::with_capacity(redemptions_to_claim.len());
+    let mut bank_msgs = Vec::with_capacity(redemptions_to_claim.len());
+
+    for (timestamp, redemption) in redemptions_to_claim {
+        remove_from_pending(deps.storage, user.clone(), timestamp)?;
+        claimed_redemptions.push(redemption.clone());
+
+        // Create bank send message for this redemption
+        bank_msgs.push(BankMsg::Send {
+            to_address: redemption.user,
+            amount: redemption.funds,
+        });
+    }
+
+    Ok(Response::new()
+        .add_event(event_claim_redemption(claimed_redemptions))
+        .add_messages(bank_msgs))
 }

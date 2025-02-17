@@ -1,26 +1,20 @@
 use crate::{
     errors::ContractError,
-    events::event_migrate,
-    handle::{
-        handle_repay, handle_repay_queue, handle_set_grants, handle_set_vault,
-        handle_update_config, handle_withdraw,
-    },
+    handle::{handle_claim_redemption, handle_send_redemption, handle_update_config},
     ownership::{
         get_ownership_proposal, handle_claim_ownership, handle_ownership_proposal,
         handle_ownership_proposal_rejection,
     },
-    query::{query_config, query_grants, query_owner},
+    query::{query_all_redemptions, query_config, query_owner, query_redemptions},
     storage::state::{Config, CONFIG, OWNER, OWNERSHIP_PROPOSAL},
-    utils::create_authz_grant_messages,
 };
 
 use cosmwasm_std::{
     entry_point, to_json_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdError,
     StdResult,
 };
-use cw2::{get_contract_version, set_contract_version};
+use cw2::set_contract_version;
 use interface::redemption::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
-use std::iter::Iterator;
 
 pub const CONTRACT_NAME: &str = env!("CARGO_PKG_NAME");
 pub const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -62,23 +56,14 @@ pub fn execute(
     msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
     match msg {
-        ExecuteMsg::Withdraw { tokens_to_withdraw } => {
-            handle_withdraw(deps, env, info, tokens_to_withdraw)
+        ExecuteMsg::SendRedemption { redemption } => {
+            handle_send_redemption(deps, env, info, redemption)
         }
-        ExecuteMsg::Repay {
-            tokens_to_repay,
-            cycle_profit,
-        } => handle_repay(deps, env, info, tokens_to_repay, cycle_profit),
-        ExecuteMsg::RepayQueue {
-            tokens_to_repay,
-            cycle_profit,
-            limit,
-        } => handle_repay_queue(deps, env, info, tokens_to_repay, cycle_profit, limit),
-        ExecuteMsg::SetVault { vault } => handle_set_vault(deps, env, info, vault),
-        ExecuteMsg::SetGrants { grants } => handle_set_grants(deps, env, info, grants),
-        ExecuteMsg::UpdateConfig { grants, controller } => {
-            handle_update_config(deps, env, info, grants, controller)
-        }
+        ExecuteMsg::ClaimRedemption { limit } => handle_claim_redemption(deps, env, info, limit),
+        ExecuteMsg::UpdateConfig {
+            add_fund,
+            remove_fund,
+        } => handle_update_config(deps, env, info, add_fund, remove_fund),
         ExecuteMsg::ProposeNewOwner {
             new_owner,
             duration,
@@ -102,13 +87,14 @@ pub fn execute(
 
 #[cfg(not(tarpaulin_include))]
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
+pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
         QueryMsg::Config {} => to_json_binary(&query_config(&deps)?),
-        QueryMsg::Grants {} => to_json_binary(&query_grants(&deps)?),
-        QueryMsg::SpotPrice {} => to_json_binary(&query_spot_price(&deps, env)?),
-        QueryMsg::TwapPrice { duration } => {
-            to_json_binary(&query_twap_price(&deps, env, duration)?)
+        QueryMsg::AllRedemptions { start_after, limit } => {
+            to_json_binary(&query_all_redemptions(deps, start_after, limit)?)
+        }
+        QueryMsg::Redemptions { user, limit } => {
+            to_json_binary(&query_redemptions(deps, user, limit)?)
         }
         QueryMsg::Owner {} => to_json_binary(
             &query_owner(deps).map_err(|err| StdError::generic_err(err.to_string()))?,
@@ -120,34 +106,6 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
-    let contract_version = get_contract_version(deps.storage)?;
-
-    match contract_version.contract.as_ref() {
-        "crates.io:strategy" => match contract_version.version.as_ref() {
-            "0.0.4" => {
-                set_contract_version(
-                    deps.storage,
-                    format!("crates.io:{CONTRACT_NAME}"),
-                    CONTRACT_VERSION,
-                )?;
-            }
-            _ => {
-                return Err(ContractError::Std(StdError::generic_err(
-                    "Migration failed",
-                )))
-            }
-        },
-        _ => {
-            return Err(ContractError::Std(StdError::generic_err(
-                "Migration failed",
-            )))
-        }
-    }
-
-    Ok(Response::new().add_event(event_migrate(
-        CONTRACT_VERSION,
-        CONTRACT_NAME,
-        contract_version,
-    )))
+pub fn migrate(_deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
+    unimplemented!()
 }

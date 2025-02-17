@@ -1,9 +1,13 @@
-use cosmwasm_std::{Addr, Order, StdError, StdResult, Storage, Uint128};
+use cosmwasm_std::{Addr, Order, StdError, StdResult, Storage};
 use cw_storage_plus::{Index, IndexList, IndexedMap, MultiIndex};
 use interface::redemption::PendingRedemption;
 
+type RedemptionResult<'a> =
+    Box<dyn Iterator<Item = StdResult<((String, u64), PendingRedemption)>> + 'a>;
+
 pub struct Pending<'a> {
-    pub user: MultiIndex<'a, Addr, PendingRedemption, String>,
+    // Index by user address
+    pub user: MultiIndex<'a, Addr, PendingRedemption, (String, u64)>,
 }
 
 impl<'a> IndexList<PendingRedemption> for Pending<'a> {
@@ -12,7 +16,9 @@ impl<'a> IndexList<PendingRedemption> for Pending<'a> {
         Box::new(v.into_iter())
     }
 }
-pub fn redemptions<'a>() -> IndexedMap<&'a str, PendingRedemption, Pending<'a>> {
+
+// Create indexed map with composite key (user, timestamp)
+pub fn redemptions<'a>() -> IndexedMap<(&'a str, u64), PendingRedemption, Pending<'a>> {
     let indexes = Pending {
         user: MultiIndex::new(
             |_, value| Addr::unchecked(value.user.clone()),
@@ -23,14 +29,11 @@ pub fn redemptions<'a>() -> IndexedMap<&'a str, PendingRedemption, Pending<'a>> 
     IndexedMap::new("redemption", indexes)
 }
 
-pub fn redemptions_by_user<'a>() -> MultiIndex<'a, Addr, PendingRedemption, String> {
+pub fn redemptions_by_user<'a>() -> MultiIndex<'a, Addr, PendingRedemption, (String, u64)> {
     redemptions().idx.user
 }
 
-pub fn filter_user_redemptions<'a>(
-    storage: &'a dyn Storage,
-    user: String,
-) -> Box<dyn Iterator<Item = StdResult<(String, PendingRedemption)>> + 'a> {
+pub fn filter_user_redemptions(storage: &'_ dyn Storage, user: String) -> RedemptionResult<'_> {
     redemptions_by_user()
         .prefix(Addr::unchecked(user))
         .range(storage, None, None, Order::Ascending)
@@ -44,46 +47,37 @@ pub fn get_all_user_redemptions(
     storage: &dyn Storage,
     user: String,
 ) -> StdResult<Vec<PendingRedemption>> {
-    Ok(
-        filter_user_redemptions(storage, user)
-            .collect::<StdResult<Vec<_>>>()? // Collect into StdResult and propagate errors with `?`
-            .iter()
-            .map(|(_, strategy)| strategy.clone())
-            .collect::<Vec<_>>(), // Collect the final Vec
-    )
+    Ok(filter_user_redemptions(storage, user)
+        .collect::<StdResult<Vec<_>>>()?
+        .iter()
+        .map(|(_, redemption)| redemption.clone())
+        .collect::<Vec<_>>())
 }
 
 pub fn add_to_pending(storage: &mut dyn Storage, redemption: PendingRedemption) -> StdResult<()> {
     let redemptions_map = redemptions();
+    let key = (redemption.user.as_str(), redemption.timestamp);
 
-    // Check if user already exists in the queue
-    match redemptions_map.may_load(storage, &redemption.user)? {
-        Some(_) => {
-            // continue
-        }
-        None => {
-            redemptions_map.save(storage, redemption.user.as_str(), &redemption)?;
-        }
-    }
+    // Save the redemption with composite key
+    redemptions_map.save(storage, key, &redemption)?;
 
     Ok(())
 }
 
-// pub fn remove_from_pending(storage: &mut dyn Storage, user: String) -> StdResult<Uint128> {
-//     let redemptions_map = redemptions();
+pub fn remove_from_pending(
+    storage: &mut dyn Storage,
+    user: String,
+    timestamp: u64,
+) -> StdResult<PendingRedemption> {
+    let redemptions_map = redemptions();
+    let key = (user.as_str(), timestamp);
 
-//     // Check if user exists in the queue
-//     match redemptions_map.may_load(storage, user.as_str())? {
-//         Some(redemption) => {
-//             let amount = redemption.total_deposits;
-
-//             redemptions_map.remove(storage, user.as_str())?;
-
-//             Ok(amount)
-//         }
-//         None => {
-//             // User does not exist in the queue
-//             Err(StdError::not_found("Redemption"))
-//         }
-//     }
-// }
+    // Check if redemption exists
+    match redemptions_map.may_load(storage, key)? {
+        Some(redemption) => {
+            redemptions_map.remove(storage, key)?;
+            Ok(redemption)
+        }
+        None => Err(StdError::not_found("Redemption not found")),
+    }
+}

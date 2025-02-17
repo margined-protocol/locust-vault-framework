@@ -1,5 +1,6 @@
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{Addr, Coin, Decimal};
+use cosmwasm_std::{Addr, Coin};
+use std::fmt;
 
 #[cw_serde]
 pub struct InstantiateMsg {
@@ -33,8 +34,14 @@ pub enum ExecuteMsg {
 #[cw_serde]
 pub enum QueryMsg {
     Config {},
-    AllRedemptions { user: String, limit: Option<u32> },
-    Redemptions { user: String, limit: Option<u32> },
+    AllRedemptions {
+        start_after: Option<(String, u64)>,
+        limit: Option<u32>,
+    },
+    Redemptions {
+        user: String,
+        limit: Option<u32>,
+    },
     Owner {},
     GetOwnershipProposal {},
 }
@@ -59,6 +66,12 @@ pub struct PendingRedemption {
 pub struct FundInfo {
     pub address: String,
     pub metadata: String,
+}
+
+impl fmt::Display for FundInfo {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}:{}", self.address, self.metadata)
+    }
 }
 
 #[cw_serde]
