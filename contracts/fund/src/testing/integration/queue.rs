@@ -11,12 +11,23 @@ fn test_queue() {
     let env = TestEnv::new();
     let wasm = Wasm::new(&env.app);
 
+    let redemption_addr = env.deploy_redemption_contract(&wasm, None);
+
     let mut msg = env.default_fund_instantiation_msg();
     msg.token1 = None;
+    msg.redemption_contract = redemption_addr.to_string();
 
     let vault_addr = env.deploy_fund_contract(&wasm, msg);
 
     env.set_open_fund(&wasm, &vault_addr, &env.signer).unwrap();
+    env.whitelist_fund(
+        &wasm,
+        &redemption_addr,
+        vault_addr.to_string(),
+        "Some metadata".to_string(),
+        &env.signer,
+    )
+    .unwrap();
 
     let config = env.query_config_fund(&wasm, &vault_addr).unwrap();
 
@@ -73,12 +84,23 @@ fn test_queue_twice() {
     let env = TestEnv::new();
     let wasm = Wasm::new(&env.app);
 
+    let redemption_addr = env.deploy_redemption_contract(&wasm, None);
+
     let mut msg = env.default_fund_instantiation_msg();
     msg.token1 = None;
+    msg.redemption_contract = redemption_addr.to_string();
 
     let vault_addr = env.deploy_fund_contract(&wasm, msg);
 
     env.set_open_fund(&wasm, &vault_addr, &env.signer).unwrap();
+    env.whitelist_fund(
+        &wasm,
+        &redemption_addr,
+        vault_addr.to_string(),
+        "Some metadata".to_string(),
+        &env.signer,
+    )
+    .unwrap();
 
     let config = env.query_config_fund(&wasm, &vault_addr).unwrap();
 
@@ -159,12 +181,23 @@ fn test_queue_multiple_users() {
     let env = TestEnv::new();
     let wasm = Wasm::new(&env.app);
 
+    let redemption_addr = env.deploy_redemption_contract(&wasm, None);
+
     let mut msg = env.default_fund_instantiation_msg();
     msg.token1 = None;
+    msg.redemption_contract = redemption_addr.to_string();
 
     let vault_addr = env.deploy_fund_contract(&wasm, msg);
 
     env.set_open_fund(&wasm, &vault_addr, &env.signer).unwrap();
+    env.whitelist_fund(
+        &wasm,
+        &redemption_addr,
+        vault_addr.to_string(),
+        "Some metadata".to_string(),
+        &env.signer,
+    )
+    .unwrap();
 
     let config = env.query_config_fund(&wasm, &vault_addr).unwrap();
 
@@ -262,13 +295,24 @@ fn test_queue_end_to_end_with_repayment() {
     let env = TestEnv::new();
     let wasm = Wasm::new(&env.app);
 
+    let redemption_addr = env.deploy_redemption_contract(&wasm, None);
+
     let mut msg = env.default_fund_instantiation_msg();
     msg.token1 = None;
+    msg.redemption_contract = redemption_addr.to_string();
 
     let vault_addr = env.deploy_fund_contract(&wasm, msg);
     let block_time = env.app.get_block_timestamp();
 
     env.set_open_fund(&wasm, &vault_addr, &env.signer).unwrap();
+    env.whitelist_fund(
+        &wasm,
+        &redemption_addr,
+        vault_addr.to_string(),
+        "Some metadata".to_string(),
+        &env.signer,
+    )
+    .unwrap();
 
     let config = env.query_config_fund(&wasm, &vault_addr).unwrap();
 
@@ -363,6 +407,10 @@ fn test_queue_end_to_end_with_repayment() {
         assert_eq!(state, expected_state);
     }
 
+    // Claim redemption - trader 0
+    env.claim_redemption(&wasm, &redemption_addr, None, &env.traders[0])
+        .unwrap();
+
     let pending_redemption = env
         .query_pending_redemptions_fund(&wasm, &vault_addr, None)
         .unwrap();
@@ -382,13 +430,24 @@ fn test_queue_end_to_end_with_partial_repayment() {
     let env = TestEnv::new();
     let wasm = Wasm::new(&env.app);
 
+    let redemption_addr = env.deploy_redemption_contract(&wasm, None);
+
     let mut msg = env.default_fund_instantiation_msg();
     msg.token1 = None;
+    msg.redemption_contract = redemption_addr.to_string();
 
     let vault_addr = env.deploy_fund_contract(&wasm, msg);
     let block_time = env.app.get_block_timestamp();
 
     env.set_open_fund(&wasm, &vault_addr, &env.signer).unwrap();
+    env.whitelist_fund(
+        &wasm,
+        &redemption_addr,
+        vault_addr.to_string(),
+        "Some metadata".to_string(),
+        &env.signer,
+    )
+    .unwrap();
 
     let config = env.query_config_fund(&wasm, &vault_addr).unwrap();
 
@@ -479,6 +538,10 @@ fn test_queue_end_to_end_with_partial_repayment() {
         assert_eq!(state, expected_state);
     }
 
+    // Claim redemption - trader 0
+    env.claim_redemption(&wasm, &redemption_addr, None, &env.traders[0])
+        .unwrap();
+
     let trader_base_after = env.get_balance(&env.traders[0].address(), BASE_DENOM);
     assert_eq!(trader_base_before, trader_base_after,);
 }
@@ -488,10 +551,12 @@ fn test_queue_end_to_end_with_repayment_multiple_denom() {
     let env = TestEnv::new();
     let wasm = Wasm::new(&env.app);
 
+    let redemption_addr = env.deploy_redemption_contract(&wasm, None);
     let strategy_addr = env.deploy_strategy_contract(&wasm, None);
 
     let mut msg = env.default_fund_instantiation_msg();
     msg.controller = strategy_addr.to_string();
+    msg.redemption_contract = redemption_addr.to_string();
 
     let vault_addr = env.deploy_fund_contract(&wasm, msg);
     let block_time = env.app.get_block_timestamp();
@@ -500,6 +565,14 @@ fn test_queue_end_to_end_with_repayment_multiple_denom() {
         .unwrap();
 
     env.set_open_fund(&wasm, &vault_addr, &env.signer).unwrap();
+    env.whitelist_fund(
+        &wasm,
+        &redemption_addr,
+        vault_addr.to_string(),
+        "Some metadata".to_string(),
+        &env.signer,
+    )
+    .unwrap();
 
     let config = env.query_config_fund(&wasm, &vault_addr).unwrap();
 
@@ -601,6 +674,10 @@ fn test_queue_end_to_end_with_repayment_multiple_denom() {
         .unwrap();
     }
 
+    // Claim redemption - trader 0
+    env.claim_redemption(&wasm, &redemption_addr, None, &env.traders[0])
+        .unwrap();
+
     let expected_base_share = Uint128::new(44_105_572);
     let expected_quote_share = Uint128::new(29_472_141);
     let trader_base_after = env.get_balance(&env.traders[0].address(), BASE_DENOM);
@@ -624,19 +701,30 @@ fn test_queue_from_second_user() {
     let env = TestEnv::new();
     let wasm = Wasm::new(&env.app);
 
+    let redemption_addr = env.deploy_redemption_contract(&wasm, None);
+
     let mut msg = env.default_fund_instantiation_msg();
     msg.token1 = None;
+    msg.redemption_contract = redemption_addr.to_string();
 
     let vault_addr = env.deploy_fund_contract(&wasm, msg);
 
     env.whitelist_hooks(vec![WhitelistedHook {
-        code_id: 1,
+        code_id: 2,
         denom_creator: vault_addr.to_string(),
     }]);
 
     env.register_sudo_fund(&wasm, &vault_addr, &env.signer)
         .unwrap();
     env.set_open_fund(&wasm, &vault_addr, &env.signer).unwrap();
+    env.whitelist_fund(
+        &wasm,
+        &redemption_addr,
+        vault_addr.to_string(),
+        "Some metadata".to_string(),
+        &env.signer,
+    )
+    .unwrap();
 
     let config = env.query_config_fund(&wasm, &vault_addr).unwrap();
 
@@ -700,19 +788,30 @@ fn test_queue_from_second_user_multiple_times() {
     let env = TestEnv::new();
     let wasm = Wasm::new(&env.app);
 
+    let redemption_addr = env.deploy_redemption_contract(&wasm, None);
+
     let mut msg = env.default_fund_instantiation_msg();
     msg.token1 = None;
+    msg.redemption_contract = redemption_addr.to_string();
 
     let vault_addr = env.deploy_fund_contract(&wasm, msg);
 
     env.whitelist_hooks(vec![WhitelistedHook {
-        code_id: 1,
+        code_id: 2,
         denom_creator: vault_addr.to_string(),
     }]);
 
     env.register_sudo_fund(&wasm, &vault_addr, &env.signer)
         .unwrap();
     env.set_open_fund(&wasm, &vault_addr, &env.signer).unwrap();
+    env.whitelist_fund(
+        &wasm,
+        &redemption_addr,
+        vault_addr.to_string(),
+        "Some metadata".to_string(),
+        &env.signer,
+    )
+    .unwrap();
 
     let config = env.query_config_fund(&wasm, &vault_addr).unwrap();
 
@@ -787,12 +886,23 @@ fn test_queue_insufficient_funds_then_complete() {
     let env = TestEnv::new();
     let wasm = Wasm::new(&env.app);
 
+    let redemption_addr = env.deploy_redemption_contract(&wasm, None);
+
     let mut msg = env.default_fund_instantiation_msg();
     msg.token1 = None;
+    msg.redemption_contract = redemption_addr.to_string();
 
     let vault_addr = env.deploy_fund_contract(&wasm, msg);
 
     env.set_open_fund(&wasm, &vault_addr, &env.signer).unwrap();
+    env.whitelist_fund(
+        &wasm,
+        &redemption_addr,
+        vault_addr.to_string(),
+        "Some metadata".to_string(),
+        &env.signer,
+    )
+    .unwrap();
 
     let config = env.query_config_fund(&wasm, &vault_addr).unwrap();
 

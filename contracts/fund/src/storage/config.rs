@@ -27,8 +27,9 @@ pub struct Config {
     pub controller: String,
     pub admin: String,
     pub treasury: String,
+    pub redemption_contract: String,
     pub strategy_cap: Uint128,
-    pub float: Decimal,
+    pub float: Option<Decimal>,
     pub strategy_denom: String,
     pub token0: String,
     pub token1: Option<String>,
@@ -56,6 +57,7 @@ impl Configure for Config {
             admin: deps.api.addr_validate(&msg.admin)?.to_string(),
             controller: deps.api.addr_validate(&msg.controller)?.to_string(),
             treasury: deps.api.addr_validate(&msg.treasury)?.to_string(),
+            redemption_contract: msg.redemption_contract,
             strategy_cap: msg.strategy_cap,
             float: msg.float,
             strategy_denom: "".to_string(),
@@ -82,13 +84,9 @@ impl Configure for Config {
     where
         M: Serialize + DeserializeOwned,
     {
-        // Function can only be called by admin
         OWNER.assert_admin(deps.as_ref(), &info.sender)?;
 
-        // Load the current configuration from storage
         let mut config = Self::get_from_storage(deps.as_ref())?;
-
-        // // Deserialize the message directly into an UpdateConfig struct
         let update_msg: UpdateConfig =
             serde_json::from_slice(&serde_json::to_vec(&msg)?).map_err(|e| {
                 ContractError::Std(StdError::generic_err(format!(
@@ -97,34 +95,32 @@ impl Configure for Config {
                 )))
             })?;
 
-        // Initialise a mutable response
-        let response = Response::new().add_event(Event::new("update_config"));
-
-        // Update config with new values
-        if let Some(new_strategy_cap) = update_msg.strategy_cap {
-            config.strategy_cap = new_strategy_cap;
+        // Update validated addresses
+        if let Some(controller) = update_msg.controller {
+            config.controller = deps.api.addr_validate(&controller)?.to_string();
         }
-
-        if let Some(new_controller) = update_msg.controller {
-            config.controller = deps.api.addr_validate(&new_controller)?.to_string();
-        }
-
-        if let Some(management_fee_rate) = update_msg.management_fee_rate {
-            config.management_fee_rate = management_fee_rate;
-        }
-
-        if let Some(performance_fee_rate) = update_msg.performance_fee_rate {
-            config.performance_fee_rate = performance_fee_rate;
-        }
-
-        if let Some(estimate_cycle_profit) = update_msg.estimate_cycle_profit {
-            config.estimate_cycle_profit = Some(estimate_cycle_profit);
-        }
-
         if let Some(treasury) = update_msg.treasury {
             config.treasury = deps.api.addr_validate(&treasury)?.to_string();
         }
+        if let Some(redemption_contract) = update_msg.redemption_contract {
+            deps.api.addr_validate(&redemption_contract)?;
 
+            config.redemption_contract = redemption_contract;
+        }
+
+        // Update numeric values
+        if let Some(strategy_cap) = update_msg.strategy_cap {
+            config.strategy_cap = strategy_cap;
+        }
+        if let Some(management_fee_rate) = update_msg.management_fee_rate {
+            config.management_fee_rate = management_fee_rate;
+        }
+        if let Some(performance_fee_rate) = update_msg.performance_fee_rate {
+            config.performance_fee_rate = performance_fee_rate;
+        }
+        if let Some(estimate_cycle_profit) = update_msg.estimate_cycle_profit {
+            config.estimate_cycle_profit = Some(estimate_cycle_profit);
+        }
         if let Some(float) = update_msg.float {
             config.float = float;
         }
@@ -132,7 +128,7 @@ impl Configure for Config {
         config.validate(deps)?;
         config.save_to_storage(deps)?;
 
-        Ok(response)
+        Ok(Response::new().add_event(Event::new("update_config")))
     }
 
     fn validate(&self, _deps: &mut DepsMut) -> Result<(), ContractError> {
@@ -165,7 +161,7 @@ impl Configure for Config {
         );
 
         ensure!(
-            self.float <= Decimal::percent(10),
+            self.float.unwrap_or(Decimal::zero()) <= Decimal::percent(10),
             ContractError::Std(StdError::generic_err(
                 "Float must be less or equal to ten percent"
             ))
@@ -192,7 +188,10 @@ impl Config {
     }
 }
 
-pub fn migrate_config(mut deps: DepsMut) -> Result<(DepsMut, Response), ContractError> {
+pub fn migrate_config(
+    mut deps: DepsMut,
+    redemption_contract: String,
+) -> Result<(DepsMut, Response), ContractError> {
     let old_config: Item<V003Config> = Item::new("config");
 
     let cfg = old_config.load(deps.storage)?;
@@ -201,8 +200,9 @@ pub fn migrate_config(mut deps: DepsMut) -> Result<(DepsMut, Response), Contract
         admin: cfg.admin,
         controller: cfg.controller,
         treasury: cfg.treasury,
+        redemption_contract,
         strategy_cap: cfg.strategy_cap,
-        float: cfg.float,
+        float: Some(cfg.float),
         strategy_denom: cfg.strategy_denom,
         token0: cfg.token0,
         token1: cfg.token1,

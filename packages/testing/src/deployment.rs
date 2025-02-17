@@ -152,7 +152,8 @@ impl TestEnv {
             controller: self.controller.address().to_string(),
             treasury: self.treasury.address().to_string(),
             strategy_cap: STRATEGY_CAP,
-            float: Decimal::zero(),
+            float: Some(Decimal::zero()),
+            redemption_contract: self.controller.address().to_string(), // Placeholder for tests that need it must be deployed
             token0: BASE_DENOM.to_string(),
             token1: Some(QUOTE_DENOM.to_string()),
             management_fee_rate: Decimal::zero(),
@@ -167,6 +168,7 @@ impl TestEnv {
             float: None,
             controller: None,
             treasury: None,
+            redemption_contract: None,
             management_fee_rate: None,
             performance_fee_rate: None,
             instant_withdraw_penalty: None,

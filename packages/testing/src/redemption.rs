@@ -49,6 +49,21 @@ impl TestEnv {
         wasm.execute(contract_addr, &msg, &[], signer)
     }
 
+    pub fn whitelist_fund(
+        &self,
+        wasm: &Wasm<OsmosisTestApp>,
+        contract_addr: &str,
+        address: String,
+        metadata: String,
+        signer: &SigningAccount,
+    ) -> RunnerExecuteResult<MsgExecuteContractResponse> {
+        let msg = ExecuteMsg::UpdateConfig {
+            add_fund: Some(FundInfo { address, metadata }),
+            remove_fund: None,
+        };
+        wasm.execute(contract_addr, &msg, &[], signer)
+    }
+
     pub fn propose_new_owner(
         &self,
         wasm: &Wasm<OsmosisTestApp>,

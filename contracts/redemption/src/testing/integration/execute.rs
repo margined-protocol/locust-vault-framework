@@ -1,6 +1,9 @@
+use crate::errors::ContractError;
+
+use cosmwasm_std::{coin, StdError};
 use interface::redemption::FundInfo;
 use neutron_test_tube::{Account, Module, Wasm};
-use testing::setup::TestEnv;
+use testing::{setup::TestEnv, utils::assert_err};
 
 #[test]
 fn test_update_config() {
@@ -47,8 +50,13 @@ fn test_fail_update_config_too_many_funds() {
 
     // Add funds until we hit the limit
     for i in 1..100 {
+        let address = env
+            .app
+            .init_account(&[coin(1000000000000000000u128, "untr")])
+            .unwrap();
+
         let new_fund = FundInfo {
-            address: env.traders[i % env.traders.len()].address(),
+            address: address.address().to_string(),
             metadata: format!("test fund {}", i),
         };
 
