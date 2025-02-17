@@ -2,9 +2,7 @@ use crate::contract::{CONTRACT_NAME, CONTRACT_VERSION};
 
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{coin, Decimal, Uint128};
-use interface::fund::{
-    ConfigResponse, ExtensionQueryMsg, MigrateMsg, QueryMsg, VaultenatorExtensionQueryMsg,
-};
+use interface::fund::{ExtensionQueryMsg, MigrateMsg, QueryMsg, VaultenatorExtensionQueryMsg};
 use neutron_test_tube::{Account, Module, Runner, Wasm};
 use osmosis_std::types::cosmwasm::wasm::v1::{
     MsgMigrateContract, MsgMigrateContractResponse, QueryContractInfoRequest,
@@ -27,6 +25,22 @@ pub struct V010InstantiateMsg {
     pub token1: Option<String>,
     pub management_fee_rate: Decimal,
     pub performance_fee_rate: Decimal,
+    pub vault_type: String,
+}
+
+#[cw_serde]
+pub struct V010ConfigResponse {
+    pub admin: String,
+    pub controller: String,
+    pub treasury: String,
+    pub strategy_cap: Uint128,
+    pub float: Option<Decimal>,
+    pub strategy_denom: String,
+    pub token0: String,
+    pub token1: Option<String>,
+    pub management_fee_rate: Decimal,
+    pub performance_fee_rate: Decimal,
+    pub estimate_cycle_profit: Option<Decimal>,
     pub vault_type: String,
 }
 
@@ -79,9 +93,8 @@ fn test_migration() {
         VaultenatorExtensionQueryMsg::Config {},
     ));
 
-    let config: ConfigResponse = wasm.query(&contract_addr, &query_msg).unwrap();
+    let config: V010ConfigResponse = wasm.query(&contract_addr, &query_msg).unwrap();
 
-    // note: for v0.0.2 onwards the denom is omitted
     let expected_strategy_denom = format!("factory/{}/fund", contract_addr);
 
     assert_eq!(config.strategy_denom, expected_strategy_denom);
