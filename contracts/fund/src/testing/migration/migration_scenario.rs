@@ -22,7 +22,7 @@ fn test_migration() {
     let wasm = Wasm::new(&env.app);
 
     let wasm_byte_code =
-        std::fs::read("../../contracts/fund/src/testing/artifacts/fund_vault-v010.wasm").unwrap();
+        std::fs::read("../../contracts/fund/src/testing/artifacts/fund-v010.wasm").unwrap();
 
     let fund_vault_v003 = wasm
         .store_code(&wasm_byte_code, None, &env.signer)
