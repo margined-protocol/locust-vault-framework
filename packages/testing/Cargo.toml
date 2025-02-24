@@ -8,7 +8,7 @@ version = "0.1.0"
 backtraces = [ "cosmwasm-std/backtraces" ]
 
 [dependencies]
-cosmrs            = { version = "0.15.0" }
+cosmrs            = { version = "0.21.1" }
 cosmwasm-schema   = { workspace = true }
 cosmwasm-std      = { workspace = true }
 cw-vault-standard = { workspace = true }
