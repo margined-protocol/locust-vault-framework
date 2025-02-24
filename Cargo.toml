@@ -26,7 +26,7 @@ prost-types       = { version = "0.12.4" }
 regex             = { version = "1.10.5" }
 serde             = { version = "1.0.201" }
 serde-json-wasm   = { version = "1.0.1" }
-serde_json        = { version = "1.0.117" }
+serde_json        = { version = "1.0.139" }
 strum             = { version = "0.26.2", features = [ "derive" ] }
 test-tube         = { version = "0.7.0" }
 thiserror         = { version = "1.0.44" }
