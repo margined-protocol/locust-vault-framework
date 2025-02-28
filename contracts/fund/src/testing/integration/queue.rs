@@ -56,7 +56,7 @@ fn test_queue() {
         pending_redemption[0],
         Redemption {
             user: env.traders[0].address(),
-            total_deposits: redeem.amount,
+            amount: redeem.amount,
             timestamp: timestamp.seconds(),
         }
     );
@@ -132,7 +132,7 @@ fn test_queue_twice() {
         pending_redemption[0],
         Redemption {
             user: env.traders[0].address(),
-            total_deposits: redeem.amount,
+            amount: redeem.amount,
             timestamp: timestamp.seconds(),
         }
     );
@@ -153,7 +153,7 @@ fn test_queue_twice() {
         pending_redemption[0],
         Redemption {
             user: env.traders[0].address(),
-            total_deposits: trader_strategy_before,
+            amount: trader_strategy_before,
             timestamp: timestamp.seconds(),
         }
     );
@@ -240,12 +240,12 @@ fn test_queue_multiple_users() {
         vec![
             Redemption {
                 user: env.traders[0].address(),
-                total_deposits: redeem.amount,
+                amount: redeem.amount,
                 timestamp: timestamp.seconds(),
             },
             Redemption {
                 user: env.traders[1].address(),
-                total_deposits: redeem_1.amount,
+                amount: redeem_1.amount,
                 timestamp: timestamp_1.seconds(),
             },
         ]
@@ -762,7 +762,7 @@ fn test_queue_from_second_user() {
         pending_redemption[0],
         Redemption {
             user: env.traders[1].address(),
-            total_deposits: redeem.amount,
+            amount: redeem.amount,
             timestamp: timestamp.seconds(),
         }
     );
@@ -945,12 +945,12 @@ fn test_queue_insufficient_funds_then_complete() {
         vec![
             Redemption {
                 user: env.traders[0].address(),
-                total_deposits: redeem.amount,
+                amount: redeem.amount,
                 timestamp: timestamp.seconds(),
             },
             Redemption {
                 user: env.traders[1].address(),
-                total_deposits: redeem_1.amount,
+                amount: redeem_1.amount,
                 timestamp: timestamp_1.seconds(),
             },
         ]
@@ -996,12 +996,12 @@ fn test_queue_insufficient_funds_then_complete() {
         vec![
             Redemption {
                 user: env.traders[0].address(),
-                total_deposits: redeem.amount,
+                amount: redeem.amount,
                 timestamp: timestamp.seconds(),
             },
             Redemption {
                 user: env.traders[1].address(),
-                total_deposits: redeem_1.amount,
+                amount: redeem_1.amount,
                 timestamp: timestamp_1.seconds(),
             },
         ]
@@ -1027,7 +1027,7 @@ fn test_queue_insufficient_funds_then_complete() {
         pending_redemption,
         vec![Redemption {
             user: env.traders[1].address(),
-            total_deposits: redeem_1.amount,
+            amount: redeem_1.amount,
             timestamp: timestamp_1.seconds(),
         },]
     );

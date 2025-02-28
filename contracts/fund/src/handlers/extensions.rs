@@ -209,7 +209,7 @@ pub fn handle_repay_queue(
     let pending_redemptions = query_pending_redemptions(deps.as_ref(), limit)?;
 
     for redemption in pending_redemptions.iter() {
-        let strategy_denom_sent = redemption.total_deposits;
+        let strategy_denom_sent = redemption.amount;
 
         let (burn_ratio, assets_to_redeem) = calculate_share_to_burn(
             deps.as_ref(),
@@ -242,7 +242,7 @@ pub fn handle_repay_queue(
             assets_to_redeem.to_vec(),
             &config,
             &env,
-            redemption.total_deposits,
+            redemption.amount,
         )?;
 
         // Remove the redemption from the queue

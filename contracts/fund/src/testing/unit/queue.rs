@@ -16,13 +16,13 @@ fn test_add_to_queue() {
     )
     .unwrap();
     let redemption = redemptions().load(&storage, user.as_str()).unwrap();
-    assert_eq!(redemption.total_deposits, Uint128::new(100));
+    assert_eq!(redemption.amount, Uint128::new(100));
     assert_eq!(redemption.timestamp, 1672531200);
 
     // Add more to the existing entry
     add_to_queue(&mut storage, user.to_string(), Uint128::new(50), 1672531300).unwrap();
     let redemption = redemptions().load(&storage, user.as_str()).unwrap();
-    assert_eq!(redemption.total_deposits, Uint128::new(150));
+    assert_eq!(redemption.amount, Uint128::new(150));
     assert_eq!(redemption.timestamp, 1672531300); // Ensure timestamp is updated
 }
 

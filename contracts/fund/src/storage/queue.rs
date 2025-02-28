@@ -80,7 +80,7 @@ pub fn add_to_queue(
     match redemptions_map.may_load(storage, user.as_str())? {
         Some(mut redemption) => {
             // Update the user's total deposits and timestamp
-            redemption.total_deposits += amount;
+            redemption.amount += amount;
             redemption.timestamp = timestamp;
             redemptions_map.save(storage, user.as_str(), &redemption)?;
         }
@@ -88,7 +88,7 @@ pub fn add_to_queue(
             // Initialize a new Redemption entry for the user
             let redemption = Redemption {
                 user: user.clone(),
-                total_deposits: amount,
+                amount,
                 timestamp,
             };
             redemptions_map.save(storage, user.as_str(), &redemption)?;
@@ -104,7 +104,7 @@ pub fn remove_from_queue(storage: &mut dyn Storage, user: String) -> StdResult<U
     // Check if user exists in the queue
     match redemptions_map.may_load(storage, user.as_str())? {
         Some(redemption) => {
-            let amount = redemption.total_deposits;
+            let amount = redemption.amount;
 
             redemptions_map.remove(storage, user.as_str())?;
 

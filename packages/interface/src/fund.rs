@@ -110,7 +110,7 @@ pub struct ConfigResponse {
 #[cw_serde]
 pub struct Redemption {
     pub user: String,
-    pub total_deposits: Uint128,
+    pub amount: Uint128,
     pub timestamp: u64,
 }
 
