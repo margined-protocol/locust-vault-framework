@@ -5,7 +5,9 @@ use crate::{
         calculate_performance_fees, get_management_fees, get_sent_tokens, get_token_deposits,
         get_total_vault_assets, get_vault_coins,
     },
-    messages::{create_bank_message, create_burn_message, create_mint_message},
+    messages::{
+        create_bank_message, create_burn_message, create_mint_message, create_redemption_message,
+    },
     storage::{config::Config, state::State},
 };
 
@@ -108,12 +110,13 @@ pub fn process_redeem(
     env: &Env,
     strategy_denom_sent: Uint128,
 ) -> StdResult<Response> {
-    for asset in assets_to_redeem.iter().filter(|a| !a.amount.is_zero()) {
-        response = response.add_message(create_bank_message(
-            recipient.to_string(),
-            vec![asset.clone()],
-        ));
-    }
+    response = response.add_message(create_redemption_message(
+        config.redemption_contract.to_string(),
+        recipient.to_string(),
+        assets_to_redeem.clone(),
+        env.block.time.seconds(),
+        env.contract.address.to_string(),
+    ));
 
     let (token0, token1) = get_token_deposits(config, assets_to_redeem.clone())?;
 

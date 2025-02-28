@@ -5,7 +5,7 @@ use crate::{
 
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{coin, Coin, Decimal};
-use interface::{fund as Fund, strategy as Strategy};
+use interface::{fund as Fund, redemption as Redemption, strategy as Strategy};
 use neutron_std::types::{
     cosmwasm::wasm::v1::MsgInstantiateContractResponse,
     neutron::dex::MsgPlaceLimitOrder as DefaultMsg,
@@ -94,6 +94,19 @@ impl TestEnv {
             .address
     }
 
+    pub fn deploy_redemption_contract(
+        &self,
+        wasm: &Wasm<OsmosisTestApp>,
+        msg: Option<Redemption::InstantiateMsg>,
+    ) -> String {
+        let msg = msg.unwrap_or_else(|| self.default_redemption_instantiation_msg());
+
+        self.instantiate_contract(wasm, &msg, vec![], &self.signer, "redemption")
+            .unwrap()
+            .data
+            .address
+    }
+
     pub fn deploy_strategy_contract(
         &self,
         wasm: &Wasm<OsmosisTestApp>,
@@ -139,7 +152,8 @@ impl TestEnv {
             controller: self.controller.address().to_string(),
             treasury: self.treasury.address().to_string(),
             strategy_cap: STRATEGY_CAP,
-            float: Decimal::zero(),
+            float: Some(Decimal::zero()),
+            redemption_contract: self.controller.address().to_string(), // Placeholder for tests that need it must be deployed
             token0: BASE_DENOM.to_string(),
             token1: Some(QUOTE_DENOM.to_string()),
             management_fee_rate: Decimal::zero(),
@@ -154,11 +168,22 @@ impl TestEnv {
             float: None,
             controller: None,
             treasury: None,
+            redemption_contract: None,
             management_fee_rate: None,
             performance_fee_rate: None,
             instant_withdraw_penalty: None,
             penalty_duration: None,
             estimate_cycle_profit: None,
+        }
+    }
+
+    pub fn default_redemption_instantiation_msg(&self) -> Redemption::InstantiateMsg {
+        Redemption::InstantiateMsg {
+            admin: self.signer.address().to_string(),
+            whitelisted_funds: vec![Redemption::FundInfo {
+                address: self.fund.address().to_string(),
+                metadata: "test fund".to_string(),
+            }],
         }
     }
 }

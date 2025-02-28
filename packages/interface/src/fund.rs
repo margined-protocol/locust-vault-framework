@@ -4,11 +4,12 @@ use cw_vault_standard::{VaultStandardExecuteMsg, VaultStandardQueryMsg};
 
 #[cw_serde]
 pub struct InstantiateMsg {
-    pub admin: String,         // manages contract configuration
-    pub controller: String,    // manages contract balance sheet
-    pub treasury: String,      // account fees are paid to
-    pub strategy_cap: Uint128, // maximum value of strategy deposits
-    pub float: Decimal,        // percentage of balance sheet that can be withdrawn
+    pub admin: String,               // manages contract configuration
+    pub controller: String,          // manages contract balance sheet
+    pub treasury: String,            // account fees are paid to
+    pub redemption_contract: String, // address of the redemption contract
+    pub strategy_cap: Uint128,       // maximum value of strategy deposits
+    pub float: Option<Decimal>,      // percentage of balance sheet that can be withdrawn
     pub token0: String,
     pub token1: Option<String>,
     pub management_fee_rate: Decimal,
@@ -17,7 +18,9 @@ pub struct InstantiateMsg {
 }
 
 #[cw_serde]
-pub struct MigrateMsg {}
+pub struct MigrateMsg {
+    pub redemption_contract: String,
+}
 
 #[cw_serde]
 pub enum ExtensionExecuteMsg {
@@ -92,8 +95,9 @@ pub struct ConfigResponse {
     pub admin: String,
     pub controller: String,
     pub treasury: String,
+    pub redemption_contract: String,
     pub strategy_cap: Uint128,
-    pub float: Decimal,
+    pub float: Option<Decimal>,
     pub strategy_denom: String,
     pub token0: String,
     pub token1: Option<String>,
@@ -124,14 +128,15 @@ pub struct StateResponse {
 #[cw_serde]
 pub struct UpdateConfig {
     pub strategy_cap: Option<Uint128>,
-    pub float: Option<Decimal>,
     pub controller: Option<String>,
     pub treasury: Option<String>,
+    pub redemption_contract: Option<String>,
     pub management_fee_rate: Option<Decimal>,
     pub performance_fee_rate: Option<Decimal>,
     pub instant_withdraw_penalty: Option<Decimal>,
     pub penalty_duration: Option<u64>,
     pub estimate_cycle_profit: Option<Decimal>,
+    pub float: Option<Option<Decimal>>, // Nested Option for set/remove functionality
 }
 
 #[cw_serde]

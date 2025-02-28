@@ -10,7 +10,7 @@ and this project adheres to
 
 ### Added
 
-- Redemption queue feature added
+- Redemption queue feature added, with claim contract
 
 ## [0.1.0] - 2024/12/23
 

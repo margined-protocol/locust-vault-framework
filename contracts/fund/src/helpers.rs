@@ -63,7 +63,9 @@ pub fn calculate_amount_withdrawable(
 
     let total_balance = balance.checked_add(state.get_total_withdrawn_tokens(denom))?;
 
-    let float_amount = total_balance.mul_floor(config.float);
+    let float = config.float.unwrap_or(Decimal::zero());
+
+    let float_amount = total_balance.mul_floor(float);
 
     Ok(balance.saturating_sub(float_amount))
 }
