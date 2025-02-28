@@ -3,8 +3,9 @@ use crate::setup::TestEnv;
 use cosmwasm_std::{Addr, Coin, Decimal, Uint128};
 use cw_vault_standard::VaultInfoResponse;
 use interface::fund::{
-    ConfigResponse, ExecuteMsg, ExtensionExecuteMsg, ExtensionQueryMsg, QueryMsg, StateResponse,
-    UpdateConfig, VaultenatorExtensionExecuteMsg, VaultenatorExtensionQueryMsg, VersionResponse,
+    ConfigResponse, ExecuteMsg, ExtensionExecuteMsg, ExtensionQueryMsg, QueryMsg, Redemption,
+    StateResponse, UpdateConfig, VaultenatorExtensionExecuteMsg, VaultenatorExtensionQueryMsg,
+    VersionResponse,
 };
 use neutron_std::types::cosmwasm::wasm::v1::MsgExecuteContractResponse;
 use neutron_test_tube::{
@@ -16,6 +17,73 @@ use vaultenator::ownership::OwnerProposal;
 
 // Execute Functions
 impl TestEnv {
+    pub fn deposit_fund(
+        &self,
+        wasm: &Wasm<OsmosisTestApp>,
+        contract_addr: &str,
+        funds: &[Coin],
+        signer: &SigningAccount,
+    ) -> RunnerExecuteResult<MsgExecuteContractResponse> {
+        let msg = ExecuteMsg::Deposit {
+            amount: Uint128::one(),
+            recipient: None,
+        };
+        wasm.execute(contract_addr, &msg, funds, signer)
+    }
+
+    pub fn redeem_fund(
+        &self,
+        wasm: &Wasm<OsmosisTestApp>,
+        contract_addr: &str,
+        amount: Coin,
+        signer: &SigningAccount,
+    ) -> RunnerExecuteResult<MsgExecuteContractResponse> {
+        let msg = ExecuteMsg::Redeem {
+            amount: Uint128::one(),
+            recipient: None,
+        };
+        wasm.execute(contract_addr, &msg, &[amount], signer)
+    }
+
+    pub fn cancel_redemption_fund(
+        &self,
+        wasm: &Wasm<OsmosisTestApp>,
+        contract_addr: &str,
+        signer: &SigningAccount,
+    ) -> RunnerExecuteResult<MsgExecuteContractResponse> {
+        let msg = ExecuteMsg::VaultExtension(ExtensionExecuteMsg::Vaultenator(
+            VaultenatorExtensionExecuteMsg::CancelRedemption {},
+        ));
+        wasm.execute(contract_addr, &msg, &[], signer)
+    }
+
+    pub fn create_redemption_fund(
+        &self,
+        wasm: &Wasm<OsmosisTestApp>,
+        contract_addr: &str,
+        funds: &[Coin],
+        signer: &SigningAccount,
+    ) -> RunnerExecuteResult<MsgExecuteContractResponse> {
+        let msg = ExecuteMsg::VaultExtension(ExtensionExecuteMsg::Vaultenator(
+            VaultenatorExtensionExecuteMsg::CreateRedemption {
+                amount: Uint128::one(),
+            },
+        ));
+        wasm.execute(contract_addr, &msg, funds, signer)
+    }
+
+    pub fn claim_ownership_fund(
+        &self,
+        wasm: &Wasm<OsmosisTestApp>,
+        contract_addr: &str,
+        signer: &SigningAccount,
+    ) -> RunnerExecuteResult<MsgExecuteContractResponse> {
+        let claim_ownership_msg = ExecuteMsg::VaultExtension(ExtensionExecuteMsg::Vaultenator(
+            VaultenatorExtensionExecuteMsg::ClaimOwnership {},
+        ));
+        wasm.execute(contract_addr, &claim_ownership_msg, &[], signer)
+    }
+
     pub fn propose_new_owner_fund(
         &self,
         wasm: &Wasm<OsmosisTestApp>,
@@ -44,34 +112,6 @@ impl TestEnv {
             VaultenatorExtensionExecuteMsg::Crank {},
         ));
         wasm.execute(contract_addr, &msg, &[], signer)
-    }
-
-    pub fn deposit_fund(
-        &self,
-        wasm: &Wasm<OsmosisTestApp>,
-        contract_addr: &str,
-        funds: &[Coin],
-        signer: &SigningAccount,
-    ) -> RunnerExecuteResult<MsgExecuteContractResponse> {
-        let msg = ExecuteMsg::Deposit {
-            amount: Uint128::one(),
-            recipient: None,
-        };
-        wasm.execute(contract_addr, &msg, funds, signer)
-    }
-
-    pub fn redeem_fund(
-        &self,
-        wasm: &Wasm<OsmosisTestApp>,
-        contract_addr: &str,
-        amount: Coin,
-        signer: &SigningAccount,
-    ) -> RunnerExecuteResult<MsgExecuteContractResponse> {
-        let msg = ExecuteMsg::Redeem {
-            amount: Uint128::one(),
-            recipient: None,
-        };
-        wasm.execute(contract_addr, &msg, &[amount], signer)
     }
 
     pub fn register_sudo_fund(
@@ -109,6 +149,24 @@ impl TestEnv {
     ) -> RunnerExecuteResult<MsgExecuteContractResponse> {
         let set_open_msg = ExecuteMsg::VaultExtension(ExtensionExecuteMsg::Vaultenator(
             VaultenatorExtensionExecuteMsg::Repay { cycle_profit },
+        ));
+        wasm.execute(contract_addr, &set_open_msg, funds, signer)
+    }
+
+    pub fn repay_queue_fund(
+        &self,
+        wasm: &Wasm<OsmosisTestApp>,
+        contract_addr: &str,
+        cycle_profit: Option<Decimal>,
+        limit: Option<u64>,
+        funds: &[Coin],
+        signer: &SigningAccount,
+    ) -> RunnerExecuteResult<MsgExecuteContractResponse> {
+        let set_open_msg = ExecuteMsg::VaultExtension(ExtensionExecuteMsg::Vaultenator(
+            VaultenatorExtensionExecuteMsg::RepayQueue {
+                cycle_profit,
+                limit,
+            },
         ));
         wasm.execute(contract_addr, &set_open_msg, funds, signer)
     }
@@ -162,18 +220,6 @@ impl TestEnv {
         wasm.execute(contract_addr, &set_unpause_msg, &[], signer)
     }
 
-    pub fn claim_ownership_fund(
-        &self,
-        wasm: &Wasm<OsmosisTestApp>,
-        contract_addr: &str,
-        signer: &SigningAccount,
-    ) -> RunnerExecuteResult<MsgExecuteContractResponse> {
-        let claim_ownership_msg = ExecuteMsg::VaultExtension(ExtensionExecuteMsg::Vaultenator(
-            VaultenatorExtensionExecuteMsg::ClaimOwnership {},
-        ));
-        wasm.execute(contract_addr, &claim_ownership_msg, &[], signer)
-    }
-
     pub fn reject_owner_fund(
         &self,
         wasm: &Wasm<OsmosisTestApp>,
@@ -189,6 +235,30 @@ impl TestEnv {
 
 // Query Functions
 impl TestEnv {
+    pub fn query_config_fund(
+        &self,
+        wasm: &Wasm<OsmosisTestApp>,
+        contract_addr: &str,
+    ) -> RunnerResult<ConfigResponse> {
+        let query_msg = QueryMsg::VaultExtension(ExtensionQueryMsg::Vaultenator(
+            VaultenatorExtensionQueryMsg::Config {},
+        ));
+
+        wasm.query(contract_addr, &query_msg)
+    }
+
+    pub fn query_estimate_vault_assets_fund(
+        &self,
+        wasm: &Wasm<OsmosisTestApp>,
+        contract_addr: &str,
+        amount: Uint128,
+    ) -> RunnerResult<Vec<Coin>> {
+        let query_msg = QueryMsg::VaultExtension(ExtensionQueryMsg::Vaultenator(
+            VaultenatorExtensionQueryMsg::EstimateVaultAssets { amount },
+        ));
+        wasm.query(contract_addr, &query_msg)
+    }
+
     pub fn query_owner_fund(
         &self,
         wasm: &Wasm<OsmosisTestApp>,
@@ -213,13 +283,14 @@ impl TestEnv {
         wasm.query(contract_addr, &query_msg)
     }
 
-    pub fn query_config_fund(
+    pub fn query_pending_redemptions_fund(
         &self,
         wasm: &Wasm<OsmosisTestApp>,
         contract_addr: &str,
-    ) -> RunnerResult<ConfigResponse> {
+        limit: Option<u64>,
+    ) -> RunnerResult<Vec<Redemption>> {
         let query_msg = QueryMsg::VaultExtension(ExtensionQueryMsg::Vaultenator(
-            VaultenatorExtensionQueryMsg::Config {},
+            VaultenatorExtensionQueryMsg::PendingRedemptions { limit },
         ));
 
         wasm.query(contract_addr, &query_msg)
@@ -232,6 +303,33 @@ impl TestEnv {
     ) -> RunnerResult<StateResponse> {
         let query_msg = QueryMsg::VaultExtension(ExtensionQueryMsg::Vaultenator(
             VaultenatorExtensionQueryMsg::State {},
+        ));
+
+        wasm.query(contract_addr, &query_msg)
+    }
+
+    pub fn query_withdrawable_amount_fund(
+        &self,
+        wasm: &Wasm<OsmosisTestApp>,
+        contract_addr: &str,
+    ) -> RunnerResult<StateResponse> {
+        let query_msg = QueryMsg::VaultExtension(ExtensionQueryMsg::Vaultenator(
+            VaultenatorExtensionQueryMsg::WithdrawableAmount {},
+        ));
+
+        wasm.query(contract_addr, &query_msg)
+    }
+
+    pub fn query_user_redemption_fund(
+        &self,
+        wasm: &Wasm<OsmosisTestApp>,
+        contract_addr: &str,
+        user: &str,
+    ) -> RunnerResult<Vec<Redemption>> {
+        let query_msg = QueryMsg::VaultExtension(ExtensionQueryMsg::Vaultenator(
+            VaultenatorExtensionQueryMsg::UserRedemption {
+                user: user.to_string(),
+            },
         ));
 
         wasm.query(contract_addr, &query_msg)
@@ -322,18 +420,6 @@ impl TestEnv {
     ) -> RunnerResult<Uint128> {
         let query_msg = QueryMsg::ConvertToAssets { amount };
 
-        wasm.query(contract_addr, &query_msg)
-    }
-
-    pub fn query_estimate_vault_assets_fund(
-        &self,
-        wasm: &Wasm<OsmosisTestApp>,
-        contract_addr: &str,
-        amount: Uint128,
-    ) -> RunnerResult<Vec<Coin>> {
-        let query_msg = QueryMsg::VaultExtension(ExtensionQueryMsg::Vaultenator(
-            VaultenatorExtensionQueryMsg::EstimateVaultAssets { amount },
-        ));
         wasm.query(contract_addr, &query_msg)
     }
 }

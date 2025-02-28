@@ -137,7 +137,7 @@ fn test_withdraw_with_float() {
 
     let mut msg = env.default_fund_instantiation_msg();
     msg.controller = strategy_addr.to_string();
-    msg.float = Decimal::from_str("0.05").unwrap();
+    msg.float = Some(Decimal::from_str("0.05").unwrap());
 
     let vault_addr = env.deploy_fund_contract(&wasm, msg);
 

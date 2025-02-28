@@ -1,0 +1,42 @@
+[package]
+authors = [ "Margined Protocol" ]
+edition = "2021"
+name    = "redemption"
+version = "0.1.0"
+
+exclude = [
+ # Those files are rust-optimizer artifacts. You might want to commit them for convenience but they should not be part of the source code publication.
+ "contract.wasm",
+ "hash.txt",
+]
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+crate-type = [ "cdylib", "rlib" ]
+
+[features]
+integration = [  ]
+library     = [  ]
+unit        = [  ]
+
+[dependencies]
+cosmwasm-schema   = { workspace = true }
+cosmwasm-std      = { workspace = true }
+cw-controllers    = { workspace = true }
+cw-storage-plus   = { workspace = true }
+cw-utils          = { workspace = true }
+cw-vault-standard = { workspace = true }
+cw2               = { workspace = true }
+interface         = { workspace = true }
+neutron-std       = { workspace = true }
+osmosis-std       = { workspace = true }
+prost             = { workspace = true }
+serde             = { workspace = true }
+serde-json-wasm   = { workspace = true }
+thiserror         = { workspace = true }
+
+[dev-dependencies]
+neutron-test-tube = { workspace = true }
+test-tube         = { workspace = true }
+testing           = { workspace = true }

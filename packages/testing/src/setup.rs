@@ -31,6 +31,7 @@ pub struct TestEnv {
     pub app: NeutronTestApp,
     pub signer: SigningAccount,
     pub controller: SigningAccount,
+    pub fund: SigningAccount,
     pub treasury: SigningAccount,
     pub traders: Vec<SigningAccount>,
 }
@@ -56,6 +57,14 @@ impl TestEnv {
 
         let controller = app
             .init_account(&[coin(1_000_000_000_000_000_000, GAS_DENOM)])
+            .unwrap();
+
+        let fund = app
+            .init_account(&[
+                coin(1_000_000_000_000_000_000, GAS_DENOM),
+                coin(1_000_000_000_000_000_000, BASE_DENOM),
+                coin(1_000_000_000_000_000_000, QUOTE_DENOM),
+            ])
             .unwrap();
 
         let treasury = app.init_account(&[coin(1000, GAS_DENOM)]).unwrap();
@@ -111,6 +120,7 @@ impl TestEnv {
             app,
             signer,
             controller,
+            fund,
             treasury,
             traders,
         }

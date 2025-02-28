@@ -24,8 +24,16 @@ pub enum ExtensionExecuteMsg {
 
 #[cw_serde]
 pub enum VaultenatorExtensionExecuteMsg {
-    Withdraw { tokens_to_withdraw: Vec<Coin> },
-    Repay { cycle_profit: Option<Decimal> },
+    Withdraw {
+        tokens_to_withdraw: Vec<Coin>,
+    },
+    Repay {
+        cycle_profit: Option<Decimal>,
+    },
+    RepayQueue {
+        cycle_profit: Option<Decimal>,
+        limit: Option<u64>,
+    },
 }
 
 pub fn handle_withdraw(
@@ -90,6 +98,44 @@ pub fn handle_repay(
         msg: to_json_binary(&VaultExecuteMsg::VaultExtension(
             ExtensionExecuteMsg::Vaultenator(VaultenatorExtensionExecuteMsg::Repay {
                 cycle_profit,
+            }),
+        ))?,
+        funds: tokens_to_repay.clone(),
+        contract_addr: vault.to_string(),
+    };
+
+    Ok(Response::default()
+        .add_event(event_repay(tokens_to_string(tokens_to_repay)))
+        .add_message(msg))
+}
+
+pub fn handle_repay_queue(
+    deps: DepsMut,
+    _env: Env,
+    info: MessageInfo,
+    tokens_to_repay: Vec<Coin>,
+    cycle_profit: Option<Decimal>,
+    limit: Option<u64>,
+) -> Result<Response, ContractError> {
+    let config = CONFIG.load(deps.storage)?;
+
+    ensure!(
+        config.controller == info.sender.to_string(),
+        ContractError::Unauthorized {}
+    );
+
+    let vault = match &config.vault {
+        Some(vault) => vault,
+        None => {
+            return Err(ContractError::VaultNotSet {});
+        }
+    };
+
+    let msg = WasmMsg::Execute {
+        msg: to_json_binary(&VaultExecuteMsg::VaultExtension(
+            ExtensionExecuteMsg::Vaultenator(VaultenatorExtensionExecuteMsg::RepayQueue {
+                cycle_profit,
+                limit,
             }),
         ))?,
         funds: tokens_to_repay.clone(),

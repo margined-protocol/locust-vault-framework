@@ -211,3 +211,27 @@ fn query_version() {
     assert_eq!(version.name, format!("crates.io:{CONTRACT_NAME}"));
     assert_eq!(version.version, CONTRACT_VERSION.to_string());
 }
+
+#[test]
+fn query_pending_redemptions() {
+    let env = TestEnv::new();
+    let wasm = Wasm::new(&env.app);
+    let vault_addr = env.deploy_fund_contract(&wasm, env.default_fund_instantiation_msg());
+    let pending_redemptions = env
+        .query_pending_redemptions_fund(&wasm, &vault_addr, None)
+        .unwrap();
+
+    assert!(pending_redemptions.is_empty());
+}
+
+#[test]
+fn query_user_redemption() {
+    let env = TestEnv::new();
+    let wasm = Wasm::new(&env.app);
+    let vault_addr = env.deploy_fund_contract(&wasm, env.default_fund_instantiation_msg());
+    let user_redemption = env
+        .query_user_redemption_fund(&wasm, &vault_addr, &env.traders[0].address())
+        .unwrap();
+
+    assert!(user_redemption.is_empty());
+}

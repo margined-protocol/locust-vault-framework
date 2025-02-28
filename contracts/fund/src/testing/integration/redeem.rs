@@ -1,4 +1,6 @@
-use cosmwasm_std::{assert_approx_eq, coin, coins, Uint128};
+use crate::testing::integration::queue::DUST;
+
+use cosmwasm_std::{coin, coins, Uint128};
 use interface::fund::StateResponse;
 use neutron_std::types::osmosis::tokenfactory::WhitelistedHook;
 use neutron_test_tube::{Account, Module, Wasm};
@@ -10,10 +12,12 @@ fn test_redeem() {
     let wasm = Wasm::new(&env.app);
 
     let strategy_addr = env.deploy_strategy_contract(&wasm, None);
+    let redemption_addr = env.deploy_redemption_contract(&wasm, None);
 
     let mut msg = env.default_fund_instantiation_msg();
     msg.controller = strategy_addr.to_string();
     msg.token1 = None;
+    msg.redemption_contract = redemption_addr.to_string();
 
     let vault_addr = env.deploy_fund_contract(&wasm, msg);
 
@@ -21,6 +25,14 @@ fn test_redeem() {
         .unwrap();
 
     env.set_open_fund(&wasm, &vault_addr, &env.signer).unwrap();
+    env.whitelist_fund(
+        &wasm,
+        &redemption_addr,
+        vault_addr.to_string(),
+        "Some metadata".to_string(),
+        &env.signer,
+    )
+    .unwrap();
 
     let config = env.query_config_fund(&wasm, &vault_addr).unwrap();
 
@@ -44,7 +56,10 @@ fn test_redeem() {
     assert!(trader_strategy_after.is_zero());
 
     let contract_base_after = env.get_balance(&vault_addr, BASE_DENOM);
-    assert_approx_eq!(contract_base_before, contract_base_after, "1");
+    assert_eq!(
+        contract_base_before.checked_add(DUST).unwrap(),
+        contract_base_after
+    );
 }
 
 #[test]
@@ -53,10 +68,12 @@ fn test_redeem_twice() {
     let wasm = Wasm::new(&env.app);
 
     let strategy_addr = env.deploy_strategy_contract(&wasm, None);
+    let redemption_addr = env.deploy_redemption_contract(&wasm, None);
 
     let mut msg = env.default_fund_instantiation_msg();
     msg.controller = strategy_addr.to_string();
     msg.token1 = None;
+    msg.redemption_contract = redemption_addr.to_string();
 
     let vault_addr = env.deploy_fund_contract(&wasm, msg);
 
@@ -64,6 +81,14 @@ fn test_redeem_twice() {
         .unwrap();
 
     env.set_open_fund(&wasm, &vault_addr, &env.signer).unwrap();
+    env.whitelist_fund(
+        &wasm,
+        &redemption_addr,
+        vault_addr.to_string(),
+        "Some metadata".to_string(),
+        &env.signer,
+    )
+    .unwrap();
 
     let config = env.query_config_fund(&wasm, &vault_addr).unwrap();
 
@@ -97,7 +122,10 @@ fn test_redeem_twice() {
     assert!(trader_strategy_after.is_zero());
 
     let contract_base_after = env.get_balance(&vault_addr, BASE_DENOM);
-    assert_approx_eq!(contract_base_before, contract_base_after, "1");
+    assert_eq!(
+        contract_base_before.checked_add(DUST).unwrap(),
+        contract_base_after
+    );
 }
 
 #[test]
@@ -106,10 +134,12 @@ fn test_redeem_multiple_users() {
     let wasm = Wasm::new(&env.app);
 
     let strategy_addr = env.deploy_strategy_contract(&wasm, None);
+    let redemption_addr = env.deploy_redemption_contract(&wasm, None);
 
     let mut msg = env.default_fund_instantiation_msg();
     msg.controller = strategy_addr.to_string();
     msg.token1 = None;
+    msg.redemption_contract = redemption_addr.to_string();
 
     let vault_addr = env.deploy_fund_contract(&wasm, msg);
 
@@ -117,6 +147,14 @@ fn test_redeem_multiple_users() {
         .unwrap();
 
     env.set_open_fund(&wasm, &vault_addr, &env.signer).unwrap();
+    env.whitelist_fund(
+        &wasm,
+        &redemption_addr,
+        vault_addr.to_string(),
+        "Some metadata".to_string(),
+        &env.signer,
+    )
+    .unwrap();
 
     let config = env.query_config_fund(&wasm, &vault_addr).unwrap();
 
@@ -148,10 +186,9 @@ fn test_redeem_multiple_users() {
     assert_eq!(state.total_staked_tokens, deposit_1.amount);
 
     let contract_base_after = env.get_balance(&vault_addr, BASE_DENOM);
-    assert_approx_eq!(
+    assert_eq!(
         contract_base_before.checked_add(deposit_1.amount).unwrap(),
-        contract_base_after,
-        "1"
+        contract_base_after
     );
 }
 
@@ -161,10 +198,12 @@ fn test_redeem_both_users() {
     let wasm = Wasm::new(&env.app);
 
     let strategy_addr = env.deploy_strategy_contract(&wasm, None);
+    let redemption_addr = env.deploy_redemption_contract(&wasm, None);
 
     let mut msg = env.default_fund_instantiation_msg();
     msg.controller = strategy_addr.to_string();
     msg.token1 = None;
+    msg.redemption_contract = redemption_addr.to_string();
 
     let vault_addr = env.deploy_fund_contract(&wasm, msg);
 
@@ -172,6 +211,15 @@ fn test_redeem_both_users() {
         .unwrap();
 
     env.set_open_fund(&wasm, &vault_addr, &env.signer).unwrap();
+    env.whitelist_fund(
+        &wasm,
+        &redemption_addr,
+        vault_addr.to_string(),
+        "Some metadata".to_string(),
+        &env.signer,
+    )
+    .unwrap();
+
     let config = env.query_config_fund(&wasm, &vault_addr).unwrap();
 
     let contract_base_before = env.get_balance(&vault_addr, BASE_DENOM);
@@ -206,7 +254,7 @@ fn test_redeem_both_users() {
     let contract_base_after = env.get_balance(&vault_addr, BASE_DENOM);
     assert_eq!(
         contract_base_before,
-        contract_base_after.checked_sub(1u128.into()).unwrap(),
+        contract_base_after.checked_sub(DUST).unwrap(),
     );
 }
 
@@ -215,11 +263,13 @@ fn test_redeem_end_to_end_with_repayment() {
     let env = TestEnv::new();
     let wasm = Wasm::new(&env.app);
 
+    let redemption_addr = env.deploy_redemption_contract(&wasm, None);
     let strategy_addr = env.deploy_strategy_contract(&wasm, None);
 
     let mut msg = env.default_fund_instantiation_msg();
     msg.controller = strategy_addr.to_string();
     msg.token1 = None;
+    msg.redemption_contract = redemption_addr.to_string();
 
     let vault_addr = env.deploy_fund_contract(&wasm, msg);
     let block_time = env.app.get_block_timestamp();
@@ -228,6 +278,14 @@ fn test_redeem_end_to_end_with_repayment() {
         .unwrap();
 
     env.set_open_fund(&wasm, &vault_addr, &env.signer).unwrap();
+    env.whitelist_fund(
+        &wasm,
+        &redemption_addr,
+        vault_addr.to_string(),
+        "Some metadata".to_string(),
+        &env.signer,
+    )
+    .unwrap();
 
     let config = env.query_config_fund(&wasm, &vault_addr).unwrap();
 
@@ -306,13 +364,16 @@ fn test_redeem_end_to_end_with_repayment() {
         assert_eq!(state, expected_state);
     }
 
+    // Claim redemption - trader 0
+    env.claim_redemption(&wasm, &redemption_addr, None, &env.traders[0])
+        .unwrap();
+
     let expected_profit = Uint128::new(16_611_296); // approx 1/3 of the profit
     let trader_base_after = env.get_balance(&env.traders[0].address(), BASE_DENOM);
 
-    assert_approx_eq!(
+    assert_eq!(
         trader_base_before.checked_add(expected_profit).unwrap(),
         trader_base_after,
-        "2"
     );
 }
 
@@ -321,11 +382,13 @@ fn test_redeem_end_to_end_with_partial_repayment() {
     let env = TestEnv::new();
     let wasm = Wasm::new(&env.app);
 
+    let redemption_addr = env.deploy_redemption_contract(&wasm, None);
     let strategy_addr = env.deploy_strategy_contract(&wasm, None);
 
     let mut msg = env.default_fund_instantiation_msg();
     msg.controller = strategy_addr.to_string();
     msg.token1 = None;
+    msg.redemption_contract = redemption_addr.to_string();
 
     let vault_addr = env.deploy_fund_contract(&wasm, msg);
     let block_time = env.app.get_block_timestamp();
@@ -334,6 +397,14 @@ fn test_redeem_end_to_end_with_partial_repayment() {
         .unwrap();
 
     env.set_open_fund(&wasm, &vault_addr, &env.signer).unwrap();
+    env.whitelist_fund(
+        &wasm,
+        &redemption_addr,
+        vault_addr.to_string(),
+        "Some metadata".to_string(),
+        &env.signer,
+    )
+    .unwrap();
 
     let config = env.query_config_fund(&wasm, &vault_addr).unwrap();
 
@@ -381,6 +452,21 @@ fn test_redeem_end_to_end_with_partial_repayment() {
         let repay_amount = coins(100_000_000, BASE_DENOM);
         env.repay_strategy(&wasm, &strategy_addr, repay_amount, None, &env.controller)
             .unwrap();
+
+        let latest_block_time = env.app.get_block_timestamp();
+
+        let expected_state = StateResponse {
+            is_open: true,
+            is_paused: false,
+            total_staked_tokens: Uint128::new(300_000_000),
+            total_withdrawn_tokens: coins(50_000_000, BASE_DENOM), // Shortfall in repayment
+            last_pause: block_time,
+            last_claim: latest_block_time,
+            pending_management_fees: vec![],
+        };
+
+        let state = env.query_state_fund(&wasm, &vault_addr).unwrap();
+        assert_eq!(state, expected_state);
     }
 
     // Trader redeems
@@ -408,14 +494,14 @@ fn test_redeem_end_to_end_with_partial_repayment() {
         assert_eq!(state, expected_state);
     }
 
-    let expected_loss = Uint128::new(16_611_296); // approx 1/3 of the loss
+    // Claim redemption - trader 0
+    env.claim_redemption(&wasm, &redemption_addr, None, &env.traders[0])
+        .unwrap();
+
+    // let expected_loss = Uint128::new(16_611_296); // approx 1/3 of the loss
     let trader_base_after = env.get_balance(&env.traders[0].address(), BASE_DENOM);
 
-    assert_approx_eq!(
-        trader_base_before.checked_sub(expected_loss).unwrap(),
-        trader_base_after,
-        "2"
-    );
+    assert_eq!(trader_base_before, trader_base_after);
 }
 
 #[test]
@@ -423,10 +509,12 @@ fn test_redeem_end_to_end_with_repayment_multiple_denom() {
     let env = TestEnv::new();
     let wasm = Wasm::new(&env.app);
 
+    let redemption_addr = env.deploy_redemption_contract(&wasm, None);
     let strategy_addr = env.deploy_strategy_contract(&wasm, None);
 
     let mut msg = env.default_fund_instantiation_msg();
     msg.controller = strategy_addr.to_string();
+    msg.redemption_contract = redemption_addr.to_string();
 
     let vault_addr = env.deploy_fund_contract(&wasm, msg);
     let block_time = env.app.get_block_timestamp();
@@ -435,6 +523,14 @@ fn test_redeem_end_to_end_with_repayment_multiple_denom() {
         .unwrap();
 
     env.set_open_fund(&wasm, &vault_addr, &env.signer).unwrap();
+    env.whitelist_fund(
+        &wasm,
+        &redemption_addr,
+        vault_addr.to_string(),
+        "Some metadata".to_string(),
+        &env.signer,
+    )
+    .unwrap();
 
     let config = env.query_config_fund(&wasm, &vault_addr).unwrap();
 
@@ -533,17 +629,26 @@ fn test_redeem_end_to_end_with_repayment_multiple_denom() {
         assert_eq!(state, expected_state);
     }
 
-    let expected_profit = Uint128::new(16_611_296); // approx 1/3 of the profit
+    // Claim redemption - trader 0
+    env.claim_redemption(&wasm, &redemption_addr, None, &env.traders[0])
+        .unwrap();
+
+    let expected_base_share = Uint128::new(44_105_572);
+    let expected_quote_share = Uint128::new(29_472_141);
     let trader_base_after = env.get_balance(&env.traders[0].address(), BASE_DENOM);
     let trader_quote_after = env.get_balance(&env.traders[0].address(), QUOTE_DENOM);
 
-    assert_approx_eq!(
-        trader_base_before.checked_add(expected_profit).unwrap(),
-        trader_base_after,
-        "2"
+    assert_eq!(
+        trader_base_before.checked_add(expected_base_share).unwrap(),
+        trader_base_after
     );
 
-    assert_approx_eq!(trader_quote_before, trader_quote_after, "2");
+    assert_eq!(
+        trader_quote_before
+            .checked_sub(expected_quote_share)
+            .unwrap(),
+        trader_quote_after
+    );
 }
 
 #[test]
@@ -551,24 +656,34 @@ fn test_redeem_from_second_user() {
     let env = TestEnv::new();
     let wasm = Wasm::new(&env.app);
 
+    let redemption_addr = env.deploy_redemption_contract(&wasm, None);
     let strategy_addr = env.deploy_strategy_contract(&wasm, None);
 
     let mut msg = env.default_fund_instantiation_msg();
     msg.controller = strategy_addr.to_string();
     msg.token1 = None;
+    msg.redemption_contract = redemption_addr.to_string();
 
     let vault_addr = env.deploy_fund_contract(&wasm, msg);
 
     env.set_vault_strategy(&wasm, &strategy_addr, &vault_addr, &env.signer)
         .unwrap();
     env.whitelist_hooks(vec![WhitelistedHook {
-        code_id: 2,
+        code_id: 3,
         denom_creator: vault_addr.to_string(),
     }]);
 
     env.register_sudo_fund(&wasm, &vault_addr, &env.signer)
         .unwrap();
     env.set_open_fund(&wasm, &vault_addr, &env.signer).unwrap();
+    env.whitelist_fund(
+        &wasm,
+        &redemption_addr,
+        vault_addr.to_string(),
+        "Some metadata".to_string(),
+        &env.signer,
+    )
+    .unwrap();
 
     let config = env.query_config_fund(&wasm, &vault_addr).unwrap();
 
@@ -601,7 +716,10 @@ fn test_redeem_from_second_user() {
     assert!(trader_strategy_after.is_zero());
 
     let contract_base_after = env.get_balance(&vault_addr, BASE_DENOM);
-    assert_approx_eq!(contract_base_before, contract_base_after, "1");
+    assert_eq!(
+        contract_base_before.checked_add(DUST).unwrap(),
+        contract_base_after
+    );
 }
 
 #[test]
@@ -609,25 +727,34 @@ fn test_redeem_from_second_user_multiple_times() {
     let env = TestEnv::new();
     let wasm = Wasm::new(&env.app);
 
+    let redemption_addr = env.deploy_redemption_contract(&wasm, None);
     let strategy_addr = env.deploy_strategy_contract(&wasm, None);
 
     let mut msg = env.default_fund_instantiation_msg();
     msg.controller = strategy_addr.to_string();
     msg.token1 = None;
+    msg.redemption_contract = redemption_addr.to_string();
 
     let vault_addr = env.deploy_fund_contract(&wasm, msg);
 
     env.set_vault_strategy(&wasm, &strategy_addr, &vault_addr, &env.signer)
         .unwrap();
-
     env.whitelist_hooks(vec![WhitelistedHook {
-        code_id: 2,
+        code_id: 3,
         denom_creator: vault_addr.to_string(),
     }]);
 
     env.register_sudo_fund(&wasm, &vault_addr, &env.signer)
         .unwrap();
     env.set_open_fund(&wasm, &vault_addr, &env.signer).unwrap();
+    env.whitelist_fund(
+        &wasm,
+        &redemption_addr,
+        vault_addr.to_string(),
+        "Some metadata".to_string(),
+        &env.signer,
+    )
+    .unwrap();
 
     let config = env.query_config_fund(&wasm, &vault_addr).unwrap();
 
@@ -672,5 +799,8 @@ fn test_redeem_from_second_user_multiple_times() {
     assert!(trader_strategy_after.is_zero());
 
     let contract_base_after = env.get_balance(&vault_addr, BASE_DENOM);
-    assert_approx_eq!(contract_base_before, contract_base_after, "1");
+    assert_eq!(
+        contract_base_before.checked_add(DUST).unwrap(),
+        contract_base_after
+    );
 }

@@ -985,7 +985,7 @@ dependencies = [
 
 [[package]]
 name = "fund"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "cosmwasm-schema",
  "cosmwasm-std",
@@ -2126,6 +2126,29 @@ dependencies = [
 ]
 
 [[package]]
+name = "redemption"
+version = "0.1.0"
+dependencies = [
+ "cosmwasm-schema",
+ "cosmwasm-std",
+ "cw-controllers",
+ "cw-storage-plus",
+ "cw-utils",
+ "cw-vault-standard-margined",
+ "cw2",
+ "interface",
+ "margined-neutron-std 5.0.1",
+ "neutron-test-tube",
+ "osmosis-std",
+ "prost 0.13.3",
+ "serde",
+ "serde-json-wasm",
+ "test-tube-ntrn",
+ "testing",
+ "thiserror",
+]
+
+[[package]]
 name = "regex"
 version = "1.11.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2610,7 +2633,7 @@ checksum = "a2eb9349b6444b326872e140eb1cf5e7c522154d69e7a0ffb0fb81c06b37543f"
 
 [[package]]
 name = "strategy"
-version = "0.0.4"
+version = "0.1.0"
 dependencies = [
  "cosmwasm-schema",
  "cosmwasm-std",

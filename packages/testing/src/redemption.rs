@@ -1,142 +1,153 @@
 use crate::setup::TestEnv;
 
-use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{Coin, Decimal};
+use cosmwasm_std::Coin;
+use interface::redemption::{
+    ConfigResponse, ExecuteMsg, FundInfo, OwnerProposal, PendingRedemption, QueryMsg,
+};
 use neutron_std::types::cosmwasm::wasm::v1::MsgExecuteContractResponse;
 use neutron_test_tube::{
     NeutronTestApp as OsmosisTestApp, RunnerExecuteResult, RunnerResult, SigningAccount, Wasm,
 };
-// use osmosis_test_tube::{OsmosisTestApp, RunnerExecuteResult, RunnerResult, SigningAccount, Wasm};
-
-use interface::strategy::{ConfigResponse, ExecuteMsg, QueryMsg};
-
-#[cw_serde]
-pub enum AstroExecuteMsg {
-    AppendPrice { price: Decimal },
-}
 
 // Execute Functions
 impl TestEnv {
-    pub fn repay_strategy(
+    pub fn send_redemption(
         &self,
         wasm: &Wasm<OsmosisTestApp>,
         contract_addr: &str,
-        tokens_to_repay: Vec<Coin>,
-        cycle_profit: Option<Decimal>,
+        redemption: PendingRedemption,
+        funds: &[Coin],
         signer: &SigningAccount,
     ) -> RunnerExecuteResult<MsgExecuteContractResponse> {
-        let msg = ExecuteMsg::Repay {
-            tokens_to_repay,
-            cycle_profit,
+        let msg = ExecuteMsg::SendRedemption { redemption };
+        wasm.execute(contract_addr, &msg, funds, signer)
+    }
+
+    pub fn claim_redemption(
+        &self,
+        wasm: &Wasm<OsmosisTestApp>,
+        contract_addr: &str,
+        limit: Option<u32>,
+        signer: &SigningAccount,
+    ) -> RunnerExecuteResult<MsgExecuteContractResponse> {
+        let msg = ExecuteMsg::ClaimRedemption { limit };
+        wasm.execute(contract_addr, &msg, &[], signer)
+    }
+
+    pub fn update_config(
+        &self,
+        wasm: &Wasm<OsmosisTestApp>,
+        contract_addr: &str,
+        add_fund: Option<FundInfo>,
+        remove_fund: Option<FundInfo>,
+        signer: &SigningAccount,
+    ) -> RunnerExecuteResult<MsgExecuteContractResponse> {
+        let msg = ExecuteMsg::UpdateConfig {
+            add_fund,
+            remove_fund,
         };
-
         wasm.execute(contract_addr, &msg, &[], signer)
     }
 
-    pub fn withdraw_strategy(
+    pub fn whitelist_fund(
         &self,
         wasm: &Wasm<OsmosisTestApp>,
         contract_addr: &str,
-        tokens_to_withdraw: Vec<Coin>,
+        address: String,
+        metadata: String,
         signer: &SigningAccount,
     ) -> RunnerExecuteResult<MsgExecuteContractResponse> {
-        let msg = ExecuteMsg::Withdraw { tokens_to_withdraw };
-
-        wasm.execute(contract_addr, &msg, &[], signer)
-    }
-
-    pub fn set_vault_strategy(
-        &self,
-        wasm: &Wasm<OsmosisTestApp>,
-        contract_addr: &str,
-        vault: &str,
-        signer: &SigningAccount,
-    ) -> RunnerExecuteResult<MsgExecuteContractResponse> {
-        let msg = ExecuteMsg::SetVault {
-            vault: vault.to_string(),
+        let msg = ExecuteMsg::UpdateConfig {
+            add_fund: Some(FundInfo { address, metadata }),
+            remove_fund: None,
         };
-
         wasm.execute(contract_addr, &msg, &[], signer)
     }
 
-    pub fn set_grants_strategy(
+    pub fn propose_new_owner(
         &self,
         wasm: &Wasm<OsmosisTestApp>,
         contract_addr: &str,
-        grants: Vec<String>,
+        new_owner: String,
+        duration: u64,
         signer: &SigningAccount,
     ) -> RunnerExecuteResult<MsgExecuteContractResponse> {
-        let msg = ExecuteMsg::SetGrants { grants };
-
+        let msg = ExecuteMsg::ProposeNewOwner {
+            new_owner,
+            duration,
+        };
         wasm.execute(contract_addr, &msg, &[], signer)
     }
 
-    pub fn update_config_strategy(
+    pub fn reject_owner(
         &self,
         wasm: &Wasm<OsmosisTestApp>,
         contract_addr: &str,
-        grants: Option<Vec<String>>,
-        controller: Option<String>,
         signer: &SigningAccount,
     ) -> RunnerExecuteResult<MsgExecuteContractResponse> {
-        let msg = ExecuteMsg::UpdateConfig { grants, controller };
-
+        let msg = ExecuteMsg::RejectOwner {};
         wasm.execute(contract_addr, &msg, &[], signer)
     }
 
-    pub fn set_astro_price_strategy(
+    pub fn claim_ownership(
         &self,
         wasm: &Wasm<OsmosisTestApp>,
         contract_addr: &str,
-        price: Decimal,
         signer: &SigningAccount,
     ) -> RunnerExecuteResult<MsgExecuteContractResponse> {
-        let msg = AstroExecuteMsg::AppendPrice { price };
-
+        let msg = ExecuteMsg::ClaimOwnership {};
         wasm.execute(contract_addr, &msg, &[], signer)
     }
 }
 
 // Query Functions
 impl TestEnv {
-    pub fn query_config_strategy(
+    pub fn query_config_redemption(
         &self,
         wasm: &Wasm<OsmosisTestApp>,
         contract_addr: &str,
     ) -> RunnerResult<ConfigResponse> {
         let query_msg = QueryMsg::Config {};
-
         wasm.query(contract_addr, &query_msg)
     }
 
-    pub fn query_grants_strategy(
+    pub fn query_all_redemptions(
         &self,
         wasm: &Wasm<OsmosisTestApp>,
         contract_addr: &str,
-    ) -> RunnerResult<Vec<String>> {
-        let query_msg = QueryMsg::Grants {};
-
+        start_after: Option<(String, u64)>,
+        limit: Option<u32>,
+    ) -> RunnerResult<Vec<PendingRedemption>> {
+        let query_msg = QueryMsg::AllRedemptions { start_after, limit };
         wasm.query(contract_addr, &query_msg)
     }
 
-    pub fn query_spot_price_strategy(
+    pub fn query_redemptions(
         &self,
         wasm: &Wasm<OsmosisTestApp>,
         contract_addr: &str,
-    ) -> RunnerResult<Decimal> {
-        let query_msg = QueryMsg::SpotPrice {};
-
+        user: String,
+        limit: Option<u32>,
+    ) -> RunnerResult<Vec<PendingRedemption>> {
+        let query_msg = QueryMsg::Redemptions { user, limit };
         wasm.query(contract_addr, &query_msg)
     }
 
-    pub fn query_twap_price_strategy(
+    pub fn query_owner(
         &self,
         wasm: &Wasm<OsmosisTestApp>,
         contract_addr: &str,
-        duration: u64,
-    ) -> RunnerResult<Decimal> {
-        let query_msg = QueryMsg::TwapPrice { duration };
+    ) -> RunnerResult<String> {
+        let query_msg = QueryMsg::Owner {};
+        wasm.query(contract_addr, &query_msg)
+    }
 
+    pub fn query_ownership_proposal(
+        &self,
+        wasm: &Wasm<OsmosisTestApp>,
+        contract_addr: &str,
+    ) -> RunnerResult<OwnerProposal> {
+        let query_msg = QueryMsg::GetOwnershipProposal {};
         wasm.query(contract_addr, &query_msg)
     }
 }
