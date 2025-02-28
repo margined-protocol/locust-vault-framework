@@ -1,5 +1,5 @@
 use cosmwasm_std::{assert_approx_eq, coin, coins, Uint128};
-use osmosis_test_tube::{Account, Module, Wasm};
+use neutron_test_tube::{Account, Module, Wasm};
 use testing::setup::{TestEnv, BASE_DENOM, ONE_WEEK_IN_SECONDS, QUOTE_DENOM};
 use vault::authz::{AltDenom, StateResponse};
 

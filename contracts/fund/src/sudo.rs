@@ -1,12 +1,18 @@
 use crate::{
-    config::Config,
-    events::event_sudo,
-    queries::get_balance,
-    state::{UserDeposit, USER_DEPOSITS},
+    events::{event_register_sudo, event_sudo},
+    helpers::map_to_contract_error,
+    queries::external::get_balance,
+    storage::{
+        config::Config,
+        state::{UserDeposit, USER_DEPOSITS},
+    },
 };
-
-use cosmwasm_std::{ensure, Coin, Decimal, Deps, DepsMut, Env, Response, StdError, Uint128};
-use vaultenator::{config::Configure, errors::ContractError};
+use cosmwasm_std::{
+    ensure, Coin, Decimal, Deps, DepsMut, Env, MessageInfo, Response, StdError, Uint128,
+};
+use cw_utils::nonpayable;
+use osmosis_std::types::osmosis::tokenfactory::v1beta1::MsgSetBeforeSendHook;
+use vaultenator::{config::Configure, errors::ContractError, state::OWNER};
 
 pub const NEUTRON_TOKEN_FACTORY_ADDRESS: &str = "neutron19ejy8n9qsectrf4semdp9cpknflld0j6el50hx";
 pub const OSMOSIS_TOKEN_FACTORY_ADDRESS: &str = "osmo19ejy8n9qsectrf4semdp9cpknflld0j64mwamn";
@@ -58,7 +64,35 @@ pub fn sudo_block_before_send(
     USER_DEPOSITS.save(deps.storage, sender, &sender_deposit)?;
     USER_DEPOSITS.save(deps.storage, receiver, &receiver_deposit)?;
 
-    Ok(Response::default().add_event(event_sudo(&to, &from, &sent)))
+    Ok(Response::default()
+        .add_attribute("register_sudo", &config.strategy_denom)
+        .add_event(event_sudo(&to, &from, &sent)))
+}
+
+pub fn handle_register_sudo(
+    deps: DepsMut,
+    env: Env,
+    info: MessageInfo,
+) -> Result<Response, ContractError> {
+    nonpayable(&info).map_err(map_to_contract_error)?;
+
+    let config = Config::get_from_storage(deps.as_ref())?;
+
+    // Function can only be called by admin
+    OWNER.assert_admin(deps.as_ref(), &info.sender)?;
+
+    // set beforesend listener to this contract
+    // this will trigger sudo endpoint before any bank send
+    // which makes blacklisting / freezing possible
+    let set_before_send_hook_msg = MsgSetBeforeSendHook {
+        sender: env.contract.address.to_string(),
+        denom: config.strategy_denom,
+        cosmwasm_address: env.contract.address.to_string(),
+    };
+
+    Ok(Response::default()
+        .add_message(set_before_send_hook_msg)
+        .add_event(event_register_sudo()))
 }
 
 fn calculate_and_adjust_deposits(
@@ -70,9 +104,12 @@ fn calculate_and_adjust_deposits(
     receiver_deposit: &mut UserDeposit,
 ) -> Result<(), ContractError> {
     let user_vault_token_balance = get_balance(deps, from, &config.strategy_denom)?;
+    let total_user_vault_token_balance = user_vault_token_balance
+        .checked_add(sent_amount)
+        .map_err(ContractError::Overflow)?;
 
-    let burn_ratio = Decimal::from_ratio(sent_amount, user_vault_token_balance);
-    let sender_deposit_sent = sender_deposit.total_deposits * burn_ratio;
+    let burn_ratio = Decimal::from_ratio(sent_amount, total_user_vault_token_balance);
+    let sender_deposit_sent = sender_deposit.total_deposits.mul_floor(burn_ratio);
 
     sender_deposit.remove_from_user_deposits(sender_deposit_sent)?;
     receiver_deposit.add_to_user_deposits(sender_deposit_sent)?;

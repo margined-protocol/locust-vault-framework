@@ -1,10 +1,8 @@
-use crate::{config::Config, contract::StructuredVault, messages::create_mint_message};
+use crate::{contract::StructuredVault, messages::create_mint_message, storage::config::Config};
 
 use cosmwasm_std::{DepsMut, Env, Reply, Response, SubMsgResult, Uint128};
 use num_enum::TryFromPrimitive;
-use osmosis_std::types::osmosis::tokenfactory::v1beta1::{
-    MsgCreateDenomResponse, MsgSetBeforeSendHook,
-};
+use osmosis_std::types::osmosis::tokenfactory::v1beta1::MsgCreateDenomResponse;
 use strum::IntoStaticStr;
 use vaultenator::{errors::ContractError, reply::ReplyHandler};
 
@@ -41,17 +39,7 @@ pub fn reply_create_strategy_denom(
         response.new_token_denom.to_string(),
     );
 
-    // set beforesend listener to this contract
-    // this will trigger sudo endpoint before any bank send
-    // which makes blacklisting / freezing possible
-    let set_before_send_hook_msg = MsgSetBeforeSendHook {
-        sender: env.contract.address.to_string(),
-        denom: response.new_token_denom.to_string(),
-        cosmwasm_address: env.contract.address.to_string(),
-    };
-
     Ok(Response::default()
         .add_attribute("strategy_denom", &response.new_token_denom)
-        .add_message(mint_msg)
-        .add_message(set_before_send_hook_msg))
+        .add_message(mint_msg))
 }

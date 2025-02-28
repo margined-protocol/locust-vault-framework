@@ -12,14 +12,16 @@ readme       = "README.md"
 repository   = "https://github.com/margined-protocol/locust-vaults"
 resolver     = "2"
 rust-version = { workspace = true }
-version      = "0.0.5"
+version      = "0.2.0"
 
 [lib]
 crate-type = [ "cdylib", "rlib" ]
 
 [features]
-backtraces = [ "cosmwasm-std/backtraces" ]
-library    = [  ]
+integration = [  ]
+library     = [  ]
+migration   = [  ]
+unit        = [  ]
 
 [dependencies]
 cosmwasm-schema   = { workspace = true }
@@ -42,6 +44,8 @@ strum             = { workspace = true }
 vaultenator       = { workspace = true }
 
 [dev-dependencies]
-osmosis-test-tube = { workspace = true }
+# osmosis-test-tube = { workspace = true }
+neutron-std       = { workspace = true }
+neutron-test-tube = { workspace = true }
 test-tube         = { workspace = true }
 testing           = { workspace = true }

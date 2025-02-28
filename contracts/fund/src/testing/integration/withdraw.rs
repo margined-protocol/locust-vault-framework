@@ -1,6 +1,6 @@
 use cosmwasm_std::{coin, coins, Decimal, StdError, Uint128};
 use interface::fund::StateResponse;
-use osmosis_test_tube::{Module, Wasm};
+use neutron_test_tube::{Module, Wasm};
 use std::str::FromStr;
 use testing::{
     setup::{TestEnv, BASE_DENOM, QUOTE_DENOM},
@@ -137,7 +137,7 @@ fn test_withdraw_with_float() {
 
     let mut msg = env.default_fund_instantiation_msg();
     msg.controller = strategy_addr.to_string();
-    msg.float = Decimal::from_str("0.05").unwrap();
+    msg.float = Some(Decimal::from_str("0.05").unwrap());
 
     let vault_addr = env.deploy_fund_contract(&wasm, msg);
 

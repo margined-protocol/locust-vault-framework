@@ -1,18 +1,23 @@
 use crate::setup::TestEnv;
 
-use cosmwasm_std::{Decimal, Uint128};
-use osmosis_std::types::{
-    cosmos::{bank::v1beta1::MsgSend, base::v1beta1::Coin as OsmoCoin},
-    osmosis::poolmanager::v1beta1::{PoolRequest, SpotPriceRequest},
+use cosmwasm_std::Uint128;
+use neutron_std::types::cosmos::{bank::v1beta1::MsgSend, base::v1beta1::Coin as OsmoCoin};
+use neutron_test_tube::{
+    neutron_std::types::cosmos::bank::v1beta1::{QueryBalanceRequest, QueryTotalSupplyRequest},
+    Account, Bank, Module, SigningAccount,
 };
-use osmosis_test_tube::{
-    cosmrs::proto::traits::Message,
-    osmosis_std::types::{
-        cosmos::bank::v1beta1::{QueryBalanceRequest, QueryTotalSupplyRequest},
-        osmosis::concentratedliquidity::v1beta1::Pool,
-    },
-    Account, Bank, Module, PoolManager, SigningAccount,
-};
+// use osmosis_std::types::{
+//     cosmos::{bank::v1beta1::MsgSend, base::v1beta1::Coin as OsmoCoin},
+//     osmosis::poolmanager::v1beta1::{PoolRequest, SpotPriceRequest},
+// };
+// use osmosis_test_tube::{
+//     cosmrs::proto::traits::Message,
+//     osmosis_std::types::{
+//         cosmos::bank::v1beta1::{QueryBalanceRequest, QueryTotalSupplyRequest},
+//         osmosis::concentratedliquidity::v1beta1::Pool,
+//     },
+//     Account, Bank, Module, PoolManager, SigningAccount,
+// };
 use std::str::FromStr;
 
 impl TestEnv {
@@ -46,31 +51,31 @@ impl TestEnv {
         }
     }
 
-    pub fn get_pool(&self, pool_id: u64) -> Pool {
-        let poolmanager = PoolManager::new(&self.app);
-        let res = poolmanager.query_pool(&PoolRequest { pool_id }).unwrap();
-        Pool::decode(res.pool.unwrap().value.as_ref()).unwrap()
-    }
+    // pub fn get_pool(&self, pool_id: u64) -> Pool {
+    //     let poolmanager = PoolManager::new(&self.app);
+    //     let res = poolmanager.query_pool(&PoolRequest { pool_id }).unwrap();
+    //     Pool::decode(res.pool.unwrap().value.as_ref()).unwrap()
+    // }
 
-    pub fn get_spot_price(
-        &self,
-        pool_id: u64,
-        base_asset_denom: &str,
-        quote_asset_denom: &str,
-    ) -> Decimal {
-        let pm = PoolManager::new(&self.app);
+    // pub fn get_spot_price(
+    //     &self,
+    //     pool_id: u64,
+    //     base_asset_denom: &str,
+    //     quote_asset_denom: &str,
+    // ) -> Decimal {
+    //     let pm = PoolManager::new(&self.app);
 
-        let res = pm
-            .query_spot_price(&SpotPriceRequest {
-                pool_id,
-                base_asset_denom: base_asset_denom.to_string(),
-                quote_asset_denom: quote_asset_denom.to_string(),
-            })
-            .unwrap()
-            .spot_price;
+    //     let res = pm
+    //         .query_spot_price(&SpotPriceRequest {
+    //             pool_id,
+    //             base_asset_denom: base_asset_denom.to_string(),
+    //             quote_asset_denom: quote_asset_denom.to_string(),
+    //         })
+    //         .unwrap()
+    //         .spot_price;
 
-        Decimal::from_str(&res).unwrap()
-    }
+    //     Decimal::from_str(&res).unwrap()
+    // }
 
     pub fn get_total_supply(&self, denom: &str) -> Uint128 {
         let bank = Bank::new(&self.app);

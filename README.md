@@ -1,6 +1,6 @@
-# Transfigure
+# Locust Vault Framework
 
-This repo contains the code base for `Transfigure` a framework that enables non-custodial execution of sophisticated strategies.
+This repo contains the code base for `Locust Vault Framework` a framework that enables non-custodial execution of sophisticated strategies.
 
 To do this the framework is compromised of a `Fund Vault` and `Strategy Contract`. The fund vault simply holds funds and the strategy contract executes actions with said funds.
 

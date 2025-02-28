@@ -1,8 +1,10 @@
 use crate::{
-    config::Config,
     math::{calculate_management_fee, YEAR_IN_SECONDS},
-    queries::{get_balance, get_total_supply, query_twap_price},
-    state::{State, TWAP_PERIOD},
+    queries::external::{get_balance, get_total_supply, query_twap_price},
+    storage::{
+        config::Config,
+        state::{State, TWAP_PERIOD},
+    },
 };
 
 use cosmwasm_std::{
@@ -19,7 +21,7 @@ pub fn calculate_assets_value(
     state: &State,
     contract_addr: &str,
 ) -> StdResult<Uint128> {
-    let tokens = get_assets(deps, config, state, contract_addr)?;
+    let tokens = get_total_vault_assets(deps, config, state, contract_addr)?;
 
     get_deposit_value(deps, config, tokens)
 }
@@ -31,9 +33,9 @@ pub fn calculate_assets_to_redeem(
     contract_addr: &str,
     withdraw_percentage: Decimal,
 ) -> Result<Vec<Coin>, ContractError> {
-    let mut assets = get_assets(deps, config, state, contract_addr)?;
+    let mut assets = get_total_vault_assets(deps, config, state, contract_addr)?;
     for asset in &mut assets {
-        asset.amount = asset.amount * withdraw_percentage;
+        asset.amount = asset.amount.mul_floor(withdraw_percentage);
     }
     Ok(assets)
 }
@@ -47,7 +49,25 @@ pub fn calculate_amount_to_mint(
 
     let normalized_delta = Decimal::from_ratio(delta_liquidity, *previous_assets);
 
-    normalized_delta * total_supply
+    total_supply.mul_floor(normalized_delta)
+}
+
+pub fn calculate_amount_withdrawable(
+    deps: &Deps,
+    config: &Config,
+    state: &State,
+    contract_address: &str,
+    denom: &str,
+) -> StdResult<Uint128> {
+    let balance = get_balance(deps, contract_address, denom)?;
+
+    let total_balance = balance.checked_add(state.get_total_withdrawn_tokens(denom))?;
+
+    let float = config.float.unwrap_or(Decimal::zero());
+
+    let float_amount = total_balance.mul_floor(float);
+
+    Ok(balance.saturating_sub(float_amount))
 }
 
 pub fn calculate_total_value(
@@ -68,7 +88,7 @@ pub fn calculate_total_value(
 
             let amount = Uint128::from_str(&asset.amount.to_string())?;
 
-            total += twap * amount;
+            total += amount.mul_floor(twap);
         }
     }
     Ok(total)
@@ -79,7 +99,7 @@ pub fn calculate_performance_fees(coins: Vec<Coin>, fee_rate: Decimal) -> StdRes
 
     for coin in coins {
         let initial_amount = coin.amount;
-        let fee = initial_amount * fee_rate;
+        let fee = initial_amount.mul_floor(fee_rate);
 
         if !fee.is_zero() {
             fees.push(cosmwasm_std::coin(fee.u128(), coin.denom.clone()));
@@ -146,7 +166,25 @@ pub fn get_amount_to_mint(
     Ok(amount_to_mint)
 }
 
-pub fn get_assets(
+pub fn get_vault_balance(
+    deps: &Deps,
+    config: &Config,
+    contract_addr: &str,
+) -> StdResult<Vec<Coin>> {
+    let tokens = get_vault_coins(deps, config, contract_addr)?;
+
+    let mut assets = Vec::new();
+    for token in tokens {
+        assets.push(Coin {
+            denom: token.denom,
+            amount: token.amount,
+        });
+    }
+
+    Ok(assets)
+}
+
+pub fn get_total_vault_assets(
     deps: &Deps,
     config: &Config,
     state: &State,
@@ -291,7 +329,7 @@ pub fn get_sent_tokens(info: &MessageInfo, config: &Config) -> StdResult<Vec<Coi
         }
         None => {
             let token_deposit = must_pay(info, &config.token0)
-                .map_err(|_| StdError::generic_err("Failed to retrieve token deposit"))?;
+                .map_err(|_| StdError::generic_err("No tokens sent"))?;
 
             let token_coin = coin(token_deposit.u128(), &config.token0);
 

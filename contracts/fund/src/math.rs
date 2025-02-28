@@ -1,4 +1,4 @@
-use crate::queries::get_total_supply;
+use crate::queries::external::get_total_supply;
 
 use cosmwasm_std::{Decimal, Deps, StdResult, Uint128};
 
@@ -24,7 +24,7 @@ pub fn calculate_amount_to_mint(
     let delta_liquidity = current_assets.saturating_sub(*previous_assets);
     let normalized_delta = Decimal::from_ratio(delta_liquidity, *previous_assets);
 
-    normalized_delta * total_supply
+    total_supply.mul_floor(normalized_delta)
 }
 
 pub fn calculate_management_fee(
@@ -38,5 +38,5 @@ pub fn calculate_management_fee(
 
     let fee_multiplier = management_fee * elapsed_time_multiplier;
 
-    fee_multiplier * amount
+    amount.mul_floor(fee_multiplier)
 }

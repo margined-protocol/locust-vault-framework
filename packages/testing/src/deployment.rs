@@ -5,12 +5,14 @@ use crate::{
 
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{coin, Coin, Decimal};
-use interface::{fund as Fund, strategy as Strategy};
-use osmosis_std::types::{
+use interface::{fund as Fund, redemption as Redemption, strategy as Strategy};
+use neutron_std::types::{
     cosmwasm::wasm::v1::MsgInstantiateContractResponse,
-    osmosis::concentratedliquidity::v1beta1::MsgCreatePosition,
+    neutron::dex::MsgPlaceLimitOrder as DefaultMsg,
 };
-use osmosis_test_tube::{Account, OsmosisTestApp, RunnerExecuteResult, SigningAccount, Wasm};
+use neutron_test_tube::{
+    Account, NeutronTestApp as OsmosisTestApp, RunnerExecuteResult, SigningAccount, Wasm,
+};
 use serde::Serialize;
 
 #[cw_serde]
@@ -47,11 +49,11 @@ pub fn get_default_instantiation_msg(env: &TestEnv) -> Strategy::InstantiateMsg 
         controller: env.controller.address(),
         token0: BASE_DENOM.to_string(),
         token1: None,
-        grants: vec![MsgCreatePosition::TYPE_URL.to_string()],
-        pool_info: Strategy::PoolInfo::Osmosis {
-            id: 1,
-            token0: BASE_DENOM.to_string(),
-            token1: QUOTE_DENOM.to_string(),
+        grants: vec![DefaultMsg::TYPE_URL.to_string()],
+        pool_info: Strategy::PoolInfo::Slinky {
+            base: BASE_DENOM.to_uppercase(),
+            quote: QUOTE_DENOM.to_uppercase(),
+            timeout: 3_600u64,
         },
     }
 }
@@ -87,6 +89,19 @@ impl TestEnv {
         let funds = vec![coin(DEFAULT_LIQUIDITY, BASE_DENOM)];
 
         self.instantiate_contract(wasm, &msg, funds, &self.signer, "fund")
+            .unwrap()
+            .data
+            .address
+    }
+
+    pub fn deploy_redemption_contract(
+        &self,
+        wasm: &Wasm<OsmosisTestApp>,
+        msg: Option<Redemption::InstantiateMsg>,
+    ) -> String {
+        let msg = msg.unwrap_or_else(|| self.default_redemption_instantiation_msg());
+
+        self.instantiate_contract(wasm, &msg, vec![], &self.signer, "redemption")
             .unwrap()
             .data
             .address
@@ -131,21 +146,14 @@ impl TestEnv {
         .address
     }
 
-    // pub fn set_vault(&self, wasm: &Wasm<OsmosisTestApp>, address: &str, vault: &str) {
-    //     let msg = StrategyContractExecuteMsg::SetVault {
-    //         vault: vault.to_string(),
-    //     };
-
-    //     wasm.execute(address, &msg, &[], &self.signer).unwrap();
-    // }
-
     pub fn default_fund_instantiation_msg(&self) -> Fund::InstantiateMsg {
         Fund::InstantiateMsg {
             admin: self.signer.address().to_string(),
             controller: self.controller.address().to_string(),
             treasury: self.treasury.address().to_string(),
             strategy_cap: STRATEGY_CAP,
-            float: Decimal::zero(),
+            float: Some(Decimal::zero()),
+            redemption_contract: self.controller.address().to_string(), // Placeholder for tests that need it must be deployed
             token0: BASE_DENOM.to_string(),
             token1: Some(QUOTE_DENOM.to_string()),
             management_fee_rate: Decimal::zero(),
@@ -160,11 +168,22 @@ impl TestEnv {
             float: None,
             controller: None,
             treasury: None,
+            redemption_contract: None,
             management_fee_rate: None,
             performance_fee_rate: None,
             instant_withdraw_penalty: None,
             penalty_duration: None,
             estimate_cycle_profit: None,
+        }
+    }
+
+    pub fn default_redemption_instantiation_msg(&self) -> Redemption::InstantiateMsg {
+        Redemption::InstantiateMsg {
+            admin: self.signer.address().to_string(),
+            whitelisted_funds: vec![Redemption::FundInfo {
+                address: self.fund.address().to_string(),
+                metadata: "test fund".to_string(),
+            }],
         }
     }
 }

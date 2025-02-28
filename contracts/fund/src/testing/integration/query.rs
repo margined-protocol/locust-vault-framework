@@ -6,7 +6,7 @@ use crate::{
 use cosmwasm_std::{coin, StdError, Uint128};
 use cw_vault_standard::{VaultStandardInfoResponse, VaultStandardQueryMsg};
 use interface::fund::QueryMsg;
-use osmosis_test_tube::{Account, Module, Wasm};
+use neutron_test_tube::{Account, Module, Wasm};
 use testing::{
     setup::{TestEnv, BASE_DENOM, QUOTE_DENOM},
     utils::assert_err,
@@ -24,7 +24,7 @@ fn query_vault_standard_info() {
             &VaultStandardQueryMsg::VaultStandardInfo {},
         )
         .unwrap();
-    assert_eq!(vault_info.version, "1".to_string());
+    assert_eq!(vault_info.version, 1.to_string());
     assert_eq!(vault_info.extensions.len(), 2);
     let expected_extensions = vec!["lockup".to_string(), "force-unlock".to_string()];
     assert_eq!(vault_info.extensions, expected_extensions);
@@ -210,4 +210,28 @@ fn query_version() {
 
     assert_eq!(version.name, format!("crates.io:{CONTRACT_NAME}"));
     assert_eq!(version.version, CONTRACT_VERSION.to_string());
+}
+
+#[test]
+fn query_pending_redemptions() {
+    let env = TestEnv::new();
+    let wasm = Wasm::new(&env.app);
+    let vault_addr = env.deploy_fund_contract(&wasm, env.default_fund_instantiation_msg());
+    let pending_redemptions = env
+        .query_pending_redemptions_fund(&wasm, &vault_addr, None)
+        .unwrap();
+
+    assert!(pending_redemptions.is_empty());
+}
+
+#[test]
+fn query_user_redemption() {
+    let env = TestEnv::new();
+    let wasm = Wasm::new(&env.app);
+    let vault_addr = env.deploy_fund_contract(&wasm, env.default_fund_instantiation_msg());
+    let user_redemption = env
+        .query_user_redemption_fund(&wasm, &vault_addr, &env.traders[0].address())
+        .unwrap();
+
+    assert!(user_redemption.is_empty());
 }

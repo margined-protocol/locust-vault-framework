@@ -2,7 +2,7 @@
 authors = [ "Margined Protocol" ]
 edition = "2021"
 name    = "strategy"
-version = "0.0.2"
+version = "0.1.0"
 
 exclude = [
  # Those files are rust-optimizer artifacts. You might want to commit them for convenience but they should not be part of the source code publication.
@@ -16,15 +16,29 @@ exclude = [
 crate-type = [ "cdylib", "rlib" ]
 
 [features]
-backtraces = [ "cosmwasm-std/backtraces" ]
-default    = [ "osmosis" ]
-library    = [  ]
+default = [ "slinky" ]
+library = [  ]
 
 astroport = [  ]
+drop      = [  ]
 osmosis   = [  ]
+slinky    = [  ]
 
 [package.metadata.optimizer]
-builds        = [ { name = "astroport", features = [ "astroport" ], default-features = false }, { name = "osmosis", features = [ "osmosis" ], default-features = false } ]
+builds = [
+ { name = "astroport", features = [
+  "astroport",
+ ], default-features = false },
+ { name = "drop", features = [
+  "drop",
+ ], default-features = false },
+ { name = "osmosis", features = [
+  "osmosis",
+ ], default-features = false },
+ { name = "slinky", features = [
+  "slinky",
+ ], default-features = false },
+]
 default-build = true
 
 [dependencies]
@@ -36,6 +50,7 @@ cw-utils          = { workspace = true }
 cw-vault-standard = { workspace = true }
 cw2               = { workspace = true }
 interface         = { workspace = true }
+neutron-std       = { workspace = true }
 osmosis-std       = { workspace = true }
 prost             = { workspace = true }
 serde             = { workspace = true }
@@ -43,6 +58,6 @@ serde-json-wasm   = { workspace = true }
 thiserror         = { workspace = true }
 
 [dev-dependencies]
-osmosis-test-tube = { workspace = true }
+neutron-test-tube = { workspace = true }
 test-tube         = { workspace = true }
 testing           = { workspace = true }

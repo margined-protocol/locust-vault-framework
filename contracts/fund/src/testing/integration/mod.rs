@@ -4,6 +4,7 @@ pub mod deposit;
 pub mod fees;
 pub mod instantiation;
 pub mod query;
+pub mod queue;
 pub mod redeem;
 pub mod repay;
 pub mod withdraw;

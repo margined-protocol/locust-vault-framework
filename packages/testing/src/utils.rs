@@ -1,5 +1,9 @@
-use osmosis_std::types::cosmwasm::wasm::v1::MsgExecuteContractResponse;
-use osmosis_test_tube::{ExecuteResponse, OsmosisTestApp, RunnerError, SigningAccount, Wasm};
+use neutron_std::types::cosmwasm::wasm::v1::MsgExecuteContractResponse;
+use neutron_test_tube::{
+    ExecuteResponse, NeutronTestApp as OsmosisTestApp, RunnerError, SigningAccount, Wasm,
+};
+// use osmosis_std::types::cosmwasm::wasm::v1::MsgExecuteContractResponse;
+// use osmosis_test_tube::{ExecuteResponse, OsmosisTestApp, RunnerError, SigningAccount, Wasm};
 use std::{fmt::Display, fs, path::PathBuf};
 
 pub fn wasm_file(contract_name: &str) -> Result<String, String> {

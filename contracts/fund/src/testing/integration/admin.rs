@@ -1,5 +1,5 @@
 use cw_controllers::AdminError;
-use osmosis_test_tube::{Module, Wasm};
+use neutron_test_tube::{Module, Wasm};
 use testing::{
     setup::TestEnv,
     utils::{assert_err, contains_event},

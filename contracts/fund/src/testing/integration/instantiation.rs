@@ -2,7 +2,7 @@ use crate::reply::INITIAL_TOKEN_SUPPLY;
 
 use cosmwasm_std::{coins, Decimal, StdError, Uint128};
 use interface::fund::{ConfigResponse, InstantiateMsg, StateResponse};
-use osmosis_test_tube::{Account, Module, Wasm};
+use neutron_test_tube::{Account, Module, Wasm};
 use testing::{
     setup::{TestEnv, BASE_DENOM, QUOTE_DENOM, STRATEGY_CAP},
     utils::assert_err,
@@ -18,12 +18,13 @@ fn test_instantiation() {
         admin: env.signer.address().to_string(),
         controller: env.signer.address().to_string(),
         treasury: env.treasury.address().to_string(),
+        redemption_contract: env.signer.address().to_string(),
         token0: BASE_DENOM.to_string(),
         token1: None,
         strategy_cap: STRATEGY_CAP,
         management_fee_rate: Decimal::zero(),
         performance_fee_rate: Decimal::zero(),
-        float: Decimal::zero(),
+        float: Some(Decimal::zero()),
         vault_type: "fund".to_string(),
     };
 
@@ -45,12 +46,13 @@ fn test_instantiation() {
     let expected_config = ConfigResponse {
         admin: env.signer.address().to_string(),
         strategy_cap: STRATEGY_CAP,
-        float: Decimal::zero(),
+        float: Some(Decimal::zero()),
         strategy_denom: format!("factory/{}/fund", vault_addr),
         controller: env.signer.address(),
         token0: BASE_DENOM.to_string(),
         token1: None,
         treasury: env.treasury.address(),
+        redemption_contract: env.signer.address().to_string(),
         management_fee_rate: Decimal::zero(),
         performance_fee_rate: Decimal::zero(),
         estimate_cycle_profit: None,
@@ -103,8 +105,9 @@ fn test_fail_instantiation_strategy_cap_zero() {
         strategy_cap: Uint128::zero(),
         management_fee_rate: Decimal::zero(),
         performance_fee_rate: Decimal::zero(),
-        float: Decimal::zero(),
+        float: Some(Decimal::zero()),
         treasury: env.treasury.address().to_string(),
+        redemption_contract: env.signer.address().to_string(),
         vault_type: "fund".to_string(),
     };
 
@@ -132,8 +135,9 @@ fn test_fail_instantiation_performance_fee_rate_invalid() {
         strategy_cap: STRATEGY_CAP,
         management_fee_rate: Decimal::zero(),
         performance_fee_rate: Decimal::percent(21),
-        float: Decimal::zero(),
+        float: Some(Decimal::zero()),
         treasury: env.treasury.address().to_string(),
+        redemption_contract: env.signer.address().to_string(),
         vault_type: "fund".to_string(),
     };
 
@@ -161,8 +165,9 @@ fn test_fail_instantiation_float_invalid() {
         strategy_cap: STRATEGY_CAP,
         management_fee_rate: Decimal::zero(),
         performance_fee_rate: Decimal::percent(10),
-        float: Decimal::percent(11),
+        float: Some(Decimal::percent(11)),
         treasury: env.treasury.address().to_string(),
+        redemption_contract: env.signer.address().to_string(),
         vault_type: "fund".to_string(),
     };
 
@@ -190,8 +195,9 @@ fn test_fail_instantiation_management_fee_invalid() {
         strategy_cap: STRATEGY_CAP,
         management_fee_rate: Decimal::percent(21),
         performance_fee_rate: Decimal::zero(),
-        float: Decimal::zero(),
+        float: Some(Decimal::zero()),
         treasury: env.treasury.address().to_string(),
+        redemption_contract: env.signer.address().to_string(),
         vault_type: "fund".to_string(),
     };
 

@@ -2,7 +2,8 @@ use crate::{
     errors::ContractError,
     events::event_migrate,
     handle::{
-        handle_repay, handle_set_grants, handle_set_vault, handle_update_config, handle_withdraw,
+        handle_repay, handle_repay_queue, handle_set_grants, handle_set_vault,
+        handle_update_config, handle_withdraw,
     },
     ownership::{
         get_ownership_proposal, handle_claim_ownership, handle_ownership_proposal,
@@ -80,6 +81,11 @@ pub fn execute(
             tokens_to_repay,
             cycle_profit,
         } => handle_repay(deps, env, info, tokens_to_repay, cycle_profit),
+        ExecuteMsg::RepayQueue {
+            tokens_to_repay,
+            cycle_profit,
+            limit,
+        } => handle_repay_queue(deps, env, info, tokens_to_repay, cycle_profit, limit),
         ExecuteMsg::SetVault { vault } => handle_set_vault(deps, env, info, vault),
         ExecuteMsg::SetGrants { grants } => handle_set_grants(deps, env, info, grants),
         ExecuteMsg::UpdateConfig { grants, controller } => {
@@ -112,7 +118,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
         QueryMsg::Config {} => to_json_binary(&query_config(&deps)?),
         QueryMsg::Grants {} => to_json_binary(&query_grants(&deps)?),
-        QueryMsg::SpotPrice {} => to_json_binary(&query_spot_price(&deps)?),
+        QueryMsg::SpotPrice {} => to_json_binary(&query_spot_price(&deps, env)?),
         QueryMsg::TwapPrice { duration } => {
             to_json_binary(&query_twap_price(&deps, env, duration)?)
         }
@@ -131,7 +137,7 @@ pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, C
 
     match contract_version.contract.as_ref() {
         "crates.io:strategy" => match contract_version.version.as_ref() {
-            "0.0.1" => {
+            "0.0.4" => {
                 set_contract_version(
                     deps.storage,
                     format!("crates.io:{CONTRACT_NAME}"),

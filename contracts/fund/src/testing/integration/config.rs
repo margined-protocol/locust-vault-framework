@@ -1,6 +1,6 @@
 use cosmwasm_std::Uint128;
 use interface::fund::UpdateConfig;
-use osmosis_test_tube::{Module, Wasm};
+use neutron_test_tube::{Module, Wasm};
 use testing::setup::{TestEnv, BASE_DENOM};
 
 #[test]
@@ -18,6 +18,7 @@ fn update_config() {
         strategy_cap: Some(100u128.into()),
         float: None,
         controller: None,
+        redemption_contract: None,
         management_fee_rate: None,
         performance_fee_rate: None,
         estimate_cycle_profit: None,

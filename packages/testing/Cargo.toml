@@ -5,18 +5,20 @@ name    = "testing"
 version = "0.1.0"
 
 [features]
-backtraces = [ "cosmwasm-std/backtraces" ]
 
 [dependencies]
-cosmrs            = { version = "0.15.0" }
+cosmrs            = { workspace = true }
 cosmwasm-schema   = { workspace = true }
 cosmwasm-std      = { workspace = true }
 cw-vault-standard = { workspace = true }
 cw_margined       = { workspace = true }
 interface         = { workspace = true }
+neutron-std       = { workspace = true }
+neutron-test-tube = { workspace = true }
 osmosis-std       = { workspace = true }
-osmosis-test-tube = { workspace = true }
-prost             = { workspace = true }
-regex             = { workspace = true }
-serde             = { workspace = true }
-vaultenator       = { workspace = true }
+test-tube         = { workspace = true }
+# osmosis-test-tube = { workspace = true }
+prost       = { workspace = true }
+regex       = { workspace = true }
+serde       = { workspace = true }
+vaultenator = { workspace = true }

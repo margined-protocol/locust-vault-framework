@@ -1,6 +1,7 @@
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{coin, Decimal};
-use osmosis_test_tube::{Module, Wasm};
+use neutron_std::types::osmosis::tokenfactory::WhitelistedHook;
+use neutron_test_tube::{Module, Wasm};
 use testing::{
     setup::{TestEnv, BASE_DENOM, QUOTE_DENOM},
     utils::contains_event_with_attributes,
@@ -15,7 +16,7 @@ enum StrategyContractQueryMsg {
 pub const HALF_YEAR_IN_SECONDS: u64 = 15_768_000;
 
 #[test]
-fn testt_fees() {
+fn test_fees() {
     let env = TestEnv::new();
     let wasm = Wasm::new(&env.app);
 
@@ -30,7 +31,13 @@ fn testt_fees() {
     env.set_vault_strategy(&wasm, &strategy_addr, &vault_addr, &env.signer)
         .unwrap();
 
+    env.whitelist_hooks(vec![WhitelistedHook {
+        code_id: 2,
+        denom_creator: vault_addr.to_string(),
+    }]);
+
     env.set_open_fund(&wasm, &vault_addr, &env.signer).unwrap();
+    env.set_slinky();
 
     let deposit = coin(100_000_000, BASE_DENOM);
     let res = env
@@ -50,12 +57,12 @@ fn testt_fees() {
     ));
 
     env.app.increase_time(HALF_YEAR_IN_SECONDS);
+    env.set_slinky();
 
     let deposit = coin(100_000_000, BASE_DENOM);
     let res = env
         .deposit_fund(&wasm, &vault_addr, &[deposit.clone()], &env.traders[0])
         .unwrap();
-    println!("{:#?}", res);
     assert!(contains_event_with_attributes(
         &res,
         "fees",
@@ -129,6 +136,7 @@ fn test_fees_multiple_denoms() {
     ));
 
     env.app.increase_time(HALF_YEAR_IN_SECONDS);
+    env.set_slinky();
 
     let base = coin(200_000_000, BASE_DENOM);
     let quote = coin(10_000_000, QUOTE_DENOM);
@@ -146,7 +154,6 @@ fn test_fees_multiple_denoms() {
         Some("fee_type"),
         Some("management")
     ));
-    println!("res: {:#?}", res);
     assert!(contains_event_with_attributes(
         &res,
         "fees",
@@ -155,6 +162,7 @@ fn test_fees_multiple_denoms() {
     ));
 
     env.app.increase_time(HALF_YEAR_IN_SECONDS);
+    env.set_slinky();
 
     let res = env.crank_fund(&wasm, &vault_addr, &env.traders[0]).unwrap();
     assert!(contains_event_with_attributes(
@@ -167,7 +175,7 @@ fn test_fees_multiple_denoms() {
         &res,
         "fees",
         Some("fees"),
-        Some(&format!("2999900{}, 595000{}", BASE_DENOM, QUOTE_DENOM)),
+        Some(&format!("2999901{}, 595000{}", BASE_DENOM, QUOTE_DENOM)),
     ));
 }
 
@@ -210,6 +218,7 @@ fn test_fees_all_assets_withdrawn() {
         .unwrap();
 
     env.app.increase_time(HALF_YEAR_IN_SECONDS);
+    env.set_slinky();
 
     let res = env.crank_fund(&wasm, &vault_addr, &env.traders[0]).unwrap();
     assert!(contains_event_with_attributes(
@@ -232,6 +241,7 @@ fn test_fees_all_assets_withdrawn() {
     );
 
     env.app.increase_time(HALF_YEAR_IN_SECONDS);
+    env.set_slinky();
 
     let res = env.crank_fund(&wasm, &vault_addr, &env.traders[0]).unwrap();
     assert!(contains_event_with_attributes(
@@ -254,6 +264,7 @@ fn test_fees_all_assets_withdrawn() {
     );
 
     env.app.increase_time(HALF_YEAR_IN_SECONDS);
+    env.set_slinky();
 
     let deposit = coin(100_000_000, BASE_DENOM);
     let res = env

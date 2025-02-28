@@ -36,7 +36,7 @@ pub fn event_set_grants(grants: Vec<String>) -> Event {
 }
 
 pub fn event_update_config(grants: Option<Vec<String>>, controller: Option<String>) -> Event {
-    Event::new("set_grants").add_attributes([
+    Event::new("update_config").add_attributes([
         ("version", CONTRACT_VERSION),
         ("contract", CONTRACT_NAME),
         ("grants", &grants.unwrap_or_default().join(",")),

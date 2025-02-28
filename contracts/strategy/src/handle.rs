@@ -24,8 +24,16 @@ pub enum ExtensionExecuteMsg {
 
 #[cw_serde]
 pub enum VaultenatorExtensionExecuteMsg {
-    Withdraw { tokens_to_withdraw: Vec<Coin> },
-    Repay { cycle_profit: Option<Decimal> },
+    Withdraw {
+        tokens_to_withdraw: Vec<Coin>,
+    },
+    Repay {
+        cycle_profit: Option<Decimal>,
+    },
+    RepayQueue {
+        cycle_profit: Option<Decimal>,
+        limit: Option<u64>,
+    },
 }
 
 pub fn handle_withdraw(
@@ -39,7 +47,7 @@ pub fn handle_withdraw(
     let config = CONFIG.load(deps.storage)?;
 
     ensure!(
-        config.controller == info.sender,
+        config.controller == info.sender.to_string(),
         ContractError::Unauthorized {}
     );
 
@@ -75,7 +83,7 @@ pub fn handle_repay(
     let config = CONFIG.load(deps.storage)?;
 
     ensure!(
-        config.controller == info.sender,
+        config.controller == info.sender.to_string(),
         ContractError::Unauthorized {}
     );
 
@@ -101,6 +109,44 @@ pub fn handle_repay(
         .add_message(msg))
 }
 
+pub fn handle_repay_queue(
+    deps: DepsMut,
+    _env: Env,
+    info: MessageInfo,
+    tokens_to_repay: Vec<Coin>,
+    cycle_profit: Option<Decimal>,
+    limit: Option<u64>,
+) -> Result<Response, ContractError> {
+    let config = CONFIG.load(deps.storage)?;
+
+    ensure!(
+        config.controller == info.sender.to_string(),
+        ContractError::Unauthorized {}
+    );
+
+    let vault = match &config.vault {
+        Some(vault) => vault,
+        None => {
+            return Err(ContractError::VaultNotSet {});
+        }
+    };
+
+    let msg = WasmMsg::Execute {
+        msg: to_json_binary(&VaultExecuteMsg::VaultExtension(
+            ExtensionExecuteMsg::Vaultenator(VaultenatorExtensionExecuteMsg::RepayQueue {
+                cycle_profit,
+                limit,
+            }),
+        ))?,
+        funds: tokens_to_repay.clone(),
+        contract_addr: vault.to_string(),
+    };
+
+    Ok(Response::default()
+        .add_event(event_repay(tokens_to_string(tokens_to_repay)))
+        .add_message(msg))
+}
+
 pub fn handle_set_vault(
     deps: DepsMut,
     _env: Env,
@@ -109,7 +155,10 @@ pub fn handle_set_vault(
 ) -> Result<Response, ContractError> {
     let mut config = CONFIG.load(deps.storage)?;
 
-    ensure!(config.admin == info.sender, ContractError::Unauthorized {});
+    ensure!(
+        config.admin == info.sender.to_string(),
+        ContractError::Unauthorized {}
+    );
 
     config.vault = Some(vault.clone());
     config.validate(&deps.as_ref())?;
@@ -127,7 +176,10 @@ pub fn handle_set_grants(
 ) -> Result<Response, ContractError> {
     let mut config = CONFIG.load(deps.storage)?;
 
-    ensure!(config.admin == info.sender, ContractError::Unauthorized {});
+    ensure!(
+        config.admin == info.sender.to_string(),
+        ContractError::Unauthorized {}
+    );
 
     let revoke_msgs = revoke_authz_grant_messages(
         env.contract.address.as_str(),
@@ -162,7 +214,10 @@ pub fn handle_update_config(
 ) -> Result<Response, ContractError> {
     let mut config = CONFIG.load(deps.storage)?;
 
-    ensure!(config.admin == info.sender, ContractError::Unauthorized {});
+    ensure!(
+        config.admin == info.sender.as_str(),
+        ContractError::Unauthorized {}
+    );
 
     let revoke_msgs = revoke_authz_grant_messages(
         env.contract.address.as_str(),
