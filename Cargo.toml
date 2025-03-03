@@ -21,7 +21,7 @@ neutron-std       = { package = "margined-neutron-std", version = "5.0.1" }
 neutron-test-tube = { version = "=5.0.1-debug" }
 num_enum          = { version = "0.7.2" }
 osmosis-std       = { version = "0.26.0" }
-prost             = { version = "0.13.3" }
+prost             = { version = "0.13.5" }
 prost-types       = { version = "0.13.3" }
 regex             = { version = "1.10.5" }
 serde             = { version = "1.0.201" }
