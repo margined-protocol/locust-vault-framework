@@ -150,6 +150,13 @@ neutrond tx wasm execute $CONTRACT_ADDRESS "{\"vault_extension\": {\"vaultenator
 
 ```bash
 neutrond tx wasm execute $CONTRACT_ADDRESS "{\"set_vault\": {\"vault\":\"neutron1egc0ujxyqh8p35nxrvxd04uq0z9536k6fvwzwecfgjj9yg7wkdgq2jzj38\"}}"  --from=deployer --gas=auto --gas-prices 0.0053untrn --gas-adjustment 1.3 --output=json --node=$NODE --chain-id=$CHAIN_ID
+osmosisd tx wasm execute $CONTRACT_ADDRESS "{\"set_vault\": {\"vault\":\"osmo164na5ukfshzze06el9xv8dz0j4znz2h73xkg228k7symzwgljtzq7k8d8d\"}}"  --from=deployer --gas=auto --gas-prices 0.0053uosmo --gas-adjustment 1.3 --output=json --node=$NODE --chain-id=$CHAIN_ID
+```
+
+#### Set Vault
+
+```bash
+osmosisd tx wasm execute $CONTRACT_ADDRESS "{\"claim_redemption\": {}}"  --from=deployer --gas=auto --gas-prices 0.0053uosmo --gas-adjustment 1.3 --output=json --node=$NODE --chain-id=$CHAIN_ID
 ```
 
 #### Update Config
@@ -217,6 +224,12 @@ neutrond q wasm contract-state smart $CONTRACT_ADDRESS "{\"vault_extension\": {\
 
 ```bash
 neutrond q wasm contract-state smart $CONTRACT_ADDRESS "{\"vault_extension\": {\"vaultenator\": {\"withdrawable_amount\": {}}}}" --node=$NODE --output=json | jq .
+```
+
+#### All Redemptions
+
+```bash
+neutrond q wasm contract-state smart $CONTRACT_ADDRESS "{\"all_redemptions\": {}}" --node=$NODE --output=json | jq .
 ```
 
 #### Wasm Contract Info

@@ -3,4 +3,6 @@
 debug/
 target/
 artifacts/
+wasm_artifacts/
+schema/
 

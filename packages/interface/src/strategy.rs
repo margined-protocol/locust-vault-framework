@@ -1,4 +1,4 @@
-use cosmwasm_schema::cw_serde;
+use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{Addr, Coin, Decimal};
 
 #[cw_serde]
@@ -47,12 +47,19 @@ pub enum ExecuteMsg {
 }
 
 #[cw_serde]
+#[derive(QueryResponses)]
 pub enum QueryMsg {
+    #[returns(ConfigResponse)]
     Config {},
+    #[returns(Vec<String>)]
     Grants {},
+    #[returns(Decimal)]
     SpotPrice {},
+    #[returns(Decimal)]
     TwapPrice { duration: u64 },
+    #[returns(String)]
     Owner {},
+    #[returns(OwnerProposal)]
     GetOwnershipProposal {},
 }
 

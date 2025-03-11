@@ -69,6 +69,3 @@ pub fn query_redemptions(
 
     Ok(redemptions)
 }
-
-#[cfg(test)]
-mod tests {}
