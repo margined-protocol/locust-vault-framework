@@ -14,7 +14,9 @@ pub struct InstantiateMsg {
 }
 
 #[cw_serde]
-pub struct MigrateMsg {}
+pub struct MigrateMsg {
+    pub send_authorization: Option<SendAuthorization>,
+}
 
 #[cw_serde]
 pub enum ExecuteMsg {
