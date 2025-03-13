@@ -1,6 +1,6 @@
 use crate::{contract::StructuredVault, messages::create_mint_message, storage::config::Config};
 
-use cosmwasm_std::{DepsMut, Env, Reply, Response, SubMsgResult, Uint128};
+use cosmwasm_std::{from_json, DepsMut, Env, Reply, Response, SubMsgResult, Uint128};
 use num_enum::TryFromPrimitive;
 use osmosis_std::types::osmosis::tokenfactory::v1beta1::MsgCreateDenomResponse;
 use strum::IntoStaticStr;
@@ -31,11 +31,13 @@ pub fn reply_create_strategy_denom(
     let sub_msg_response: SubMsgResult = msg.result;
     let response: MsgCreateDenomResponse = sub_msg_response.try_into()?;
 
+    let initial_token_supply: Uint128 = from_json(msg.payload)?;
+
     // Set mint_to_address to recipient if set, sender if not
     let mint_msg = create_mint_message(
         &env.contract.address,
         env.contract.address.to_string(),
-        INITIAL_TOKEN_SUPPLY,
+        initial_token_supply,
         response.new_token_denom.to_string(),
     );
 

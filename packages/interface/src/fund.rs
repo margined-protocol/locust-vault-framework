@@ -15,6 +15,7 @@ pub struct InstantiateMsg {
     pub management_fee_rate: Decimal,
     pub performance_fee_rate: Decimal,
     pub vault_type: String,
+    pub initial_token_supply: Option<Uint128>, // Override the initial token supply of the vault
 }
 
 #[cw_serde]

@@ -160,6 +160,7 @@ impl TestEnv {
             management_fee_rate: Decimal::zero(),
             performance_fee_rate: Decimal::zero(),
             vault_type: "fund".to_string(),
+            initial_token_supply: None,
         }
     }
 
