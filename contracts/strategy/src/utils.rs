@@ -1,9 +1,12 @@
 use crate::errors::ContractError;
 
 use cosmwasm_std::{AnyMsg, Binary, Coin, CosmosMsg, StdError};
-use osmosis_std::{
+use neutron_std::{
     shim::Any,
-    types::cosmos::authz::v1beta1::{GenericAuthorization, Grant, MsgGrant, MsgRevoke},
+    types::cosmos::{
+        authz::v1beta1::{GenericAuthorization, Grant, MsgGrant, MsgRevoke},
+        bank::v1beta1::SendAuthorization,
+    },
 };
 use prost::Message;
 use std::fmt::Display;
@@ -14,6 +17,30 @@ pub fn tokens_to_string(tokens: Vec<Coin>) -> String {
         .map(|coin| format!("{}{}", coin.amount, coin.denom))
         .collect::<Vec<String>>()
         .join(",")
+}
+
+pub fn create_authz_allow_list_messages(
+    granter: &str,
+    grantee: &str,
+    authorization: &SendAuthorization,
+) -> CosmosMsg {
+    CosmosMsg::Any(AnyMsg {
+        type_url: MsgGrant::TYPE_URL.to_string(),
+        value: Binary::from(
+            MsgGrant {
+                granter: granter.to_string(),
+                grantee: grantee.to_string(),
+                grant: Some(Grant {
+                    authorization: Some(Any {
+                        type_url: SendAuthorization::TYPE_URL.to_string(),
+                        value: authorization.encode_to_vec(),
+                    }),
+                    expiration: None,
+                }),
+            }
+            .encode_to_vec(),
+        ),
+    })
 }
 
 pub fn create_authz_grant_messages(

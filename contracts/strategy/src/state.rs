@@ -3,6 +3,7 @@ use cosmwasm_std::{ensure, Deps, StdError, StdResult};
 use cw_controllers::Admin;
 use cw_storage_plus::Item;
 use interface::strategy::{OwnerProposal, PoolInfo};
+use neutron_std::types::cosmos::bank::v1beta1::SendAuthorization;
 use std::collections::HashSet;
 
 pub const OWNER: Admin = Admin::new("owner");
@@ -17,6 +18,7 @@ pub struct Config {
     pub token0: String,
     pub token1: Option<String>,
     pub grants: Vec<String>,
+    pub send_authorization: Option<SendAuthorization>,
     pub pool_info: PoolInfo,
 }
 

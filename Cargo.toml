@@ -17,8 +17,8 @@ cw-utils          = { version = "2.0.0" }
 cw-vault-standard = { package = "cw-vault-standard-margined", version = "2.0.0" }
 cw2               = { version = "2.0.0" }
 cw_margined       = { version = "2.0.0" }
-neutron-std       = { package = "margined-neutron-std", version = "5.0.1" }
-neutron-test-tube = { version = "=5.0.1-debug" }
+neutron-std       = { package = "margined-neutron-std", version = "5.1.3" }
+neutron-test-tube = { version = "5.1.3" }
 num_enum          = { version = "0.7.2" }
 osmosis-std       = { version = "0.26.0" }
 prost             = { version = "0.13.3" }

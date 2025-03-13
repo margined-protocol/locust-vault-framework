@@ -1,15 +1,8 @@
 use crate::contract::{CONTRACT_NAME, CONTRACT_VERSION};
 
+use cosmwasm_schema::cw_serde;
 use cosmwasm_std::coin;
 use interface::strategy::{ConfigResponse, InstantiateMsg, MigrateMsg, PoolInfo};
-// use osmosis_std::types::{
-//     cosmwasm::wasm::v1::{
-//         MsgMigrateContract, MsgMigrateContractResponse, QueryContractInfoRequest,
-//         QueryContractInfoResponse,
-//     },
-//     osmosis::concentratedliquidity::v1beta1::DefaultMsg as DefaultMsg,
-// };
-// use osmosis_test_tube::{Account, Module, Runner, Wasm};
 use neutron_std::types::{
     cosmwasm::wasm::v1::{
         MsgMigrateContract, MsgMigrateContractResponse, QueryContractInfoRequest,
@@ -24,13 +17,36 @@ use testing::{
     utils::store_code,
 };
 
+#[cw_serde]
+pub struct V010InstantiateMsg {
+    pub admin: String,      // manages contract configuration
+    pub controller: String, // manages grant execution
+    pub token0: String,
+    pub token1: Option<String>,
+    pub grants: Vec<String>, // grants given to controller
+    pub pool_info: PoolInfo, // oracle support
+}
+
+#[cw_serde]
+pub struct V010ConfigResponse {
+    admin: String,
+    controller: String,
+    vault: Option<String>,
+    token0: String,
+    token1: Option<String>,
+    pool_info: PoolInfo,
+    grants: Vec<String>,
+    name: String,
+    version: String,
+}
+
 #[test]
 fn test_migration() {
     let env = TestEnv::new();
     let wasm = Wasm::new(&env.app);
 
     let wasm_byte_code =
-        std::fs::read("../../contracts/strategy/src/testing/migration/strategy-v004.wasm").unwrap();
+        std::fs::read("../../contracts/strategy/src/testing/migration/strategy-v010.wasm").unwrap();
 
     let fund_vault_v003 = wasm
         .store_code(&wasm_byte_code, None, &env.signer)
@@ -38,7 +54,7 @@ fn test_migration() {
         .data
         .code_id;
 
-    let msg = InstantiateMsg {
+    let msg = V010InstantiateMsg {
         admin: env.signer.address(),
         controller: env.controller.address(),
         token0: BASE_DENOM.to_string(),
@@ -70,7 +86,7 @@ fn test_migration() {
 
     assert_eq!(
         config,
-        ConfigResponse {
+        V010ConfigResponse {
             admin: env.signer.address(),
             controller: env.controller.address(),
             vault: None,

@@ -11,7 +11,7 @@ use crate::{
     },
     query::{query_config, query_grants, query_owner, query_spot_price, query_twap_price},
     state::{Config, CONFIG, OWNER, OWNERSHIP_PROPOSAL},
-    utils::create_authz_grant_messages,
+    utils::{create_authz_allow_list_messages, create_authz_grant_messages},
 };
 
 use cosmwasm_std::{
@@ -46,6 +46,7 @@ pub fn instantiate(
         token0: msg.token0,
         token1: msg.token1,
         grants: msg.grants,
+        send_authorization: msg.send_authorization,
         pool_info: msg.pool_info,
     };
 
@@ -58,9 +59,22 @@ pub fn instantiate(
 
     let authz_msgs = create_authz_grant_messages(env.contract.address.as_str(), &grantee, &grants);
 
+    let mut response = Response::new();
+
+    // Add send authorization messages if it exists
+    if let Some(send_authorization) = config.send_authorization {
+        let send_auth_msg = create_authz_allow_list_messages(
+            env.contract.address.as_str(),
+            &grantee,
+            &send_authorization,
+        );
+
+        response = response.add_message(send_auth_msg);
+    }
+
     OWNER.set(deps, Some(info.sender.clone()))?;
 
-    Ok(Response::new()
+    Ok(response
         .add_attribute("action", "instantiate")
         .add_messages(authz_msgs))
 }

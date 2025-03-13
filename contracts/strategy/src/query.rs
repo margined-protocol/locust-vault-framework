@@ -72,6 +72,7 @@ pub fn query_config(deps: &Deps) -> StdResult<ConfigResponse> {
         token0: config.token0,
         token1: config.token1,
         grants: config.grants,
+        send_authorization: config.send_authorization,
         pool_info: config.pool_info,
         name: version.contract,
         version: version.version,
