@@ -38,6 +38,7 @@ pub enum ExecuteMsg {
     SetGrants {
         grants: Vec<String>,
     },
+    SetSendAuthorization {},
     UpdateConfig {
         grants: Option<Vec<String>>,
         controller: Option<String>,

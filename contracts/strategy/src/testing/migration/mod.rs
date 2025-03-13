@@ -1,1 +1,1 @@
-// pub mod migration_scenario;
+pub mod migration_scenario;

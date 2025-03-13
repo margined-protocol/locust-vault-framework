@@ -2,6 +2,7 @@ use crate::contract::{CONTRACT_NAME, CONTRACT_VERSION};
 
 use cosmwasm_std::Event;
 use cw2::ContractVersion;
+use neutron_std::types::cosmos::bank::v1beta1::SendAuthorization;
 
 pub fn event_withdraw(withdraw: String) -> Event {
     Event::new("withdraw").add_attributes([
@@ -32,6 +33,14 @@ pub fn event_set_grants(grants: Vec<String>) -> Event {
         ("version", CONTRACT_VERSION),
         ("contract", CONTRACT_NAME),
         ("grants", &grants.join(",")),
+    ])
+}
+
+pub fn event_set_send_authorization(send_authorization: SendAuthorization) -> Event {
+    Event::new("set_send_authorization").add_attributes([
+        ("version", CONTRACT_VERSION),
+        ("contract", CONTRACT_NAME),
+        ("allow_list", &send_authorization.allow_list[0].to_string()),
     ])
 }
 

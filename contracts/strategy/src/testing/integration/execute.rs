@@ -392,3 +392,211 @@ fn test_send_authorization() {
         )
         .unwrap_err();
 }
+
+#[test]
+fn test_set_authorization() {
+    let env = TestEnv::new();
+
+    let authz = Authz::new(&env.app);
+    let wasm = Wasm::new(&env.app);
+
+    let code_id = store_code(&wasm, &env.signer, "strategy").unwrap();
+
+    let strategy_addr = wasm
+        .instantiate(
+            code_id,
+            &InstantiateMsg {
+                admin: env.signer.address(),
+                controller: env.controller.address(),
+                token0: BASE_DENOM.to_string(),
+                token1: None,
+                grants: vec![DefaultMsg::TYPE_URL.to_string()],
+                send_authorization: Some(SendAuthorization {
+                    spend_limit: vec![coin(100u128, BASE_DENOM).into()],
+                    allow_list: vec![env.traders[0].address()],
+                }),
+                pool_info: PoolInfo::Osmosis {
+                    id: 1,
+                    token0: BASE_DENOM.to_string(),
+                    token1: QUOTE_DENOM.to_string(),
+                },
+            },
+            None,
+            Some("strategy-contract"),
+            &[],
+            &env.signer,
+        )
+        .unwrap()
+        .data
+        .address;
+
+    env.send(
+        &strategy_addr,
+        coin(200u128, BASE_DENOM).into(),
+        &env.signer,
+    );
+
+    let amount_sent = coin(100u128, BASE_DENOM);
+    authz
+        .exec(
+            MsgExec {
+                grantee: env.controller.address().to_string(),
+                msgs: vec![Any {
+                    type_url: MsgSend::TYPE_URL.to_string(),
+                    value: MsgSend {
+                        from_address: strategy_addr.to_string(),
+                        to_address: env.traders[0].address().to_string(),
+                        amount: vec![amount_sent.clone().into()],
+                    }
+                    .encode_to_vec(),
+                }],
+            },
+            &env.controller,
+        )
+        .unwrap();
+
+    let second_amount_sent = coin(1u128, BASE_DENOM);
+    authz
+        .exec(
+            MsgExec {
+                grantee: env.controller.address().to_string(),
+                msgs: vec![Any {
+                    type_url: MsgSend::TYPE_URL.to_string(),
+                    value: MsgSend {
+                        from_address: strategy_addr.to_string(),
+                        to_address: env.traders[0].address().to_string(),
+                        amount: vec![second_amount_sent.clone().into()],
+                    }
+                    .encode_to_vec(),
+                }],
+            },
+            &env.controller,
+        )
+        .unwrap_err();
+
+    env.set_send_authorization_strategy(&wasm, &strategy_addr, &env.signer)
+        .unwrap();
+
+    let third_amount_sent = coin(100u128, BASE_DENOM);
+    authz
+        .exec(
+            MsgExec {
+                grantee: env.controller.address().to_string(),
+                msgs: vec![Any {
+                    type_url: MsgSend::TYPE_URL.to_string(),
+                    value: MsgSend {
+                        from_address: strategy_addr.to_string(),
+                        to_address: env.traders[0].address().to_string(),
+                        amount: vec![third_amount_sent.clone().into()],
+                    }
+                    .encode_to_vec(),
+                }],
+            },
+            &env.controller,
+        )
+        .unwrap();
+}
+
+#[test]
+fn test_set_authorization_before_expiration() {
+    let env = TestEnv::new();
+
+    let authz = Authz::new(&env.app);
+    let wasm = Wasm::new(&env.app);
+
+    let code_id = store_code(&wasm, &env.signer, "strategy").unwrap();
+
+    let strategy_addr = wasm
+        .instantiate(
+            code_id,
+            &InstantiateMsg {
+                admin: env.signer.address(),
+                controller: env.controller.address(),
+                token0: BASE_DENOM.to_string(),
+                token1: None,
+                grants: vec![DefaultMsg::TYPE_URL.to_string()],
+                send_authorization: Some(SendAuthorization {
+                    spend_limit: vec![coin(100u128, BASE_DENOM).into()],
+                    allow_list: vec![env.traders[0].address()],
+                }),
+                pool_info: PoolInfo::Osmosis {
+                    id: 1,
+                    token0: BASE_DENOM.to_string(),
+                    token1: QUOTE_DENOM.to_string(),
+                },
+            },
+            None,
+            Some("strategy-contract"),
+            &[],
+            &env.signer,
+        )
+        .unwrap()
+        .data
+        .address;
+
+    env.send(
+        &strategy_addr,
+        coin(200u128, BASE_DENOM).into(),
+        &env.signer,
+    );
+
+    let amount_sent = coin(50u128, BASE_DENOM);
+    authz
+        .exec(
+            MsgExec {
+                grantee: env.controller.address().to_string(),
+                msgs: vec![Any {
+                    type_url: MsgSend::TYPE_URL.to_string(),
+                    value: MsgSend {
+                        from_address: strategy_addr.to_string(),
+                        to_address: env.traders[0].address().to_string(),
+                        amount: vec![amount_sent.clone().into()],
+                    }
+                    .encode_to_vec(),
+                }],
+            },
+            &env.controller,
+        )
+        .unwrap();
+
+    let second_amount_sent = coin(1u128, BASE_DENOM);
+    authz
+        .exec(
+            MsgExec {
+                grantee: env.controller.address().to_string(),
+                msgs: vec![Any {
+                    type_url: MsgSend::TYPE_URL.to_string(),
+                    value: MsgSend {
+                        from_address: strategy_addr.to_string(),
+                        to_address: env.traders[0].address().to_string(),
+                        amount: vec![second_amount_sent.clone().into()],
+                    }
+                    .encode_to_vec(),
+                }],
+            },
+            &env.controller,
+        )
+        .unwrap();
+
+    env.set_send_authorization_strategy(&wasm, &strategy_addr, &env.signer)
+        .unwrap();
+
+    let third_amount_sent = coin(100u128, BASE_DENOM);
+    authz
+        .exec(
+            MsgExec {
+                grantee: env.controller.address().to_string(),
+                msgs: vec![Any {
+                    type_url: MsgSend::TYPE_URL.to_string(),
+                    value: MsgSend {
+                        from_address: strategy_addr.to_string(),
+                        to_address: env.traders[0].address().to_string(),
+                        amount: vec![third_amount_sent.clone().into()],
+                    }
+                    .encode_to_vec(),
+                }],
+            },
+            &env.controller,
+        )
+        .unwrap();
+}

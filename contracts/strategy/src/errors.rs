@@ -14,6 +14,9 @@ pub enum ContractError {
 
     #[error("Vault not set")]
     VaultNotSet {},
+
+    #[error("Send authorization not set")]
+    SendAuthorizationNotSet {},
 }
 
 impl ContractError {
