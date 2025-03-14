@@ -1,10 +1,13 @@
 use crate::{
     errors::ContractError,
-    events::{event_repay, event_set_grants, event_set_vault, event_update_config, event_withdraw},
+    events::{
+        event_repay, event_set_grants, event_set_send_authorization, event_set_vault,
+        event_update_config, event_withdraw,
+    },
     state::CONFIG,
     utils::{
-        create_authz_grant_messages, map_to_contract_error, revoke_authz_grant_messages,
-        tokens_to_string,
+        create_authz_allow_list_messages, create_authz_grant_messages, map_to_contract_error,
+        revoke_authz_grant_messages, tokens_to_string,
     },
 };
 
@@ -203,6 +206,36 @@ pub fn handle_set_grants(
     Ok(response
         .add_event(event_set_grants(grants))
         .add_messages(authz_msgs))
+}
+
+pub fn handle_set_send_authorization(
+    deps: DepsMut,
+    env: Env,
+    info: MessageInfo,
+) -> Result<Response, ContractError> {
+    let config = CONFIG.load(deps.storage)?;
+
+    ensure!(
+        config.admin == info.sender.to_string(),
+        ContractError::Unauthorized {}
+    );
+
+    let send_authorization = match config.send_authorization {
+        Some(send_authorization) => send_authorization,
+        None => {
+            return Err(ContractError::SendAuthorizationNotSet {});
+        }
+    };
+
+    let authz_msgs = create_authz_allow_list_messages(
+        env.contract.address.as_str(),
+        &config.controller,
+        &send_authorization,
+    );
+
+    Ok(Response::new()
+        .add_event(event_set_send_authorization(send_authorization))
+        .add_message(authz_msgs))
 }
 
 pub fn handle_update_config(

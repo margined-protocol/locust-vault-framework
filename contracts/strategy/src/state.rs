@@ -1,13 +1,25 @@
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{ensure, Deps, StdError, StdResult};
+use cosmwasm_std::{ensure, Deps, DepsMut, StdError, StdResult};
 use cw_controllers::Admin;
 use cw_storage_plus::Item;
 use interface::strategy::{OwnerProposal, PoolInfo};
+use neutron_std::types::cosmos::bank::v1beta1::SendAuthorization;
 use std::collections::HashSet;
 
 pub const OWNER: Admin = Admin::new("owner");
 pub const OWNERSHIP_PROPOSAL: Item<OwnerProposal> = Item::new("ownership_proposals");
 pub const CONFIG: Item<Config> = Item::new("config");
+
+#[cw_serde]
+pub struct V010Config {
+    pub admin: String,
+    pub controller: String,
+    pub vault: Option<String>,
+    pub token0: String,
+    pub token1: Option<String>,
+    pub grants: Vec<String>,
+    pub pool_info: PoolInfo,
+}
 
 #[cw_serde]
 pub struct Config {
@@ -17,6 +29,7 @@ pub struct Config {
     pub token0: String,
     pub token1: Option<String>,
     pub grants: Vec<String>,
+    pub send_authorization: Option<SendAuthorization>,
     pub pool_info: PoolInfo,
 }
 
@@ -48,6 +61,31 @@ pub fn ensure_no_duplicates(input: Vec<String>) -> StdResult<()> {
             return Err(StdError::generic_err("Duplicate grants are not allowed"));
         }
     }
+
+    Ok(())
+}
+
+pub fn migrate_config(
+    deps: DepsMut,
+    send_authorization: Option<SendAuthorization>,
+) -> StdResult<()> {
+    let old_config: Item<V010Config> = Item::new("config");
+
+    let cfg = old_config.load(deps.storage)?;
+
+    let new_config = Config {
+        admin: cfg.admin,
+        controller: cfg.controller,
+        vault: cfg.vault,
+        token0: cfg.token0,
+        token1: cfg.token1,
+        grants: cfg.grants,
+        send_authorization,
+        pool_info: cfg.pool_info,
+    };
+
+    new_config.validate(&deps.as_ref())?;
+    CONFIG.save(deps.storage, &new_config)?;
 
     Ok(())
 }

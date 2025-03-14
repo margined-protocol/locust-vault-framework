@@ -2,16 +2,16 @@ use crate::{
     errors::ContractError,
     events::event_migrate,
     handle::{
-        handle_repay, handle_repay_queue, handle_set_grants, handle_set_vault,
-        handle_update_config, handle_withdraw,
+        handle_repay, handle_repay_queue, handle_set_grants, handle_set_send_authorization,
+        handle_set_vault, handle_update_config, handle_withdraw,
     },
     ownership::{
         get_ownership_proposal, handle_claim_ownership, handle_ownership_proposal,
         handle_ownership_proposal_rejection,
     },
     query::{query_config, query_grants, query_owner, query_spot_price, query_twap_price},
-    state::{Config, CONFIG, OWNER, OWNERSHIP_PROPOSAL},
-    utils::create_authz_grant_messages,
+    state::{migrate_config, Config, CONFIG, OWNER, OWNERSHIP_PROPOSAL},
+    utils::{create_authz_allow_list_messages, create_authz_grant_messages},
 };
 
 use cosmwasm_std::{
@@ -46,6 +46,7 @@ pub fn instantiate(
         token0: msg.token0,
         token1: msg.token1,
         grants: msg.grants,
+        send_authorization: msg.send_authorization,
         pool_info: msg.pool_info,
     };
 
@@ -58,9 +59,22 @@ pub fn instantiate(
 
     let authz_msgs = create_authz_grant_messages(env.contract.address.as_str(), &grantee, &grants);
 
+    let mut response = Response::new();
+
+    // Add send authorization messages if it exists
+    if let Some(send_authorization) = config.send_authorization {
+        let send_auth_msg = create_authz_allow_list_messages(
+            env.contract.address.as_str(),
+            &grantee,
+            &send_authorization,
+        );
+
+        response = response.add_message(send_auth_msg);
+    }
+
     OWNER.set(deps, Some(info.sender.clone()))?;
 
-    Ok(Response::new()
+    Ok(response
         .add_attribute("action", "instantiate")
         .add_messages(authz_msgs))
 }
@@ -88,6 +102,7 @@ pub fn execute(
         } => handle_repay_queue(deps, env, info, tokens_to_repay, cycle_profit, limit),
         ExecuteMsg::SetVault { vault } => handle_set_vault(deps, env, info, vault),
         ExecuteMsg::SetGrants { grants } => handle_set_grants(deps, env, info, grants),
+        ExecuteMsg::SetSendAuthorization {} => handle_set_send_authorization(deps, env, info),
         ExecuteMsg::UpdateConfig { grants, controller } => {
             handle_update_config(deps, env, info, grants, controller)
         }
@@ -132,17 +147,19 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
+pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, ContractError> {
     let contract_version = get_contract_version(deps.storage)?;
 
     match contract_version.contract.as_ref() {
         "crates.io:strategy" => match contract_version.version.as_ref() {
-            "0.0.4" => {
+            "0.0.4" | "0.1.0" => {
                 set_contract_version(
                     deps.storage,
                     format!("crates.io:{CONTRACT_NAME}"),
                     CONTRACT_VERSION,
                 )?;
+
+                migrate_config(deps, msg.send_authorization)?;
             }
             _ => {
                 return Err(ContractError::Std(StdError::generic_err(

@@ -1,5 +1,6 @@
-use cosmwasm_schema::cw_serde;
+use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{Addr, Coin, Decimal};
+use neutron_std::types::cosmos::bank::v1beta1::SendAuthorization;
 
 #[cw_serde]
 pub struct InstantiateMsg {
@@ -8,11 +9,14 @@ pub struct InstantiateMsg {
     pub token0: String,
     pub token1: Option<String>,
     pub grants: Vec<String>, // grants given to controller
-    pub pool_info: PoolInfo, // oracle support
+    pub send_authorization: Option<SendAuthorization>, // optionalsend authorization - only used during instantiation
+    pub pool_info: PoolInfo,                           // oracle support
 }
 
 #[cw_serde]
-pub struct MigrateMsg {}
+pub struct MigrateMsg {
+    pub send_authorization: Option<SendAuthorization>,
+}
 
 #[cw_serde]
 pub enum ExecuteMsg {
@@ -34,6 +38,7 @@ pub enum ExecuteMsg {
     SetGrants {
         grants: Vec<String>,
     },
+    SetSendAuthorization {},
     UpdateConfig {
         grants: Option<Vec<String>>,
         controller: Option<String>,
@@ -47,12 +52,19 @@ pub enum ExecuteMsg {
 }
 
 #[cw_serde]
+#[derive(QueryResponses)]
 pub enum QueryMsg {
+    #[returns(ConfigResponse)]
     Config {},
+    #[returns(Vec<String>)]
     Grants {},
+    #[returns(Decimal)]
     SpotPrice {},
+    #[returns(Decimal)]
     TwapPrice { duration: u64 },
+    #[returns(String)]
     Owner {},
+    #[returns(OwnerProposal)]
     GetOwnershipProposal {},
 }
 
@@ -64,6 +76,7 @@ pub struct ConfigResponse {
     pub token0: String,
     pub token1: Option<String>,
     pub grants: Vec<String>,
+    pub send_authorization: Option<SendAuthorization>,
     pub pool_info: PoolInfo,
     pub name: String,
     pub version: String,

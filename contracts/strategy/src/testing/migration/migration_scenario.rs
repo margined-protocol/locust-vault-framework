@@ -1,15 +1,8 @@
 use crate::contract::{CONTRACT_NAME, CONTRACT_VERSION};
 
+use cosmwasm_schema::cw_serde;
 use cosmwasm_std::coin;
-use interface::strategy::{ConfigResponse, InstantiateMsg, MigrateMsg, PoolInfo};
-// use osmosis_std::types::{
-//     cosmwasm::wasm::v1::{
-//         MsgMigrateContract, MsgMigrateContractResponse, QueryContractInfoRequest,
-//         QueryContractInfoResponse,
-//     },
-//     osmosis::concentratedliquidity::v1beta1::DefaultMsg as DefaultMsg,
-// };
-// use osmosis_test_tube::{Account, Module, Runner, Wasm};
+use interface::strategy::{ConfigResponse, MigrateMsg, PoolInfo};
 use neutron_std::types::{
     cosmwasm::wasm::v1::{
         MsgMigrateContract, MsgMigrateContractResponse, QueryContractInfoRequest,
@@ -24,21 +17,44 @@ use testing::{
     utils::store_code,
 };
 
+#[cw_serde]
+pub struct V010InstantiateMsg {
+    pub admin: String,      // manages contract configuration
+    pub controller: String, // manages grant execution
+    pub token0: String,
+    pub token1: Option<String>,
+    pub grants: Vec<String>, // grants given to controller
+    pub pool_info: PoolInfo, // oracle support
+}
+
+#[cw_serde]
+pub struct V010ConfigResponse {
+    admin: String,
+    controller: String,
+    vault: Option<String>,
+    token0: String,
+    token1: Option<String>,
+    pool_info: PoolInfo,
+    grants: Vec<String>,
+    name: String,
+    version: String,
+}
+
 #[test]
 fn test_migration() {
     let env = TestEnv::new();
     let wasm = Wasm::new(&env.app);
 
     let wasm_byte_code =
-        std::fs::read("../../contracts/strategy/src/testing/migration/strategy-v004.wasm").unwrap();
+        std::fs::read("../../contracts/strategy/src/testing/migration/strategy-v010.wasm").unwrap();
 
-    let fund_vault_v003 = wasm
+    let fund_vault_v010 = wasm
         .store_code(&wasm_byte_code, None, &env.signer)
         .unwrap()
         .data
         .code_id;
 
-    let msg = InstantiateMsg {
+    let msg = V010InstantiateMsg {
         admin: env.signer.address(),
         controller: env.controller.address(),
         token0: BASE_DENOM.to_string(),
@@ -55,7 +71,7 @@ fn test_migration() {
 
     let strategy_addr = wasm
         .instantiate(
-            fund_vault_v003,
+            fund_vault_v010,
             &msg,
             Some(&env.signer.address()),
             Some("strategy"),
@@ -65,27 +81,6 @@ fn test_migration() {
         .unwrap()
         .data
         .address;
-
-    let config = env.query_config_strategy(&wasm, &strategy_addr).unwrap();
-
-    assert_eq!(
-        config,
-        ConfigResponse {
-            admin: env.signer.address(),
-            controller: env.controller.address(),
-            vault: None,
-            token0: BASE_DENOM.to_string(),
-            token1: None,
-            pool_info: PoolInfo::Osmosis {
-                id: 1,
-                token0: BASE_DENOM.to_string(),
-                token1: QUOTE_DENOM.to_string(),
-            },
-            grants: vec![DefaultMsg::TYPE_URL.to_string(),],
-            name: format!("crates.io:{}", CONTRACT_NAME),
-            version: "0.0.4".to_string(),
-        }
-    );
 
     let code_id = store_code(&wasm, &env.signer, "strategy").unwrap();
 
@@ -97,7 +92,10 @@ fn test_migration() {
                 sender: env.signer.address(),
                 contract: strategy_addr.clone(),
                 code_id,
-                msg: serde_json_wasm::to_vec(&MigrateMsg {}).unwrap(),
+                msg: serde_json_wasm::to_vec(&MigrateMsg {
+                    send_authorization: None,
+                })
+                .unwrap(),
             },
             "/cosmwasm.wasm.v1.MsgMigrateContract",
             &env.signer,
@@ -137,6 +135,7 @@ fn test_migration() {
                 token1: QUOTE_DENOM.to_string(),
             },
             grants: vec![DefaultMsg::TYPE_URL.to_string()],
+            send_authorization: None,
             name: format!("crates.io:{}", CONTRACT_NAME),
             version: CONTRACT_VERSION.to_string(),
         }

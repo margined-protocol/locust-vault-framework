@@ -88,6 +88,17 @@ impl TestEnv {
         wasm.execute(contract_addr, &msg, &[], signer)
     }
 
+    pub fn set_send_authorization_strategy(
+        &self,
+        wasm: &Wasm<OsmosisTestApp>,
+        contract_addr: &str,
+        signer: &SigningAccount,
+    ) -> RunnerExecuteResult<MsgExecuteContractResponse> {
+        let msg = ExecuteMsg::SetSendAuthorization {};
+
+        wasm.execute(contract_addr, &msg, &[], signer)
+    }
+
     pub fn update_config_strategy(
         &self,
         wasm: &Wasm<OsmosisTestApp>,

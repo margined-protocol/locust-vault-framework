@@ -4,4 +4,4 @@ wasm       = "build --release --lib --target wasm32-unknown-unknown --locked --w
 wasm-debug = "build --lib --target wasm32-unknown-unknown --locked --workspace --exclude testing"
 
 [target.wasm32-unknown-unknown]
-rustflags = ["-C", "link-arg=-s"]
+rustflags = [ "-C", "link-arg=-s" ]

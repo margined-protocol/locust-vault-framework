@@ -1,6 +1,6 @@
-use crate::helpers::get_management_fees;
+use crate::helpers::{calculate_amount_to_mint, get_management_fees};
 
-use cosmwasm_std::{coin, Decimal};
+use cosmwasm_std::{coin, Decimal, Uint128};
 
 #[test]
 fn test_fees_with_sufficient_balance() {
@@ -117,4 +117,102 @@ fn test_no_fee_due() {
 
     assert!(fees.is_empty());
     assert!(pending_fees.is_empty());
+}
+
+#[test]
+fn test_calculate_amount_to_mint() {
+    // Test case 1: Basic case - 10% increase in assets
+    let current_assets = Uint128::new(110);
+    let previous_assets = Uint128::new(100);
+    let total_supply = Uint128::new(1000);
+
+    let result = calculate_amount_to_mint(&current_assets, &previous_assets, total_supply);
+    assert_eq!(result, Uint128::new(100)); // 10% of 1000 = 100
+
+    // Test case 2: No change in assets
+    let current_assets = Uint128::new(100);
+    let previous_assets = Uint128::new(100);
+    let total_supply = Uint128::new(1000);
+
+    let result = calculate_amount_to_mint(&current_assets, &previous_assets, total_supply);
+    assert_eq!(result, Uint128::new(0)); // 0% change = 0 minted
+
+    // Test case 3: Decrease in assets (should return 0 due to saturating_sub)
+    let current_assets = Uint128::new(90);
+    let previous_assets = Uint128::new(100);
+    let total_supply = Uint128::new(1000);
+
+    let result = calculate_amount_to_mint(&current_assets, &previous_assets, total_supply);
+    assert_eq!(result, Uint128::new(0)); // Decrease should result in 0
+
+    // Test case 4: Large increase in assets
+    let current_assets = Uint128::new(200);
+    let previous_assets = Uint128::new(100);
+    let total_supply = Uint128::new(1000);
+
+    let result = calculate_amount_to_mint(&current_assets, &previous_assets, total_supply);
+    assert_eq!(result, Uint128::new(1000)); // 100% increase = 1000
+
+    // Test case 5: Small increase with rounding
+    let current_assets = Uint128::new(103);
+    let previous_assets = Uint128::new(100);
+    let total_supply = Uint128::new(1000);
+
+    let result = calculate_amount_to_mint(&current_assets, &previous_assets, total_supply);
+    assert_eq!(result, Uint128::new(30)); // 3% of 1000 = 30
+
+    // Test case 6: Panic - handled in separate test
+
+    // Test case 7: Zero total supply
+    let current_assets = Uint128::new(110);
+    let previous_assets = Uint128::new(100);
+    let total_supply = Uint128::new(0);
+
+    let result = calculate_amount_to_mint(&current_assets, &previous_assets, total_supply);
+    assert_eq!(result, Uint128::new(0)); // 0 supply means 0 minted
+
+    // Test case 8: Very large numbers
+    let current_assets = Uint128::new(1_000_000_000);
+    let previous_assets = Uint128::new(500_000_000);
+    let total_supply = Uint128::new(1_000_000_000);
+
+    let result = calculate_amount_to_mint(&current_assets, &previous_assets, total_supply);
+    assert_eq!(result, Uint128::new(1_000_000_000)); // 100% increase
+
+    // Test case 9: Fractional result with rounding down
+    let current_assets = Uint128::new(101);
+    let previous_assets = Uint128::new(100);
+    let total_supply = Uint128::new(999);
+
+    let result = calculate_amount_to_mint(&current_assets, &previous_assets, total_supply);
+    // 1% of 999 = 9.99, should round down to 9
+    assert_eq!(result, Uint128::new(9));
+
+    // Test case 10: Worked example - USDC
+    let current_assets = Uint128::new(2000000);
+    let previous_assets = Uint128::new(1000000);
+    let total_supply = Uint128::new(1000000);
+
+    let result = calculate_amount_to_mint(&current_assets, &previous_assets, total_supply);
+    assert_eq!(result, Uint128::new(1000000));
+
+    // Test case 11: Worked example - USDC, incorrectly initiated
+    let current_assets = Uint128::new(50010000);
+    let previous_assets = Uint128::new(10000);
+    let total_supply = Uint128::new(1000000);
+
+    let result = calculate_amount_to_mint(&current_assets, &previous_assets, total_supply);
+    assert_eq!(result, Uint128::new(5000000000));
+}
+
+#[test]
+#[should_panic(expected = "Denominator must not be zero")]
+fn test_calculate_amount_to_mint_division_by_zero() {
+    // Test division by zero case
+    let current_assets = Uint128::new(100);
+    let previous_assets = Uint128::new(0);
+    let total_supply = Uint128::new(1000);
+
+    // This should panic with "Attempt to divide by zero"
+    let _ = calculate_amount_to_mint(&current_assets, &previous_assets, total_supply);
 }

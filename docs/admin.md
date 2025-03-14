@@ -52,6 +52,10 @@ CONTRACT_ADDRESS=neutron1me4fuchq3pgle46dvdxsgvpz02z605gkr0sgs6uwew25cpgg3ydsfg8
 CONTRACT_ADDRESS=osmo164na5ukfshzze06el9xv8dz0j4znz2h73xkg228k7symzwgljtzq7k8d8d
 CONTRACT_ADDRESS=osmo1xersavnsn033kwu2qrt5et4kg5d7u0k9y5ssy2r6l203fasymmvqg87yd4
 
+# Hydro
+CONTRACT_ADDRESS=neutron1hd4le7ndpxfjzw9vny903pdm5pjkqe7rr9utn9ddxsdak5fdrf9smph7d0
+CONTRACT_ADDRESS=neutron1205uqwmyhpmgcslcak7qtvlajqha7chwgfgh9veayrq9eufzzy4q675vly
+
 # Redemption Queue
 CONTRACT_ADDRESS=osmo1g63cnjmq2spfagpp03et04xpgklnfllzzc23xqm953huqhrgr7dsaytq8k
 ```
@@ -150,6 +154,13 @@ neutrond tx wasm execute $CONTRACT_ADDRESS "{\"vault_extension\": {\"vaultenator
 
 ```bash
 neutrond tx wasm execute $CONTRACT_ADDRESS "{\"set_vault\": {\"vault\":\"neutron1egc0ujxyqh8p35nxrvxd04uq0z9536k6fvwzwecfgjj9yg7wkdgq2jzj38\"}}"  --from=deployer --gas=auto --gas-prices 0.0053untrn --gas-adjustment 1.3 --output=json --node=$NODE --chain-id=$CHAIN_ID
+osmosisd tx wasm execute $CONTRACT_ADDRESS "{\"set_vault\": {\"vault\":\"osmo164na5ukfshzze06el9xv8dz0j4znz2h73xkg228k7symzwgljtzq7k8d8d\"}}"  --from=deployer --gas=auto --gas-prices 0.0053uosmo --gas-adjustment 1.3 --output=json --node=$NODE --chain-id=$CHAIN_ID
+```
+
+#### Set Vault
+
+```bash
+osmosisd tx wasm execute $CONTRACT_ADDRESS "{\"claim_redemption\": {}}"  --from=deployer --gas=auto --gas-prices 0.0053uosmo --gas-adjustment 1.3 --output=json --node=$NODE --chain-id=$CHAIN_ID
 ```
 
 #### Update Config
@@ -217,6 +228,12 @@ neutrond q wasm contract-state smart $CONTRACT_ADDRESS "{\"vault_extension\": {\
 
 ```bash
 neutrond q wasm contract-state smart $CONTRACT_ADDRESS "{\"vault_extension\": {\"vaultenator\": {\"withdrawable_amount\": {}}}}" --node=$NODE --output=json | jq .
+```
+
+#### All Redemptions
+
+```bash
+neutrond q wasm contract-state smart $CONTRACT_ADDRESS "{\"all_redemptions\": {}}" --node=$NODE --output=json | jq .
 ```
 
 #### Wasm Contract Info

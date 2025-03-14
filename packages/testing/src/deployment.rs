@@ -50,6 +50,7 @@ pub fn get_default_instantiation_msg(env: &TestEnv) -> Strategy::InstantiateMsg 
         token0: BASE_DENOM.to_string(),
         token1: None,
         grants: vec![DefaultMsg::TYPE_URL.to_string()],
+        send_authorization: None,
         pool_info: Strategy::PoolInfo::Slinky {
             base: BASE_DENOM.to_uppercase(),
             quote: QUOTE_DENOM.to_uppercase(),
