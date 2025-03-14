@@ -11,8 +11,11 @@ use crate::{
     },
     query::{query_config, query_grants, query_owner, query_spot_price, query_twap_price},
     state::{migrate_config, Config, CONFIG, OWNER, OWNERSHIP_PROPOSAL},
-    utils::{create_authz_allow_list_messages, create_authz_grant_messages},
+    utils::create_authz_grant_messages,
 };
+
+#[cfg(feature = "send-authz")]
+use crate::utils::create_authz_allow_list_messages;
 
 use cosmwasm_std::{
     entry_point, to_json_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdError,
@@ -54,29 +57,29 @@ pub fn instantiate(
 
     CONFIG.save(deps.storage, &config)?;
 
-    let grantee = config.controller;
+    let grantee = config.controller.clone();
     let grants: Vec<&str> = config.grants.iter().map(|s| s.as_str()).collect();
 
     let authz_msgs = create_authz_grant_messages(env.contract.address.as_str(), &grantee, &grants);
 
-    let mut response = Response::new();
+    // Create response with authz messages
+    let response = Response::new().add_messages(authz_msgs);
 
-    // Add send authorization messages if it exists
-    if let Some(send_authorization) = config.send_authorization {
-        let send_auth_msg = create_authz_allow_list_messages(
+    // Add send authorization if feature is enabled
+    #[cfg(feature = "send-authz")]
+    let response = if let Some(send_authorization) = &config.send_authorization {
+        response.add_message(create_authz_allow_list_messages(
             env.contract.address.as_str(),
             &grantee,
-            &send_authorization,
-        );
-
-        response = response.add_message(send_auth_msg);
-    }
+            send_authorization,
+        ))
+    } else {
+        response
+    };
 
     OWNER.set(deps, Some(info.sender.clone()))?;
 
-    Ok(response
-        .add_attribute("action", "instantiate")
-        .add_messages(authz_msgs))
+    Ok(response.add_attribute("action", "instantiate"))
 }
 
 #[cfg(not(tarpaulin_include))]

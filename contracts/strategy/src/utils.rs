@@ -1,5 +1,4 @@
 use crate::errors::ContractError;
-
 use cosmwasm_std::{AnyMsg, Binary, Coin, CosmosMsg, StdError};
 use neutron_std::{
     shim::Any,
