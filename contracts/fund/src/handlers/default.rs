@@ -240,7 +240,7 @@ impl Handle<Config, State> for StructuredVault {
             }
         }
 
-        Ok(Response::new().add_event(event_migrate(
+        Ok(Response::default().add_event(event_migrate(
             CONTRACT_VERSION,
             CONTRACT_NAME,
             contract_version,
