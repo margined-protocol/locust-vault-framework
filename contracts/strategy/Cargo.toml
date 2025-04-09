@@ -16,13 +16,14 @@ exclude = [
 crate-type = [ "cdylib", "rlib" ]
 
 [features]
-default = [ "slinky" ]
+default = [ "send-authz", "slinky" ]
 library = [  ]
 
-astroport = [  ]
-drop      = [  ]
-osmosis   = [  ]
-slinky    = [  ]
+astroport  = [  ]
+drop       = [  ]
+osmosis    = [  ]
+send-authz = [  ]
+slinky     = [  ]
 
 [package.metadata.optimizer]
 builds = [
@@ -31,6 +32,10 @@ builds = [
  ], default-features = false },
  { name = "drop", features = [
   "drop",
+ ], default-features = false },
+ { name = "hydro", features = [
+  "send-authz",
+  "slinky",
  ], default-features = false },
  { name = "osmosis", features = [
   "osmosis",
