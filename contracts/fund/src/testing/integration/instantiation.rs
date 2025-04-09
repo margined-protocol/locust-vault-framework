@@ -26,6 +26,7 @@ fn test_instantiation() {
         performance_fee_rate: Decimal::zero(),
         float: Some(Decimal::zero()),
         vault_type: "fund".to_string(),
+        initial_token_supply: None,
     };
 
     let deposit_amount = 1_000_000u128;
@@ -109,6 +110,7 @@ fn test_fail_instantiation_strategy_cap_zero() {
         treasury: env.treasury.address().to_string(),
         redemption_contract: env.signer.address().to_string(),
         vault_type: "fund".to_string(),
+        initial_token_supply: None,
     };
 
     let err = env
@@ -139,6 +141,7 @@ fn test_fail_instantiation_performance_fee_rate_invalid() {
         treasury: env.treasury.address().to_string(),
         redemption_contract: env.signer.address().to_string(),
         vault_type: "fund".to_string(),
+        initial_token_supply: None,
     };
 
     let err = env
@@ -169,6 +172,7 @@ fn test_fail_instantiation_float_invalid() {
         treasury: env.treasury.address().to_string(),
         redemption_contract: env.signer.address().to_string(),
         vault_type: "fund".to_string(),
+        initial_token_supply: None,
     };
 
     let err = env
@@ -199,6 +203,7 @@ fn test_fail_instantiation_management_fee_invalid() {
         treasury: env.treasury.address().to_string(),
         redemption_contract: env.signer.address().to_string(),
         vault_type: "fund".to_string(),
+        initial_token_supply: None,
     };
 
     let err = env

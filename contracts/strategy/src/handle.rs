@@ -1,15 +1,15 @@
 use crate::{
     errors::ContractError,
-    events::{
-        event_repay, event_set_grants, event_set_send_authorization, event_set_vault,
-        event_update_config, event_withdraw,
-    },
+    events::{event_repay, event_set_grants, event_set_vault, event_update_config, event_withdraw},
     state::CONFIG,
     utils::{
-        create_authz_allow_list_messages, create_authz_grant_messages, map_to_contract_error,
-        revoke_authz_grant_messages, tokens_to_string,
+        create_authz_grant_messages, map_to_contract_error, revoke_authz_grant_messages,
+        tokens_to_string,
     },
 };
+
+#[cfg(feature = "send-authz")]
+use crate::{events::event_set_send_authorization, utils::create_authz_allow_list_messages};
 
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{
@@ -208,11 +208,26 @@ pub fn handle_set_grants(
         .add_messages(authz_msgs))
 }
 
+#[cfg(not(feature = "send-authz"))]
+pub fn handle_set_send_authorization(
+    _deps: DepsMut,
+    _env: Env,
+    _info: MessageInfo,
+) -> Result<Response, ContractError> {
+    unimplemented!("send-authz feature is not enabled");
+}
+
+#[cfg(feature = "send-authz")]
 pub fn handle_set_send_authorization(
     deps: DepsMut,
     env: Env,
     info: MessageInfo,
 ) -> Result<Response, ContractError> {
+    #[cfg(not(feature = "send-authz"))]
+    {
+        unimplemented!("send-authz feature is not enabled");
+    }
+
     let config = CONFIG.load(deps.storage)?;
 
     ensure!(

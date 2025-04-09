@@ -2,7 +2,9 @@ use crate::contract::{CONTRACT_NAME, CONTRACT_VERSION};
 
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{coin, Decimal, Uint128};
-use interface::fund::{ExtensionQueryMsg, MigrateMsg, QueryMsg, VaultenatorExtensionQueryMsg};
+use interface::fund::{
+    ConfigResponse, ExtensionQueryMsg, MigrateMsg, QueryMsg, VaultenatorExtensionQueryMsg,
+};
 use neutron_test_tube::{Account, Module, Runner, Wasm};
 use osmosis_std::types::cosmwasm::wasm::v1::{
     MsgMigrateContract, MsgMigrateContractResponse, QueryContractInfoRequest,
@@ -15,32 +17,17 @@ use testing::{
 };
 
 #[cw_serde]
-pub struct V010InstantiateMsg {
-    pub admin: String,         // manages contract configuration
-    pub controller: String,    // manages contract balance sheet
-    pub treasury: String,      // account fees are paid to
-    pub strategy_cap: Uint128, // maximum value of strategy deposits
-    pub float: Decimal,        // percentage of balance sheet that can be withdrawn
+pub struct V020InstantiateMsg {
+    pub admin: String,               // manages contract configuration
+    pub controller: String,          // manages contract balance sheet
+    pub treasury: String,            // account fees are paid to
+    pub redemption_contract: String, // redemption contract address
+    pub strategy_cap: Uint128,       // maximum value of strategy deposits
+    pub float: Decimal,              // percentage of balance sheet that can be withdrawn
     pub token0: String,
     pub token1: Option<String>,
     pub management_fee_rate: Decimal,
     pub performance_fee_rate: Decimal,
-    pub vault_type: String,
-}
-
-#[cw_serde]
-pub struct V010ConfigResponse {
-    pub admin: String,
-    pub controller: String,
-    pub treasury: String,
-    pub strategy_cap: Uint128,
-    pub float: Option<Decimal>,
-    pub strategy_denom: String,
-    pub token0: String,
-    pub token1: Option<String>,
-    pub management_fee_rate: Decimal,
-    pub performance_fee_rate: Decimal,
-    pub estimate_cycle_profit: Option<Decimal>,
     pub vault_type: String,
 }
 
@@ -50,7 +37,7 @@ fn test_migration() {
     let wasm = Wasm::new(&env.app);
 
     let wasm_byte_code =
-        std::fs::read("../../contracts/fund/src/testing/migration/fund-v010.wasm").unwrap();
+        std::fs::read("../../contracts/fund/src/testing/migration/fund-v020.wasm").unwrap();
 
     let fund_vault_v003 = wasm
         .store_code(&wasm_byte_code, None, &env.signer)
@@ -58,9 +45,10 @@ fn test_migration() {
         .data
         .code_id;
 
-    let msg = V010InstantiateMsg {
+    let msg = V020InstantiateMsg {
         admin: env.signer.address().to_string(),
         controller: env.signer.address().to_string(),
+        redemption_contract: env.controller.address().to_string(),
         treasury: env.treasury.address().to_string(),
         strategy_cap: STRATEGY_CAP,
         float: Decimal::zero(),
@@ -93,7 +81,7 @@ fn test_migration() {
         VaultenatorExtensionQueryMsg::Config {},
     ));
 
-    let config: V010ConfigResponse = wasm.query(&contract_addr, &query_msg).unwrap();
+    let config: ConfigResponse = wasm.query(&contract_addr, &query_msg).unwrap();
 
     let expected_strategy_denom = format!("factory/{}/fund", contract_addr);
 
@@ -103,7 +91,7 @@ fn test_migration() {
     let version = env.query_version_fund(&wasm, &contract_addr).unwrap();
 
     assert_eq!(version.name, "crates.io:fund".to_string());
-    assert_eq!(version.version, "0.1.0".to_string());
+    assert_eq!(version.version, "0.2.0".to_string());
 
     let code_id = store_code(&wasm, &env.signer, "fund").unwrap();
 

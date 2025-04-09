@@ -7,17 +7,19 @@ use crate::{
         get_sent_tokens, get_strategy_denom, get_token_deposits, map_to_contract_error,
     },
     process::{process_deposit, process_management_fees_and_modify_response, process_redeem},
-    reply::ReplyIDs,
+    reply::{ReplyIDs, INITIAL_TOKEN_SUPPLY},
     storage::{
-        config::{migrate_config, Config},
+        config::Config,
         state::{update_user_deposit, State, UserDeposit, USER_DEPOSITS},
     },
 };
 
-use cosmwasm_std::{coin, DepsMut, Env, MessageInfo, Response, StdError, SubMsg, Uint128};
+use cosmwasm_std::{
+    coin, to_json_binary, DepsMut, Env, MessageInfo, Response, StdError, SubMsg, Uint128,
+};
 use cw2::{get_contract_version, set_contract_version};
 use cw_utils::{must_pay, nonpayable};
-use interface::fund::MigrateMsg;
+use interface::fund::{InstantiateMsg, MigrateMsg};
 use serde::{de::DeserializeOwned, Serialize};
 use vaultenator::{
     config::Configure,
@@ -42,6 +44,10 @@ impl Handle<Config, State> for StructuredVault {
         Config::init_config(&mut deps, &msg)?;
         State::init_state(&mut deps, &env)?;
 
+        // Deserialize the message directly into an InstantiateMsg struct
+        let msg: InstantiateMsg = serde_json::from_slice(&serde_json::to_vec(&msg).unwrap())?;
+
+        let initial_token_supply = msg.initial_token_supply.unwrap_or(INITIAL_TOKEN_SUPPLY);
         let mut config = Config::get_from_storage(deps.as_ref())?;
 
         set_contract_version(
@@ -56,7 +62,8 @@ impl Handle<Config, State> for StructuredVault {
         let create_denom_sub_msg = SubMsg::reply_always(
             create_denom_message(&env.contract.address, Self::CONTRACT_NAME.to_string()),
             ReplyIDs::CreateStrategyDenom as u64,
-        );
+        )
+        .with_payload(to_json_binary(&initial_token_supply)?);
 
         config.update_strategy_denom(get_strategy_denom(&env, CONTRACT_NAME));
 
@@ -207,20 +214,18 @@ impl Handle<Config, State> for StructuredVault {
         M: Serialize + DeserializeOwned,
     {
         // Deserialize the message directly into an MigrateMsg struct
-        let msg: MigrateMsg = serde_json::from_slice(&serde_json::to_vec(&msg).unwrap())?;
+        let _msg: MigrateMsg = serde_json::from_slice(&serde_json::to_vec(&msg).unwrap())?;
 
         let contract_version = get_contract_version(deps.storage)?;
 
         match contract_version.contract.as_ref() {
             "crates.io:fund" | "crates.io:fund-vault" => match contract_version.version.as_ref() {
-                "0.1.0" => {
+                "0.2.0" => {
                     set_contract_version(
                         deps.storage,
                         format!("crates.io:{CONTRACT_NAME}"),
                         CONTRACT_VERSION,
                     )?;
-
-                    migrate_config(deps, msg.redemption_contract)?;
                 }
                 _ => {
                     return Err(ContractError::Std(StdError::generic_err(
@@ -235,7 +240,7 @@ impl Handle<Config, State> for StructuredVault {
             }
         }
 
-        Ok(Response::new().add_event(event_migrate(
+        Ok(Response::default().add_event(event_migrate(
             CONTRACT_VERSION,
             CONTRACT_NAME,
             contract_version,
