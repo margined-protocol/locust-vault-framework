@@ -8,7 +8,8 @@ use crate::{
 };
 
 use cosmwasm_std::{
-    coin, ensure, Coin, Decimal, Deps, Env, MessageInfo, Response, StdError, StdResult, Uint128,
+    coin, ensure, Coin, Decimal, Deps, Env, MessageInfo, Response, SignedDecimal, StdError,
+    StdResult, Uint128,
 };
 use cw_margined::utils::may_pay_two_denoms;
 use cw_utils::must_pay;
@@ -381,4 +382,16 @@ pub fn get_vault_coins(deps: &Deps, config: &Config, contract_addr: &str) -> Std
 
 pub fn map_to_contract_error<E: Display>(e: E) -> ContractError {
     ContractError::Std(StdError::generic_err(e.to_string()))
+}
+
+// Helper function to validate profit percentage is within valid range (-100% to 100%)
+pub fn validate_profit_percentage(profit_percentage: SignedDecimal) -> Result<(), ContractError> {
+    ensure!(
+        profit_percentage <= SignedDecimal::percent(100)
+            && profit_percentage >= SignedDecimal::percent(-100),
+        ContractError::Std(StdError::generic_err(
+            "Profit percentage must be between -100% and 100%"
+        ))
+    );
+    Ok(())
 }

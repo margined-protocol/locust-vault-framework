@@ -16,7 +16,7 @@ use crate::{
 };
 
 use cosmwasm_std::{
-    coin, ensure, Coin, Decimal, DepsMut, Env, MessageInfo, Response, SignedDecimal, Uint128,
+    coin, ensure, Coin, DepsMut, Env, MessageInfo, Response, SignedDecimal, Uint128,
 };
 use cw_utils::{must_pay, nonpayable};
 use vaultenator::{config::Configure, errors::ContractError, state::ManageState};

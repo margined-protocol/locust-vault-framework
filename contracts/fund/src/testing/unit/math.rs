@@ -116,56 +116,69 @@ fn test_calculate_management_minimum_time_elapsed_without_losing_precision() {
 fn test_apply_pnl_positive_profit() {
     let amount = Uint128::from(1000u128);
     let pnl = SignedDecimal::percent(10); // 10% profit
-    let result = apply_pnl(amount, pnl);
-    assert_eq!(result, Uint128::from(900u128)); // 1000 - (10% of 1000)
+
+    let (amount, profit) = apply_pnl(amount, pnl);
+    assert_eq!(amount, Uint128::from(1000u128)); // 1000 - (10% of 1000)
+    assert_eq!(profit, Uint128::from(100u128));
 }
 
 #[test]
 fn test_apply_pnl_negative_loss() {
     let amount = Uint128::from(1000u128);
     let pnl = SignedDecimal::percent(-10); // -10% loss
-    let result = apply_pnl(amount, pnl);
-    assert_eq!(result, Uint128::from(1100u128)); // 1000 + (10% of 1000)
+    let (amount, profit) = apply_pnl(amount, pnl);
+    assert_eq!(amount, Uint128::from(1100u128)); // 1000 - (10% of 1000)
+    assert_eq!(profit, Uint128::zero());
 }
 
 #[test]
 fn test_apply_pnl_zero() {
     let amount = Uint128::from(1000u128);
     let pnl = SignedDecimal::zero();
-    let result = apply_pnl(amount, pnl);
-    assert_eq!(result, amount); // Amount should remain unchanged
+    let (amount, profit) = apply_pnl(amount, pnl);
+
+    assert_eq!(amount, Uint128::from(1000u128)); // Amount should remain unchanged
+    assert_eq!(profit, Uint128::zero());
 }
 
 #[test]
 fn test_apply_pnl_large_amount() {
     let amount = Uint128::from(1_000_000_000u128);
     let pnl = SignedDecimal::percent(50); // 50% profit
-    let result = apply_pnl(amount, pnl);
-    assert_eq!(result, Uint128::from(500_000_000u128)); // 1B - (50% of 1B)
+    let (amount, profit) = apply_pnl(amount, pnl);
+
+    assert_eq!(amount, Uint128::from(1_000_000_000u128)); // 1B + (50% of 1B)
+    assert_eq!(profit, Uint128::from(500_000_000u128)); // 1B - (50% of 1B)
 }
 
 #[test]
 fn test_apply_pnl_small_rate() {
     let amount = Uint128::from(1000u128);
     let pnl = SignedDecimal::percent(1); // 1% profit
-    let result = apply_pnl(amount, pnl);
-    assert_eq!(result, Uint128::from(990u128)); // 1000 - (1% of 1000)
+    let (amount, profit) = apply_pnl(amount, pnl);
+
+    assert_eq!(amount, Uint128::from(1000u128)); // Amount should remain unchanged
+    assert_eq!(profit, Uint128::from(10u128)); //  (1% of 1000)
 }
 
 #[test]
 fn test_apply_pnl_100_percent() {
     let amount = Uint128::from(1000u128);
     let pnl = SignedDecimal::percent(100); // 100% profit
-    let result = apply_pnl(amount, pnl);
-    assert_eq!(result, Uint128::zero()); // Should be zero after 100% profit
+    let (amount, profit) = apply_pnl(amount, pnl);
+
+    assert_eq!(amount, Uint128::from(1000u128)); // Amount should double with 100% profit
+    assert_eq!(profit, Uint128::from(1000u128)); // Should be zero after 100% profit
 }
 
 #[test]
 fn test_apply_pnl_negative_100_percent() {
     let amount = Uint128::from(1000u128);
     let pnl = SignedDecimal::percent(-100); // -100% loss
-    let result = apply_pnl(amount, pnl);
-    assert_eq!(result, Uint128::from(2000u128)); // Should double with 100% loss
+    let (amount, profit) = apply_pnl(amount, pnl);
+
+    assert_eq!(amount, Uint128::from(2000u128)); // Amount should double with 100% profit
+    assert_eq!(profit, Uint128::zero()); // Should double with 100% loss
 }
 
 #[test]

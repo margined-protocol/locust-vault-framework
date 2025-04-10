@@ -3,7 +3,7 @@ use crate::{
     events::{event_burn, event_fees, event_mint, event_redeem, event_repay},
     helpers::{
         calculate_performance_fees, get_management_fees, get_sent_tokens, get_token_deposits,
-        get_total_vault_assets, get_vault_coins,
+        get_total_vault_assets, get_vault_coins, validate_profit_percentage,
     },
     math::{apply_pnl, decimal_to_signed},
     messages::{
@@ -13,8 +13,8 @@ use crate::{
 };
 
 use cosmwasm_std::{
-    coin, Addr, Coin, Decimal, DepsMut, Env, Int128, MessageInfo, Response, SignedDecimal,
-    StdError, StdResult, Uint128,
+    coin, Addr, Coin, DepsMut, Env, MessageInfo, Response, SignedDecimal, StdError, StdResult,
+    Uint128,
 };
 use vaultenator::{config::Configure, errors::ContractError, state::ManageState};
 
@@ -157,8 +157,10 @@ pub fn process_repayments(
     cycle_profit: Option<SignedDecimal>,
     mut response: Response,
 ) -> Result<Response, ContractError> {
+    // Get tokens sent for repayment
     let repayment_tokens = get_sent_tokens(info, config)?;
 
+    // Calculate profit percentage from cycle profit or config
     let profit_percentage = cycle_profit.unwrap_or_else(|| {
         config
             .estimate_cycle_profit
@@ -166,23 +168,25 @@ pub fn process_repayments(
             .unwrap_or(SignedDecimal::zero())
     });
 
+    // Validate profit percentage range
+    validate_profit_percentage(profit_percentage)?;
+
+    // Process each repayment token
     for repayment in repayment_tokens.iter() {
+        // Get total withdrawn amount for this token
         let total_withdrawn = state.get_total_withdrawn_tokens(&repayment.denom);
 
-        let pnl = if repayment.amount < total_withdrawn {
+        // Calculate amount repaid and profit based on comparison with total withdrawn
+        let (amount_repaid, profit) = if repayment.amount < total_withdrawn {
             apply_pnl(repayment.amount, profit_percentage)
         } else {
-            repayment.amount.saturating_sub(total_withdrawn)
+            (
+                repayment.amount,
+                repayment.amount.saturating_sub(total_withdrawn),
+            )
         };
 
-        // If pnl is negative, amount_repaid should be greater
-        let amount_repaid = if profit_percentage.is_negative() {
-            repayment.amount.saturating_add(pnl)
-        } else {
-            repayment.amount.saturating_sub(pnl)
-        };
-
-        // Update state with repayment and save to storage
+        // Update state with repayment
         state.remove_from_total_withdrawn_tokens(amount_repaid, &repayment.denom)?;
         state.save_to_storage(deps)?;
 
@@ -190,7 +194,7 @@ pub fn process_repayments(
         let performance_fee = calculate_performance_fees(
             vec![Coin {
                 denom: repayment.denom.clone(),
-                amount: pnl,
+                amount: profit,
             }],
             config.performance_fee_rate,
         )?;
@@ -217,7 +221,7 @@ pub fn process_repayments(
             ])
             .add_message(create_bank_message(
                 config.treasury.clone(),
-                performance_fee.clone(),
+                performance_fee,
             ));
     }
 

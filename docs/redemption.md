@@ -13,7 +13,7 @@ CONTRACT_ADDRESS=osmo1g63cnjmq2spfagpp03et04xpgklnfllzzc23xqm953huqhrgr7dsaytq8k
 ## Executes
 
 ```bash
-$CLIENT tx wasm execute $CONTRACT_ADDRESS "{\"update_config\": {\"add_fund\": {\"address\":\"neutron1hd4le7ndpxfjzw9vny903pdm5pjkqe7rr9utn9ddxsdak5fdrf9smph7d0\",\"metadata\":\"Hydro Hedging Strategy\"}}}" --from=deployer --gas=auto --gas-prices 0.007untrn --gas-adjustment 1.3 --output=json --node=$NODE --chain-id=$CHAIN_ID
+$CLIENT tx wasm execute $CONTRACT_ADDRESS "{\"update_config\": {\"add_fund\": {\"address\":\"neutron1f99ujxefjr4jqmskc7hvg09am6pdq2j2c5049xwl0de4cavc4rfsl866y0\",\"metadata\":\"ATOM<>dATOM MM\"}}}" --from=deployer --gas=auto --gas-prices 0.007untrn --gas-adjustment 1.3 --output=json --node=$NODE --chain-id=$CHAIN_ID
 ```
 
 ## Queries
