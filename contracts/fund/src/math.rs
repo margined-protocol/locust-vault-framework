@@ -1,6 +1,7 @@
 use crate::queries::external::get_total_supply;
 
-use cosmwasm_std::{Decimal, Deps, StdResult, Uint128};
+use core::str::FromStr;
+use cosmwasm_std::{Decimal, Deps, Int128, SignedDecimal, StdResult, Uint128};
 
 pub const YEAR_IN_SECONDS: u64 = 365 * 24 * 60 * 60;
 
@@ -39,4 +40,30 @@ pub fn calculate_management_fee(
     let fee_multiplier = management_fee * elapsed_time_multiplier;
 
     amount.mul_floor(fee_multiplier)
+}
+
+// Helper function to calculate decimal rate with sign handling
+pub fn apply_pnl(amount: Uint128, pnl: SignedDecimal) -> Uint128 {
+    let abs_rate =
+        Decimal::from_atomics(pnl.atomics().abs().i128() as u128, pnl.decimal_places()).unwrap();
+
+    let pnl_amount = amount.mul_floor(abs_rate);
+
+    // Counterintuitive logic:
+    // If PnL is negative then the amount is increased, as we want to reduce the total outstanding amount
+    // This is because the pnl is a loss, so we need to add it back to the amount to get the correct amount
+    // If PnL is positive then the amount is decreased, as we want to reduce the total outstanding amount
+    // This is because the pnl is a profit, so we need to subtract it from the amount to get the correct amount
+    let result = if pnl.is_negative() {
+        amount.saturating_add(pnl_amount)
+    } else {
+        amount.saturating_sub(pnl_amount)
+    };
+
+    result
+}
+
+// Helper function to convert Decimal to SignedDecimal
+pub fn decimal_to_signed(decimal: Decimal) -> SignedDecimal {
+    SignedDecimal::from_str(&decimal.to_string()).unwrap_or(SignedDecimal::zero())
 }

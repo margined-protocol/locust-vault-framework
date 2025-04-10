@@ -15,7 +15,9 @@ use crate::{
     },
 };
 
-use cosmwasm_std::{coin, ensure, Coin, Decimal, DepsMut, Env, MessageInfo, Response, Uint128};
+use cosmwasm_std::{
+    coin, ensure, Coin, Decimal, DepsMut, Env, MessageInfo, Response, SignedDecimal, Uint128,
+};
 use cw_utils::{must_pay, nonpayable};
 use vaultenator::{config::Configure, errors::ContractError, state::ManageState};
 
@@ -138,7 +140,7 @@ pub fn handle_repay(
     deps: DepsMut,
     env: Env,
     info: MessageInfo,
-    cycle_profit: Option<Decimal>,
+    cycle_profit: Option<SignedDecimal>,
 ) -> Result<Response, ContractError> {
     let (response, mut deps) =
         process_management_fees_and_modify_response(deps, Response::default(), env.clone(), None)?;
@@ -169,7 +171,7 @@ pub fn handle_repay_queue(
     deps: DepsMut,
     env: Env,
     info: MessageInfo,
-    cycle_profit: Option<Decimal>,
+    cycle_profit: Option<SignedDecimal>,
     limit: Option<u64>,
 ) -> Result<Response, ContractError> {
     // 1. Process management fees and ensure the state is open and unpaused

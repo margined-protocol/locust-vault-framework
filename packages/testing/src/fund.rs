@@ -1,6 +1,6 @@
 use crate::setup::TestEnv;
 
-use cosmwasm_std::{Addr, Coin, Decimal, Uint128};
+use cosmwasm_std::{Addr, Coin, SignedDecimal, Uint128};
 use cw_vault_standard::VaultInfoResponse;
 use interface::fund::{
     ConfigResponse, ExecuteMsg, ExtensionExecuteMsg, ExtensionQueryMsg, QueryMsg, Redemption,
@@ -143,7 +143,7 @@ impl TestEnv {
         &self,
         wasm: &Wasm<OsmosisTestApp>,
         contract_addr: &str,
-        cycle_profit: Option<Decimal>,
+        cycle_profit: Option<SignedDecimal>,
         funds: &[Coin],
         signer: &SigningAccount,
     ) -> RunnerExecuteResult<MsgExecuteContractResponse> {
@@ -157,7 +157,7 @@ impl TestEnv {
         &self,
         wasm: &Wasm<OsmosisTestApp>,
         contract_addr: &str,
-        cycle_profit: Option<Decimal>,
+        cycle_profit: Option<SignedDecimal>,
         limit: Option<u64>,
         funds: &[Coin],
         signer: &SigningAccount,
