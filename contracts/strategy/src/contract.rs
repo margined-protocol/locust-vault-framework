@@ -150,7 +150,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, ContractError> {
+pub fn migrate(deps: DepsMut, env: Env, msg: MigrateMsg) -> Result<Response, ContractError> {
     let contract_version = get_contract_version(deps.storage)?;
 
     match contract_version.contract.as_ref() {
@@ -162,7 +162,7 @@ pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, Co
                     CONTRACT_VERSION,
                 )?;
 
-                migrate_config(deps, msg.send_authorization)?;
+                migrate_config(deps, env, msg.send_authorization)?;
             }
             _ => {
                 return Err(ContractError::Std(StdError::generic_err(

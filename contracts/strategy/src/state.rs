@@ -1,5 +1,7 @@
+use crate::utils::create_authz_allow_list_messages;
+
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{ensure, Deps, DepsMut, StdError, StdResult};
+use cosmwasm_std::{ensure, Deps, DepsMut, Env, Response, StdError, StdResult};
 use cw_controllers::Admin;
 use cw_storage_plus::Item;
 use interface::strategy::{OwnerProposal, PoolInfo};
@@ -67,8 +69,9 @@ pub fn ensure_no_duplicates(input: Vec<String>) -> StdResult<()> {
 
 pub fn migrate_config(
     deps: DepsMut,
+    env: Env,
     send_authorization: Option<SendAuthorization>,
-) -> StdResult<()> {
+) -> StdResult<Response> {
     let old_config: Item<V010Config> = Item::new("config");
 
     let cfg = old_config.load(deps.storage)?;
@@ -80,12 +83,22 @@ pub fn migrate_config(
         token0: cfg.token0,
         token1: cfg.token1,
         grants: cfg.grants,
-        send_authorization,
+        send_authorization: send_authorization.clone(),
         pool_info: cfg.pool_info,
     };
+
+    let mut response = Response::new();
+    if let Some(send_authorization) = send_authorization {
+        let authz_msgs = create_authz_allow_list_messages(
+            env.contract.address.as_str(),
+            &new_config.controller,
+            &send_authorization,
+        );
+        response = response.add_message(authz_msgs);
+    }
 
     new_config.validate(&deps.as_ref())?;
     CONFIG.save(deps.storage, &new_config)?;
 
-    Ok(())
+    Ok(response)
 }
