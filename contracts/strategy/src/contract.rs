@@ -150,19 +150,17 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, ContractError> {
+pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
     let contract_version = get_contract_version(deps.storage)?;
 
     match contract_version.contract.as_ref() {
         "crates.io:strategy" => match contract_version.version.as_ref() {
-            "0.0.4" | "0.1.0" => {
+            "0.0.4" | "0.1.0" | "0.2.0" => {
                 set_contract_version(
                     deps.storage,
                     format!("crates.io:{CONTRACT_NAME}"),
                     CONTRACT_VERSION,
                 )?;
-
-                migrate_config(deps, msg.send_authorization)?;
             }
             _ => {
                 return Err(ContractError::Std(StdError::generic_err(
@@ -177,7 +175,7 @@ pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, Co
         }
     }
 
-    Ok(Response::new().add_event(event_migrate(
+    Ok(Response::default().add_event(event_migrate(
         CONTRACT_VERSION,
         CONTRACT_NAME,
         contract_version,

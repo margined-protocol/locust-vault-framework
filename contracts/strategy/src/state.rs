@@ -1,9 +1,11 @@
+use crate::utils::create_authz_allow_list_messages;
+
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{ensure, Deps, DepsMut, StdError, StdResult};
+use cosmwasm_std::{ensure, Deps, DepsMut, Env, Response, StdError, StdResult};
 use cw_controllers::Admin;
 use cw_storage_plus::Item;
 use interface::strategy::{OwnerProposal, PoolInfo};
-use neutron_std::types::cosmos::bank::v1beta1::SendAuthorization;
+use neutron_std::types::cosmos::{bank::v1beta1::SendAuthorization, base::v1beta1::Coin};
 use std::collections::HashSet;
 
 pub const OWNER: Admin = Admin::new("owner");
@@ -67,11 +69,23 @@ pub fn ensure_no_duplicates(input: Vec<String>) -> StdResult<()> {
 
 pub fn migrate_config(
     deps: DepsMut,
-    send_authorization: Option<SendAuthorization>,
-) -> StdResult<()> {
+    env: Env,
+    _send_authorization: Option<SendAuthorization>,
+) -> StdResult<Response> {
     let old_config: Item<V010Config> = Item::new("config");
 
     let cfg = old_config.load(deps.storage)?;
+
+    let new_send_authorization = SendAuthorization {
+        allow_list: vec![
+            "neutron1w7f40hgfc505a2wnjsl5pg35yl8qpawv48w5yekax4xj2m43j09s5fa44f".to_string(),
+        ],
+        spend_limit: vec![Coin {
+            denom: "ibc/B559A80D62249C8AA07A380E2A2BEA6E5CA9A6F079C912C3A9E9B494105E4F81"
+                .to_string(),
+            amount: "1000000000000".to_string(),
+        }],
+    };
 
     let new_config = Config {
         admin: cfg.admin,
@@ -80,12 +94,20 @@ pub fn migrate_config(
         token0: cfg.token0,
         token1: cfg.token1,
         grants: cfg.grants,
-        send_authorization,
+        send_authorization: Some(new_send_authorization.clone()),
         pool_info: cfg.pool_info,
     };
+
+    let mut response = Response::new();
+    let authz_msgs = create_authz_allow_list_messages(
+        env.contract.address.as_str(),
+        &new_config.controller,
+        &new_send_authorization,
+    );
+    response = response.add_message(authz_msgs);
 
     new_config.validate(&deps.as_ref())?;
     CONFIG.save(deps.storage, &new_config)?;
 
-    Ok(())
+    Ok(response)
 }

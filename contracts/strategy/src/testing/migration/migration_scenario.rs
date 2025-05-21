@@ -4,6 +4,7 @@ use cosmwasm_schema::cw_serde;
 use cosmwasm_std::coin;
 use interface::strategy::{ConfigResponse, MigrateMsg, PoolInfo};
 use neutron_std::types::{
+    cosmos::bank::v1beta1::SendAuthorization,
     cosmwasm::wasm::v1::{
         MsgMigrateContract, MsgMigrateContractResponse, QueryContractInfoRequest,
         QueryContractInfoResponse,
@@ -93,7 +94,10 @@ fn test_migration() {
                 contract: strategy_addr.clone(),
                 code_id,
                 msg: serde_json_wasm::to_vec(&MigrateMsg {
-                    send_authorization: None,
+                    send_authorization: Some(SendAuthorization {
+                        allow_list: vec![env.controller.address()],
+                        spend_limit: vec![],
+                    }),
                 })
                 .unwrap(),
             },
@@ -135,7 +139,10 @@ fn test_migration() {
                 token1: QUOTE_DENOM.to_string(),
             },
             grants: vec![DefaultMsg::TYPE_URL.to_string()],
-            send_authorization: None,
+            send_authorization: Some(SendAuthorization {
+                allow_list: vec![env.controller.address()],
+                spend_limit: vec![],
+            }),
             name: format!("crates.io:{}", CONTRACT_NAME),
             version: CONTRACT_VERSION.to_string(),
         }
