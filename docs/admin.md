@@ -188,6 +188,7 @@ osmosisd tx wasm execute $CONTRACT_ADDRESS "{\"update_config\": {\"add_fund\": {
 
 ```bash
 $CLIENT tx wasm migrate $CONTRACT_ADDRESS $CODE_ID '{}'  --from=deployer --gas=auto --gas-prices 0.008untrn --gas-adjustment 1.3 --output=json --node=$NODE --chain-id=$CHAIN_ID
+$CLIENT tx wasm migrate $CONTRACT_ADDRESS $CODE_ID "{\"send_authorization\": {\"allow_list\":[\"neutron1w7f40hgfc505a2wnjsl5pg35yl8qpawv48w5yekax4xj2m43j09s5fa44f\"], \"spend_limit\":[]}}"  --from=deployer --gas=auto --gas-prices 0.008untrn --gas-adjustment 1.3 --output=json --node=$NODE --chain-id=$CHAIN_ID
 ```
 
 ### Query
