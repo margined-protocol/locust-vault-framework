@@ -1,5 +1,5 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::{Addr, Coin, Decimal};
+use cosmwasm_std::{Addr, Coin, Decimal, SignedDecimal};
 use neutron_std::types::cosmos::bank::v1beta1::SendAuthorization;
 
 #[cw_serde]
@@ -25,11 +25,11 @@ pub enum ExecuteMsg {
     },
     Repay {
         tokens_to_repay: Vec<Coin>,
-        cycle_profit: Option<Decimal>,
+        cycle_profit: Option<SignedDecimal>,
     },
     RepayQueue {
         tokens_to_repay: Vec<Coin>,
-        cycle_profit: Option<Decimal>,
+        cycle_profit: Option<SignedDecimal>,
         limit: Option<u64>,
     },
     SetVault {

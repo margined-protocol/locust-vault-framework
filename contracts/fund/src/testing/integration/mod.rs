@@ -7,4 +7,5 @@ pub mod query;
 pub mod queue;
 pub mod redeem;
 pub mod repay;
+pub mod repay_loss;
 pub mod withdraw;

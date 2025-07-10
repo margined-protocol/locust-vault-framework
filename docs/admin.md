@@ -58,6 +58,7 @@ CONTRACT_ADDRESS=neutron1205uqwmyhpmgcslcak7qtvlajqha7chwgfgh9veayrq9eufzzy4q675
 
 # Redemption Queue
 CONTRACT_ADDRESS=osmo1g63cnjmq2spfagpp03et04xpgklnfllzzc23xqm953huqhrgr7dsaytq8k
+CONTRACT_ADDRESS=neutron1rl7key2jr285vwz79hgkusgtw3ylcgateux5p8ajkk4rya067dkserkva8
 ```
 
 ### Testnet

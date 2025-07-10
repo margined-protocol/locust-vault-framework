@@ -13,7 +13,7 @@ use crate::{events::event_set_send_authorization, utils::create_authz_allow_list
 
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{
-    ensure, to_json_binary, Coin, Decimal, DepsMut, Env, MessageInfo, Response, WasmMsg,
+    ensure, to_json_binary, Coin, DepsMut, Env, MessageInfo, Response, SignedDecimal, WasmMsg,
 };
 use cw_utils::nonpayable;
 use cw_vault_standard::VaultStandardExecuteMsg;
@@ -31,10 +31,10 @@ pub enum VaultenatorExtensionExecuteMsg {
         tokens_to_withdraw: Vec<Coin>,
     },
     Repay {
-        cycle_profit: Option<Decimal>,
+        cycle_profit: Option<SignedDecimal>,
     },
     RepayQueue {
-        cycle_profit: Option<Decimal>,
+        cycle_profit: Option<SignedDecimal>,
         limit: Option<u64>,
     },
 }
@@ -81,7 +81,7 @@ pub fn handle_repay(
     _env: Env,
     info: MessageInfo,
     tokens_to_repay: Vec<Coin>,
-    cycle_profit: Option<Decimal>,
+    cycle_profit: Option<SignedDecimal>,
 ) -> Result<Response, ContractError> {
     let config = CONFIG.load(deps.storage)?;
 
@@ -117,7 +117,7 @@ pub fn handle_repay_queue(
     _env: Env,
     info: MessageInfo,
     tokens_to_repay: Vec<Coin>,
-    cycle_profit: Option<Decimal>,
+    cycle_profit: Option<SignedDecimal>,
     limit: Option<u64>,
 ) -> Result<Response, ContractError> {
     let config = CONFIG.load(deps.storage)?;

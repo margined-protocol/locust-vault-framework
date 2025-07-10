@@ -1,5 +1,5 @@
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{Coin, Decimal, Timestamp, Uint128};
+use cosmwasm_std::{Coin, Decimal, SignedDecimal, Timestamp, Uint128};
 use cw_vault_standard::{VaultStandardExecuteMsg, VaultStandardQueryMsg};
 
 #[cw_serde]
@@ -71,10 +71,10 @@ pub enum VaultenatorExtensionExecuteMsg {
         tokens_to_withdraw: Vec<Coin>,
     },
     Repay {
-        cycle_profit: Option<Decimal>,
+        cycle_profit: Option<SignedDecimal>,
     },
     RepayQueue {
-        cycle_profit: Option<Decimal>,
+        cycle_profit: Option<SignedDecimal>,
         limit: Option<u64>,
     },
 }

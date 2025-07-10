@@ -1,6 +1,6 @@
-use crate::math::{calculate_management_fee, YEAR_IN_SECONDS};
+use crate::math::{apply_pnl, calculate_management_fee, decimal_to_signed, YEAR_IN_SECONDS};
 
-use cosmwasm_std::{Decimal, Uint128};
+use cosmwasm_std::{Decimal, SignedDecimal, Uint128};
 
 #[test]
 fn test_calculate_management_fee_for_one_day() {
@@ -110,4 +110,109 @@ fn test_calculate_management_minimum_time_elapsed_without_losing_precision() {
     );
 
     assert_eq!(fee, Uint128::zero());
+}
+
+#[test]
+fn test_apply_pnl_positive_profit() {
+    let amount = Uint128::from(1000u128);
+    let pnl = SignedDecimal::percent(10); // 10% profit
+
+    let (amount, profit) = apply_pnl(amount, pnl);
+    assert_eq!(amount, Uint128::from(1000u128)); // 1000 - (10% of 1000)
+    assert_eq!(profit, Uint128::from(100u128));
+}
+
+#[test]
+fn test_apply_pnl_negative_loss() {
+    let amount = Uint128::from(1000u128);
+    let pnl = SignedDecimal::percent(-10); // -10% loss
+    let (amount, profit) = apply_pnl(amount, pnl);
+    assert_eq!(amount, Uint128::from(1100u128)); // 1000 - (10% of 1000)
+    assert_eq!(profit, Uint128::zero());
+}
+
+#[test]
+fn test_apply_pnl_zero() {
+    let amount = Uint128::from(1000u128);
+    let pnl = SignedDecimal::zero();
+    let (amount, profit) = apply_pnl(amount, pnl);
+
+    assert_eq!(amount, Uint128::from(1000u128)); // Amount should remain unchanged
+    assert_eq!(profit, Uint128::zero());
+}
+
+#[test]
+fn test_apply_pnl_large_amount() {
+    let amount = Uint128::from(1_000_000_000u128);
+    let pnl = SignedDecimal::percent(50); // 50% profit
+    let (amount, profit) = apply_pnl(amount, pnl);
+
+    assert_eq!(amount, Uint128::from(1_000_000_000u128)); // 1B + (50% of 1B)
+    assert_eq!(profit, Uint128::from(500_000_000u128)); // 1B - (50% of 1B)
+}
+
+#[test]
+fn test_apply_pnl_small_rate() {
+    let amount = Uint128::from(1000u128);
+    let pnl = SignedDecimal::percent(1); // 1% profit
+    let (amount, profit) = apply_pnl(amount, pnl);
+
+    assert_eq!(amount, Uint128::from(1000u128)); // Amount should remain unchanged
+    assert_eq!(profit, Uint128::from(10u128)); //  (1% of 1000)
+}
+
+#[test]
+fn test_apply_pnl_100_percent() {
+    let amount = Uint128::from(1000u128);
+    let pnl = SignedDecimal::percent(100); // 100% profit
+    let (amount, profit) = apply_pnl(amount, pnl);
+
+    assert_eq!(amount, Uint128::from(1000u128)); // Amount should double with 100% profit
+    assert_eq!(profit, Uint128::from(1000u128)); // Should be zero after 100% profit
+}
+
+#[test]
+fn test_apply_pnl_negative_100_percent() {
+    let amount = Uint128::from(1000u128);
+    let pnl = SignedDecimal::percent(-100); // -100% loss
+    let (amount, profit) = apply_pnl(amount, pnl);
+
+    assert_eq!(amount, Uint128::from(2000u128)); // Amount should double with 100% profit
+    assert_eq!(profit, Uint128::zero()); // Should double with 100% loss
+}
+
+#[test]
+fn test_decimal_to_signed_positive() {
+    let decimal = Decimal::percent(10); // 10%
+    let signed = decimal_to_signed(decimal);
+    assert_eq!(signed, SignedDecimal::percent(10));
+}
+
+#[test]
+fn test_decimal_to_signed_zero() {
+    let decimal = Decimal::zero();
+    let signed = decimal_to_signed(decimal);
+    assert_eq!(signed, SignedDecimal::zero());
+}
+
+#[test]
+fn test_decimal_to_signed_small() {
+    let decimal = Decimal::percent(1); // 1%
+    let signed = decimal_to_signed(decimal);
+    assert_eq!(signed, SignedDecimal::percent(1));
+}
+
+#[test]
+fn test_decimal_to_signed_large() {
+    let decimal = Decimal::percent(100); // 100%
+    let signed = decimal_to_signed(decimal);
+    assert_eq!(signed, SignedDecimal::percent(100));
+}
+
+#[test]
+fn test_decimal_to_signed_precision() {
+    let decimal = Decimal::from_ratio(1u128, 3u128); // 0.333...
+    let signed = decimal_to_signed(decimal);
+    // Compare string representations to handle precision differences
+    assert_eq!(signed.to_string(), "0.333333333333333333");
 }

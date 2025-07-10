@@ -1,7 +1,7 @@
 use crate::setup::TestEnv;
 
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{Coin, Decimal};
+use cosmwasm_std::{Coin, Decimal, SignedDecimal};
 use neutron_std::types::cosmwasm::wasm::v1::MsgExecuteContractResponse;
 use neutron_test_tube::{
     NeutronTestApp as OsmosisTestApp, RunnerExecuteResult, RunnerResult, SigningAccount, Wasm,
@@ -22,7 +22,7 @@ impl TestEnv {
         wasm: &Wasm<OsmosisTestApp>,
         contract_addr: &str,
         tokens_to_repay: Vec<Coin>,
-        cycle_profit: Option<Decimal>,
+        cycle_profit: Option<SignedDecimal>,
         signer: &SigningAccount,
     ) -> RunnerExecuteResult<MsgExecuteContractResponse> {
         let msg = ExecuteMsg::Repay {
@@ -38,7 +38,7 @@ impl TestEnv {
         wasm: &Wasm<OsmosisTestApp>,
         contract_addr: &str,
         tokens_to_repay: Vec<Coin>,
-        cycle_profit: Option<Decimal>,
+        cycle_profit: Option<SignedDecimal>,
         signer: &SigningAccount,
     ) -> RunnerExecuteResult<MsgExecuteContractResponse> {
         let msg = ExecuteMsg::RepayQueue {
