@@ -23,7 +23,7 @@ num_enum          = { version = "0.7.2" }
 osmosis-std       = { version = "0.26.0" }
 prost             = { version = "0.13.3" }
 prost-types       = { version = "0.13.3" }
-regex             = { version = "1.10.5" }
+regex             = { version = "1.12.2" }
 serde             = { version = "1.0.201" }
 serde-json-wasm   = { version = "1.0.1" }
 serde_json        = { version = "1.0.117" }
